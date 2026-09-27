@@ -18,7 +18,9 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: #07060c; overflow: hidden; }
+html, body { margin: 0; height: 100%; background: #07060c; overflow: hidden; overscroll-behavior: none; }
+/* camada fixa do tamanho exato da tela: o palco de 1920px nunca alarga a página no celular */
+#app { position: fixed; inset: 0; overflow: hidden; touch-action: manipulation; }
 body { font-family: var(--font); color: var(--ink); }
 .pix { image-rendering: pixelated; image-rendering: crisp-edges; }
 button { font-family: inherit; cursor: pointer; }
@@ -528,3 +530,179 @@ span.wm-label { pointer-events: none; }
 .bubble::after { content: ''; position: absolute; left: 50%; bottom: -12px; width: 14px; height: 12px; background: #f6ead0; border: 3px solid #2a1808; border-top: 0; transform: translateX(-50%) skewX(-20deg); border-left: 0; }
 .bubble.out { opacity: 0; }
 @keyframes bubbleIn { from { opacity: 0; transform: translate(-50%, -80%); } }
+
+/* ================= Celular deitado (palco 1280 de largura) ================= */
+.rotate-hint { display: none; }
+.m.portrait .rotate-hint { display: flex; position: fixed; inset: 0; z-index: 99; align-items: center; justify-content: center; text-align: center; padding: 30px; background: #07060c; color: #f4e6c8; font-family: 'Alegreya', serif; }
+.rotate-hint div { display: flex; flex-direction: column; gap: 10px; }
+.rotate-hint b { font-family: 'Jacquarda Bastarda 9', serif; font-size: 40px; color: #f2d27a; font-weight: 400; }
+.rotate-hint b::before { content: '⟳'; display: block; font-size: 56px; font-family: serif; animation: spin 2.4s ease-in-out infinite; }
+@keyframes spin { 50% { transform: rotate(90deg); } }
+
+.m #stage { font-size: 20px; }
+.m .scene { height: 720px; bottom: auto; top: -70px; transition: top .45s ease; }
+.m #stage.talking .scene { top: -185px; }
+.m .scene .bubble { font-size: 26px; max-width: 380px; }
+
+/* topo compacto */
+.m .topbar { top: 6px; left: 8px; right: 8px; height: 54px; gap: 5px; }
+.m .date-ribbon { padding: 2px 8px; column-gap: 8px; }
+.m .date-ribbon .day { font-size: 26px; }
+.m .date-ribbon .clock { font-size: 18px; }
+.m .date-ribbon .hours i { height: 5px; }
+.m .objective { width: 190px; padding: 3px 8px; gap: 6px; }
+.m .objective .ico { width: 24px; height: 24px; }
+.m .objective b { font-size: 15px; }
+.m .objective small, .m .objective span { display: none; }
+.m .chips { gap: 4px; }
+.m .chip { padding: 2px 6px; gap: 4px; }
+.m .chip .ico { width: 20px; height: 20px; }
+.m .chip b { font-size: 18px; }
+.m .chip small { font-size: 11px; }
+.m .medal { width: 44px; height: 54px; }
+.m .medal .ico-lg { width: 42px; height: 42px; padding: 8px; border-width: 2px; }
+.m .medal span { display: none; }
+.m .medal em { font-size: 12px; min-width: 18px; height: 18px; line-height: 14px; top: -2px; right: -2px; }
+
+/* fila e barra de baixo */
+.m .queue { top: 66px; left: 8px; }
+.m .queue-title { font-size: 14px; padding: 1px 8px; margin-bottom: 4px; }
+.m .q-card { width: 66px; padding: 3px; }
+.m .q-portrait { width: 56px; height: 56px; }
+.m .q-meta { font-size: 11px; }
+.m .idle-bar { left: 8px; right: 8px; bottom: 8px; gap: 10px; }
+.m .idle-hint { padding: 10px 16px; font-size: 18px; }
+.m .end-day { padding: 10px 18px; gap: 8px; }
+.m .end-day b { font-size: 24px; }
+.m .end-day small { font-size: 13px; }
+.m .end-day .ico-lg { width: 30px; height: 30px; }
+.m .entering { bottom: 20px; font-size: 20px; padding: 10px 18px; }
+
+/* diálogo */
+.m .dialog { height: 270px; }
+.m .dialog::before { height: 240px; }
+.m .d-portrait { left: 8px; bottom: 8px; width: 176px; height: 246px; }
+.m .big-portrait { left: 8px; top: 6px; width: 160px; height: 160px; }
+.m .big-portrait.art { width: 160px; height: 160px; left: 8px; top: 20px; }
+.m .big-portrait.placeholder { height: 176px; top: -2px; }
+.m .d-house { height: 56px; padding: 4px 8px; gap: 6px; }
+.m .d-house .ico-lg { width: 28px; height: 28px; }
+.m .d-house b { font-size: 15px; }
+.m .d-house small { font-size: 11px; }
+.m .speech { left: 192px; right: 8px; bottom: 134px; min-height: 124px; padding: 10px 150px 10px 16px; }
+.m .speech h3 { font-size: 20px; }
+.m .speech h3 small { font-size: 13px; }
+.m .speech p { font-size: 19px; line-height: 1.28; }
+.m .alert img { width: 38px; height: 38px; }
+.m .choices { left: 192px; right: 8px; bottom: 8px; height: 118px; gap: 8px; }
+.m .choice { padding: 6px 8px; gap: 6px; border-width: 3px; }
+.m .choice-ico .ico-xl { width: 32px; height: 32px; }
+.m .choice-text b { font-size: 16px; }
+.m .choice-text small { font-size: 12px; }
+.m .tag { font-size: 11px; }
+.m .infl-toggle { right: 8px; top: 8px; width: 132px; padding: 3px 6px; font-size: 12px; }
+.m .infl-toggle b { font-size: 15px; }
+.m .consult { right: 8px; top: 44px; width: 132px; padding: 2px 6px; font-size: 12px; gap: 5px; }
+.m .consult-portrait { width: 28px; height: 28px; }
+.m .whisper p { font-size: 16px !important; }
+.m .whisper-portrait { width: 38px; height: 38px; }
+.m .adv-badge { width: 30px; height: 30px; top: -12px; right: -6px; }
+
+/* dicas, avisos e janelas */
+.m .tip { width: 520px; padding: 14px 18px; font-size: 17px; }
+.m .tip-head h3 { font-size: 21px; }
+.m .tip-center, .m .tip-top { top: 76px; }
+.m .tip-right { right: 12px; top: 76px; }
+.m .tip-left { left: 12px; top: 76px; }
+.m .toasts { top: 68px; }
+.m .toast { font-size: 17px; padding: 7px 18px; }
+.m .modal { width: min(1180px, 92%); max-height: 90%; overflow: auto; padding: 18px 26px; font-size: 18px; }
+.m .modal h2 { font-size: 34px; }
+.m .companion-pick { width: 92%; }
+.m .comp-cards { gap: 10px; }
+.m .comp-card { padding: 10px; }
+.m .comp-portrait { width: 96px; height: 96px; }
+.m .comp-card b { font-size: 20px; }
+.m .comp-card p { font-size: 15px; }
+.m .comp-card em, .m .comp-card .role { font-size: 13px; }
+.m .summary { right: 16px; top: 10px; bottom: 10px; width: 620px; padding: 26px 26px 16px; }
+.m .summary h1 { font-size: 40px; margin-bottom: 8px; }
+.m .sum-crest { top: -6px; }
+.m .sum-row { padding: 6px 10px 6px 30px; gap: 10px; margin-bottom: 6px; }
+.m .sum-row .medallion { width: 48px; height: 48px; }
+.m .sum-row .medallion .ico-xl { width: 34px; height: 34px; }
+.m .sum-row .ribbon { width: 16px; height: 40px; }
+.m .sum-row b { font-size: 18px; }
+.m .sum-row p { font-size: 15px; }
+.m .sum-row .delta { font-size: 22px; }
+.m .summary .end-day { margin-top: 10px; }
+.m .title-card { width: 620px; padding: 20px 30px; }
+.m .title-card h1 { font-size: 72px; }
+.m .title-card.derrota h1, .m .title-card.fimAto h1 { font-size: 52px; }
+.m .tagline { font-size: 19px; }
+.m .title-card label { margin: 8px 0; font-size: 18px; }
+.m .title-card input { font-size: 20px; }
+.m .title-card details { margin-top: 10px; font-size: 16px; }
+
+/* telas de painel */
+.m .panel { padding: 14px 16px; }
+.m .panel h2 { font-size: 24px; }
+.m .panel h3 { font-size: 18px; margin-top: 10px; }
+.m .sub { font-size: 15px; }
+.m .btn { font-size: 17px; padding: 6px 14px; }
+.m .library-panel { right: 8px; top: 66px; width: 600px; bottom: 8px; }
+.m .book { padding: 8px; gap: 8px; }
+.m .book-info b { font-size: 17px; }
+.m .book-info p { font-size: 14px; }
+.m .librarian { left: 8px; bottom: 8px; width: 540px; }
+.m .mid-portrait { width: 110px; height: 120px; }
+.m .speech-small { font-size: 16px; padding: 10px 14px; }
+.m .king-panel, .m .court-panel { left: 8px; right: 8px; top: 66px; bottom: 8px; }
+.m .king-head h2 { font-size: 34px; }
+.m .king-head { gap: 14px; }
+.m .xp { width: 300px; font-size: 14px; }
+.m .attr { width: 80px; padding: 4px; }
+.m .attr b { font-size: 24px; }
+.m .tree { gap: 10px; }
+.m .skill b { font-size: 16px; }
+.m .skill small { font-size: 12px; }
+.m .hc-body { font-size: 15px; }
+.m .hc-body b { font-size: 17px; }
+.m .people { grid-template-columns: repeat(3, 1fr); }
+.m .person b { font-size: 15px; }
+.m .gov-box h2 { font-size: 22px; }
+
+/* mapa e guerra */
+.m .map-stage { left: 8px; right: 8px; top: 66px; bottom: 8px; }
+.m .map-stage.with-card .map-slot { right: 400px; }
+.m .prov-card { right: 8px; top: 66px; bottom: 8px; width: 392px; padding: 14px 16px; font-size: 15px; }
+.m .prov-card h2 { font-size: 30px; }
+.m .prov-card h3 { font-size: 16px; margin: 8px 0 4px; }
+.m .pd-head .shield.lg { width: 48px; height: 58px; }
+.m .desc { font-size: 14px; }
+.m .pd-row { font-size: 14px; }
+.m .prod { grid-template-columns: 24px 70px 1fr 36px; font-size: 14px; }
+.m .need, .m .route { font-size: 13px; }
+.m .seg button { font-size: 15px; padding: 5px; }
+.m .new-route select { font-size: 13px; }
+.m .act-btn b { font-size: 17px; }
+.m .act-btn small { font-size: 12px; }
+.m .lens-bar { width: 140px; padding: 6px; left: 6px; top: 6px; }
+.m .lens-bar h3 { font-size: 15px; }
+.m .lens { font-size: 14px; padding: 4px 6px; gap: 5px; }
+.m .legend { font-size: 12px; }
+.m .eco-card { font-size: 13px; gap: 8px; padding: 4px 10px; left: 6px; bottom: 6px; }
+.m .card-tab { top: 72px; right: 8px; font-size: 15px; padding: 6px 10px; }
+.m .wm-label { font-size: 12px; }
+.m .wm-realm { font-size: 24px; }
+.m .wm-badge { font-size: 12px; }
+.m .wm-flag .stand { height: 54px; width: 30px; }
+.m .wm-flag .pole { height: 54px; }
+.m .wm-flag .cloth { width: 26px; height: 32px; }
+.m .wm-flag .cloth img { width: 16px; height: 16px; }
+.m .wm-army .stand { width: 44px; height: 52px; }
+.m .wm-army .stand b { font-size: 18px; }
+.m .army-card { width: 280px; padding: 12px; }
+.m .army-stats b { font-size: 24px; }
+.m .war-card h2 { font-size: 28px; }
+.m .die { width: 30px; height: 30px; font-size: 18px; }

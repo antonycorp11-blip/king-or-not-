@@ -85,6 +85,8 @@ export class App {
     this.ui = { screen: 'titulo', dialog: null, useInfluence: false, province: 'castelmar', warSel: null, warMode: 'reforcar', warResult: null, summary: null, summaryDay: 0, confirmEnd: false, help: false, lens: 'casas', good: 'graos', cardOpen: true, armyOpen: false, warClash: null };
     this.stage.addEventListener('click', (e) => this.onClick(e));
     window.addEventListener('resize', () => this.fit());
+    window.addEventListener('orientationchange', () => window.setTimeout(() => this.fit(), 250));
+    window.visualViewport?.addEventListener('resize', () => this.fit());
     this.fit();
     this.render();
     // o salão tem vida: guardas, quem espera e o conselheiro comentam de tempos em tempos
@@ -103,8 +105,26 @@ export class App {
     return (this.worldMap ??= new WorldMap());
   }
 
+  // Escala o palco para a tela. Computador: 1920x1080. Celular deitado: palco menor (1280 de largura)
+  // e proporcional à tela, com layout compacto, para o texto continuar legível.
   fit() {
-    const k = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    const host = this.stage.parentElement;
+    const w = host?.clientWidth || window.innerWidth;
+    const h = host?.clientHeight || window.innerHeight;
+    const mobile = Math.min(w, h) <= 540;
+    const root = document.documentElement;
+    root.classList.toggle('m', mobile);
+    root.classList.toggle('portrait', mobile && h > w);
+    let W = 1920;
+    let H = 1080;
+    if (mobile) {
+      const long = Math.max(w, h), short = Math.min(w, h);
+      W = 1280;
+      H = Math.round(Math.max(560, Math.min(720, (1280 * short) / long)));
+    }
+    this.stage.style.width = `${W}px`;
+    this.stage.style.height = `${H}px`;
+    const k = Math.min(w / W, h / H);
     this.stage.style.transform = `translate(-50%, -50%) scale(${k})`;
   }
 
@@ -242,6 +262,7 @@ export class App {
       this.root.innerHTML = renderTitle(this);
       return;
     }
+    this.stage.classList.remove('talking');
     if (ui.summary) {
       this.scene.setHour(20.5);
       this.scene.setMode('full');
@@ -256,6 +277,7 @@ export class App {
     }
     this.checkArrivals();
     setCrowned(s.spouse ? [s.spouse] : []);
+    this.stage.classList.toggle('talking', ui.screen === 'trono' && !!ui.dialog);
     const screen = ui.screen as ScreenId;
     this.scene.setHour(s.hour);
     const mod = SCREENS[screen];
