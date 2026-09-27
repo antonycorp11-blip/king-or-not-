@@ -4,3 +4,4 @@ build
 .DS_Store
 assets/manifest.json
 .claude/
+.wrangler/
