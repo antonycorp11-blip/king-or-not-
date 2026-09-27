@@ -1,0 +1,16 @@
+{
+  "name": "king-or-not",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "tsc --noEmit && node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "sim": "esbuild scripts/sim.ts --bundle --platform=node --outfile=build/sim.cjs --log-level=warning && node build/sim.cjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.12",
+    "typescript": "^5.6.0"
+  }
+}
