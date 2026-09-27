@@ -4,6 +4,7 @@ import { HOUSE_IDS, HOUSES, PROVINCES, GOODS } from '../data/realm';
 import { char } from '../data/characters';
 import { ACT_END, DAY_END, DAY_START, MARRIAGE_DEADLINE, applyEffect, clamp, governabilidade, hasSkill, influenceGain, rand, save } from './core';
 import { warEndOfDay } from './war';
+import { armyDaily } from './army';
 import { companion } from '../data/companions';
 import { computeEconomy, taxKey } from './economy';
 
@@ -118,8 +119,9 @@ export function endDay(s: GameState): LogEntry[] {
     }
   }
 
-  // 2. Guerra: o inimigo age se você não comandou hoje
+  // 2. Guerra: o inimigo age se você não comandou hoje; em paz, o acampamento do exército
   warEndOfDay(s, entries);
+  armyDaily(s, entries);
 
   // 3. Economia
   const eco = computeEconomy(s);

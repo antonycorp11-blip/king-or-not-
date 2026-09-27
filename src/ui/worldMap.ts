@@ -1,11 +1,14 @@
 import type { GameState, Good, ProvinceId } from '../types';
 import { GOODS, HOUSES, PROVINCES } from '../data/realm';
 import { computeEconomy, production, taxKey } from '../engine/economy';
+import { armyAt, tension, tensionLabel } from '../engine/army';
+import { levyUnits } from '../engine/war';
+import type { HouseId } from '../types';
 import { ISLAND, SEEDS, WH, WW, cellAt, routePath, world, type Cell } from '../render/worldmap';
 import { hexToRgb, iconUrl, mix } from '../render/pixel';
 
 // Mesa de guerra: diorama em perspectiva, com filtros de cor, estandartes em pé e movimento.
-export type Lens = 'casas' | 'lealdade' | 'producao' | 'escassez' | 'rotas' | 'impostos' | 'guerra';
+export type Lens = 'casas' | 'lealdade' | 'producao' | 'escassez' | 'rotas' | 'impostos' | 'guerra' | 'exercito';
 
 export interface MapView {
   lens: Lens;
@@ -111,7 +114,7 @@ export class WorldMap {
   }
 
   update(s: GameState, v: MapView) {
-    const key = JSON.stringify([v, s.loyalty, s.taxes, s.routes, s.res.povo, s.investments, s.war?.territories, s.spouse]);
+    const key = JSON.stringify([v, s.loyalty, s.taxes, s.routes, s.res.povo, s.investments, s.war?.territories, s.spouse, s.flags.armyAt, s.day]);
     if (key !== this.lastKey) {
       this.lastKey = key;
       this.drawOverlay(s, v);
@@ -120,7 +123,7 @@ export class WorldMap {
     this.el.dataset.lens = v.lens;
     // caravanas das rotas comerciais
     this.caravans = [];
-    if (v.lens !== 'guerra') {
+    if (v.lens !== 'guerra' && v.lens !== 'exercito') {
       const eco = computeEconomy(s);
       eco.routes.forEach((r, k) => {
         if (r.amount <= 0) return;
@@ -156,6 +159,12 @@ export class WorldMap {
         }
         case 'impostos': t[id] = north ? ['#2a2a3a', 0.45] : [{ baixo: '#3aa84a', normal: '#e8c848', alto: '#d83a2a' }[s.taxes[key]], 0.42]; break;
         case 'rotas': t[id] = north ? ['#2a2a3a', 0.4] : ['#f0e0b0', 0.12]; break;
+        case 'exercito': {
+          if (north) { t[id] = ['#4a5a78', 0.35]; break; }
+          const tv = tension(s, id);
+          t[id] = [mix('#3aa84a', '#d83a2a', tv / 100), 0.28 + tv / 400];
+          break;
+        }
         case 'guerra': {
           const terr = s.war?.territories.find((x) => x.id === id);
           t[id] = terr ? (terr.owner === 'rei' ? ['#3a6ae0', 0.42] : [s.war!.enemy === 'norhelm' ? '#9aa4c0' : '#d83a2a', 0.5]) : ['#2a2a3a', 0.3];
@@ -224,6 +233,18 @@ export class WorldMap {
       const P = PROVINCES[id];
       const H = HOUSES[P.house];
       const north = P.kingdom === 'norhelm';
+      if (v.lens === 'exercito') {
+        out.push(`<button class="wm-label ${north ? 'foe' : ''} ${v.target === id ? 'on' : ''}" style="${pct(x, y + 11)}" data-act="marchTo" data-arg="${id}">${P.name}</button>`);
+        if (north) continue;
+        const camp = armyAt(s) === id;
+        const key = taxKey(id);
+        const levy = key === 'coroa' ? 0 : levyUnits(s, key as HouseId) * 100;
+        if (camp) out.push(`<button class="wm-army rei sel" style="${pct(x - 14, y - 4)}" data-act="marchTo" data-arg="${id}" title="Exército Real"><span class="stand"><img class="pix" src="${iconUrl('coroa')}" alt=""><b>${Math.round(s.res.exercito / 100)}</b></span></button>`);
+        if (levy) out.push(`<span class="wm-levy" style="${pct(x + 14, y - 2)};--hc:${H.color}" title="Tropas da ${H.name}"><img class="pix" src="${iconUrl(H.sigil)}" alt=""><b>${levy / 100}</b></span>`);
+        const tv = tension(s, id);
+        out.push(`<span class="wm-badge tension-${tensionLabel(tv)}" style="${pct(x, y + 20)}">Tensão ${tensionLabel(tv)}</span>`);
+        continue;
+      }
       if (war) {
         const t = s.war!.territories.find((z) => z.id === id);
         if (!t) continue;
@@ -253,10 +274,16 @@ export class WorldMap {
       }
       if (badge) out.push(`<span class="wm-badge" style="${pct(x, y + 20)}">${badge}</span>`);
     }
-    if (!war) {
+    if (!war && v.lens !== 'exercito') {
       out.push(`<span class="wm-label foe" style="${pct(ISLAND[0], ISLAND[1] + 12)}">Véridian</span>`);
       out.push(`<span class="wm-realm" style="${pct(300, 72)}">Reino de Norhelm</span>`);
       out.push(`<span class="wm-realm home" style="${pct(230, 250)}">Reino de Castelmar</span>`);
+    }
+    // rota de marcha do exército real
+    if (v.lens === 'exercito' && v.target && v.target !== armyAt(s)) {
+      const [x0, y0] = SEEDS[armyAt(s)], [x1, y1] = SEEDS[v.target];
+      const mx = (x0 + x1) / 2, my = Math.min(y0, y1) - 22;
+      out.push(`<svg class="wm-arrows march" viewBox="0 0 ${WW} ${WH}" preserveAspectRatio="none"><path d="M${x0},${y0 - 8} Q${mx},${my} ${x1},${y1 - 8}" class="arrow-bg"/><path d="M${x0},${y0 - 8} Q${mx},${my} ${x1},${y1 - 8}" class="arrow"/></svg>`);
     }
     // setas de guerra (SVG no plano do mapa)
     if (war && v.selected && v.target) {

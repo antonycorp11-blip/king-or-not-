@@ -843,3 +843,81 @@ span.wm-label { pointer-events: none; }
 .fix .btn { flex-direction: row; gap: 8px; align-items: baseline; }
 .fix.none { background: rgba(90, 60, 20, .1); border-color: #b8903a; }
 .m .fix { font-size: 16px; }
+
+/* ---------- Respostas por TOM (orbe redondo + significado) ---------- */
+.c-azul { --g1: #2e50b8; --g2: #14226a; --ring: #7aa0ff; }
+.c-dourado { --g1: #9a7428; --g2: #4a3210; --ring: #f2d27a; }
+.c-vermelho { --g1: #b83030; --g2: #5a1010; --ring: #ff8a6a; }
+.c-roxo { --g1: #7a44b8; --g2: #34186a; --ring: #c89aff; }
+.c-verde { --g1: #2a8a52; --g2: #103a22; --ring: #8ae0a0; }
+.choices { height: 176px; }
+.choice.tone { flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; padding: 0 4px; text-align: center; background: none; box-shadow: none; border: 0; }
+.choice.tone:hover:not([disabled]) { transform: none; filter: none; }
+.choice.tone .orb { width: 96px; height: 96px; flex: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  background: radial-gradient(circle at 38% 32%, var(--g1), var(--g2) 72%); border: 4px solid #0a0610; box-shadow: inset 0 0 0 3px var(--ring), 0 6px 0 rgba(0,0,0,.45), 0 0 0 0 var(--ring); transition: transform .15s, box-shadow .2s; }
+.choice.tone .orb .ico-xl { width: 50px; height: 50px; }
+.choice.tone:hover:not([disabled]) .orb { transform: translateY(-4px) scale(1.06); box-shadow: inset 0 0 0 3px var(--ring), 0 10px 0 rgba(0,0,0,.35), 0 0 22px var(--ring); }
+.choice.tone .tone-name { font-family: var(--sc); font-size: 22px; font-weight: 700; color: #fff2d0; text-shadow: 2px 2px 0 #000; line-height: 1.05; }
+.choice.tone .meaning { font-size: 17px; color: #efe2c4; text-shadow: 1px 1px 0 #000; line-height: 1.15; }
+.choice.tone .tags { justify-content: center; }
+.choice.tone.locked { filter: grayscale(.9) brightness(.65); }
+.choice.tone.advice .orb { box-shadow: inset 0 0 0 3px #fff0a0, 0 0 20px rgba(242, 210, 122, .8); }
+.orb-portrait { width: 100%; height: 100%; object-fit: cover; object-position: top; image-rendering: auto; }
+.speech .said { font-style: italic; color: #1c2c6a; font-size: 24px !important; margin: 2px 0 6px !important; padding-left: 12px; border-left: 4px solid #2e50b8; }
+.speech { bottom: 204px; }
+.dialog::before { height: 360px; }
+
+/* celular: orbes menores, mais espaço para o texto e o salão visto de mais longe */
+.m .choices { height: 132px; gap: 6px; }
+.m .choice.tone .orb { width: 70px; height: 70px; border-width: 3px; }
+.m .choice.tone .orb .ico-xl { width: 36px; height: 36px; }
+.m .choice.tone .tone-name { font-size: 19px; }
+.m .choice.tone .meaning { font-size: 15px; }
+.m .speech { bottom: 146px; }
+.m .speech .said { font-size: 21px !important; }
+.m .scene { top: 0; transform: translateY(-8px) scale(.84); transform-origin: 50% 0; }
+.m #stage.talking .scene { top: 0; transform: translateY(-44px) scale(.66); }
+
+/* ---------- Mini-game de leitura ---------- */
+.modal.reading { width: 820px; text-align: center; }
+.modal.reading h2 { display: flex; gap: 10px; align-items: center; justify-content: center; font-size: 40px; }
+.passage { font-size: 30px; line-height: 1.4; margin: 18px 10px; font-style: italic; color: #2a1a10; }
+.passage .gap { display: inline-block; min-width: 140px; border-bottom: 3px dashed #6a4a1a; }
+.passage b.right { color: #1f7a3a; border-bottom: 3px solid #1f7a3a; }
+.passage b.wrong { color: #a82a2a; border-bottom: 3px solid #a82a2a; }
+.read-options { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.read-options .btn { min-width: 200px; font-size: 24px; padding: 12px 20px; }
+.read-options .btn.right { background: linear-gradient(#2a8a52, #103a22); filter: none; }
+.read-options .btn.wrong { background: linear-gradient(#a02a2a, #561010); filter: none; }
+.read-options .btn.off { opacity: .5; }
+.verdict { font-size: 24px; font-style: italic; }
+.read-score { display: flex; gap: 12px; justify-content: center; margin: 12px 0; }
+.read-score i { width: 34px; height: 34px; border-radius: 50%; background: #c8b890; border: 3px solid #6a4a1a; }
+.read-score i.ok { background: radial-gradient(circle at 35% 35%, #f6e08a, #c8902a); box-shadow: 0 0 10px #f2c14e; }
+.m .modal.reading { width: 760px; }
+.m .passage { font-size: 26px; margin: 10px; }
+.m .read-options .btn { min-width: 170px; font-size: 22px; padding: 10px 14px; }
+
+/* ---------- Exército em tempo de paz ---------- */
+.wm-levy { transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; padding: 3px 5px; background: linear-gradient(var(--hc), rgba(0,0,0,.8)); border: 2px solid #0a0610; box-shadow: inset 0 0 0 2px #e8c060; clip-path: polygon(0 0, 100% 0, 100% 72%, 50% 100%, 0 72%); color: #fff; pointer-events: none !important; }
+.wm-levy img { width: 18px; height: 18px; }
+.wm-levy b { font-family: var(--pix); font-size: 16px; text-shadow: 1px 1px 0 #000; padding-bottom: 6px; }
+.wm-badge.tension-alta { background: rgba(150, 20, 20, .92); border-color: #ff8a6a; }
+.wm-badge.tension-média { background: rgba(140, 100, 10, .92); border-color: #f2d27a; }
+.wm-badge.tension-baixa { background: rgba(20, 90, 40, .92); border-color: #8ae0a0; }
+.wm-arrows.march .arrow { stroke: #7aa0ff; }
+.camp { font-size: 20px; display: flex; gap: 8px; align-items: center; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.row2 .act-btn { margin-top: 0; }
+.march-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.march { display: flex; flex-direction: column; align-items: flex-start; padding: 6px 10px; text-align: left; font-family: var(--sc); font-size: 18px; color: #2a1a10; background: rgba(255,255,255,.45); border: 2px solid #b8903a; }
+.march em { font-family: var(--font); font-style: normal; font-size: 14px; font-weight: 700; }
+.march em.tension-alta { color: #b82a2a; } .march em.tension-média { color: #9a6a10; } .march em.tension-baixa { color: #1f7a3a; }
+.march small { font-size: 12px; opacity: .7; }
+.march.on { background: #fff4c8; box-shadow: inset 0 0 0 2px #2e50b8; }
+.march.here { opacity: .7; }
+.march-plan { margin-top: 10px; padding: 10px; background: rgba(46, 80, 184, .1); border: 2px solid #2e50b8; font-size: 18px; }
+.march-plan p { margin: 0 0 6px; font-style: italic; }
+.m .camp { font-size: 17px; }
+.m .march { font-size: 16px; padding: 4px 8px; }
+.m .march-plan { font-size: 15px; }

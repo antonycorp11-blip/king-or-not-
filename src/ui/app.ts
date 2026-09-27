@@ -25,6 +25,7 @@ export interface Dialog {
   node: string;
   phase: 'entering' | 'talk';
   reply?: string;
+  said?: string; // o que o rei disse na última escolha
   expr?: Expr;
   advice?: { who: string; text: string; choice: import('../types').Choice } | null;
   consulted?: boolean;

@@ -6,6 +6,8 @@ import { canTakeTurn, endPlayerTurn, blitz, ADJ, terr, reinforce } from '../src/
 import type { Choice, GameState, Req } from '../src/types';
 import { BOOKS } from '../src/data/progression';
 import { companionsFor, genericAdvice } from '../src/data/companions';
+import { marchArmy } from '../src/engine/army';
+import { KINGDOM_PROVINCES } from '../src/data/realm';
 
 function ok(s: GameState, r?: Req) {
   if (!r) return true;
@@ -30,6 +32,7 @@ for (let run = 0; run < 300; run++) {
       const b = BOOKS.find((x) => !s.knowledge.includes(x.knowledge))!;
       if (b) { spendHours(s, 2); s.bookProgress[b.id] = (s.bookProgress[b.id] ?? 0) + 2; if (s.bookProgress[b.id] >= b.hours) s.knowledge.push(b.knowledge); }
     }
+    if (Math.random() < 0.15) marchArmy(s, KINGDOM_PROVINCES[Math.floor(Math.random() * KINGDOM_PROVINCES.length)]);
     const comps = companionsFor(s);
     s.flags.companion = comps[Math.floor(Math.random() * comps.length)].id;
     for (const a of s.audiences) {

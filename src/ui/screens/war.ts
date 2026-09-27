@@ -7,6 +7,7 @@ import { computeEconomy } from '../../engine/economy';
 import { ADJ, PEACE_COST, WAR_TURN_HOURS, attackOnce, blitz, canNegotiatePeace, canTakeTurn, endPlayerTurn, fortify, levyUnits, negotiatePeace, playerReinforcement, reinforce, terr, totals, type BattleRound } from '../../engine/war';
 import { iconImg } from '../../render/pixel';
 import { esc, shield } from '../common';
+import { MARCH_HOURS, MARCH_TARGETS, armyAt, marchArmy, marchPreview, northThreat, tension, tensionLabel } from '../../engine/army';
 
 const RECRUIT_COST = 100;
 const TRAIN_COST = 80;
@@ -49,7 +50,23 @@ export function render(app: App): string {
 
   let side: string;
   if (!w) {
-    side = `<h2>Paz armada</h2><p>${s.flags.pazNorhelm ? 'O casamento com Norhelm mantém o inverno longe. Mas nem todos os lordes aceitaram a paz.' : 'Norhelm afia as espadas além do Passo Cinzento. Batedores dizem que a invasão virá depois do casamento real.'}</p><p>Prepare o exército, a moral e o tesouro. Quando a guerra começar, os exércitos aparecem sobre o mapa e você os comanda um turno por dia.</p>${knows(s, 'tatica') ? '' : '<p class="sub">Dica: "A Arte da Muralha" na biblioteca dá vantagem na defesa.</p>'}`;
+    const at = armyAt(s);
+    const target = (ui.warSel || null) as ProvinceId | null;
+    const threat = northThreat(s);
+    side = `<h2>Exército Real</h2>
+      <div class="pd-row"><span>Soldados <b>${s.res.exercito}</b></span><span>Moral <b>${s.res.moral}</b></span><span>Soldo <b>${eco.upkeep}</b>/dia</span></div>
+      <p class="camp">${iconImg('coroa')} Acampado em <b>${PROVINCES[at].name}</b></p>
+      <div class="row2">
+        <button class="act-btn a-dourado" data-act="recruit">${iconImg('moedas', 'ico-lg')}<span><b>Recrutar 100</b><small>−${RECRUIT_COST} ouro · 1h</small></span></button>
+        <button class="act-btn a-azul" data-act="train">${iconImg('escudo', 'ico-lg')}<span><b>Treinar</b><small>−${TRAIN_COST} ouro · +10 moral · 1h</small></span></button>
+      </div>
+      <h3>Mover o exército</h3>
+      <p class="sub">Toque numa província no mapa. Onde há <b>tensão alta</b> as tropas acalmam ou intimidam, mas os lordes reagem e a capital fica mais exposta.${threat ? ' <b>Norhelm ameaça a fronteira</b>: Vale Rubro e Montanhas de Ferro estão em alerta.' : ''}</p>
+      <div class="march-list">${MARCH_TARGETS.map((p) => {
+        const tv = tension(s, p);
+        return `<button class="march ${p === at ? 'here' : ''} ${p === target ? 'on' : ''}" data-act="marchTo" data-arg="${p}" ${p === at ? 'disabled' : ''}><span>${PROVINCES[p].name}</span><em class="tension-${tensionLabel(tv)}">tensão ${tensionLabel(tv)}</em>${p === at ? '<small>aqui</small>' : ''}</button>`;
+      }).join('')}</div>
+      ${target && target !== at ? `<div class="march-plan"><p>${esc(marchPreview(s, target))}</p><button class="act-btn a-vermelho" data-act="march">${iconImg('espadas', 'ico-lg')}<span><b>Marchar para ${PROVINCES[target].name}</b><small>${MARCH_HOURS}h · os lordes vão reagir</small></span></button></div>` : ''}`;
   } else {
     const enemyName = w.enemy === 'norhelm' ? 'Norhelm' : 'Rebeldes Drakon';
     const open = turnOpen(app);
@@ -104,7 +121,14 @@ export function after(app: App) {
       app.render();
     }
   };
-  map.update(s, w ? { lens: 'guerra', selected, target: to ?? null, targets, clash: app.ui.warClash as ProvinceId | null } : { lens: 'casas', selected: null });
+  if (!w) map.onPick = (id) => pickMarch(app, id);
+  map.update(s, w ? { lens: 'guerra', selected, target: to ?? null, targets, clash: app.ui.warClash as ProvinceId | null } : { lens: 'exercito', selected: null, target: (app.ui.warSel || null) as ProvinceId | null });
+}
+
+function pickMarch(app: App, id: ProvinceId) {
+  if (!MARCH_TARGETS.includes(id)) return app.toast(`${PROVINCES[id].name} pertence a Norhelm.`);
+  app.ui.warSel = id === armyAt(app.s) ? null : id;
+  app.render();
 }
 
 function clash(app: App, id: ProvinceId) {
@@ -189,6 +213,19 @@ export function handle(app: App, act: string, arg: string) {
     case 'peace':
       negotiatePeace(s);
       break;
+    case 'marchTo':
+      if (w) return;
+      return pickMarch(app, arg as ProvinceId);
+    case 'march': {
+      const to = app.ui.warSel as ProvinceId | null;
+      if (w || !to) return;
+      if (!canSpend(s, MARCH_HOURS)) return app.toast('Não há horas suficientes hoje para marchar.');
+      spendHours(s, MARCH_HOURS);
+      marchArmy(s, to);
+      app.ui.warSel = null;
+      app.toast(`O exército marcha para ${PROVINCES[to].name}. Os lordes vão reagir.`);
+      break;
+    }
     case 'armyToggle':
       app.ui.armyOpen = !app.ui.armyOpen;
       return app.render();

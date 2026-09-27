@@ -41,6 +41,15 @@ export function startWar(s: GameState, enemy: 'norhelm' | 'drakon') {
   } else {
     t.push({ id: 'vale', owner: 'inimigo', units: 14 + Math.max(0, Math.floor(-s.loyalty.drakon / 20)) });
   }
+  // o exército real luta de onde está acampado (a capital fica com uma guarnição)
+  const camp = (s.flags.armyAt as ProvinceId) || 'castelmar';
+  const campT = t.find((x) => x.id === camp && x.owner === 'rei');
+  if (campT && camp !== 'castelmar') {
+    const cap = t.find((x) => x.id === 'castelmar')!;
+    const moved = Math.floor(cap.units * 0.6); // 40% ficam guarnecendo a capital
+    cap.units -= moved;
+    campT.units += moved;
+  }
   s.war = { enemy, turn: 1, lastTurnDay: s.day - 1, territories: t, reinforcements: 0, moveUsed: false, log: [] };
   beginPlayerTurn(s);
 }
