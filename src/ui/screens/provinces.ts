@@ -86,6 +86,13 @@ function detailCard(app: App) {
       const miss = shortages.find((x) => x.good === g);
       return `<span class="need ${miss ? 'miss' : 'ok'}">${iconImg(GOODS[g].icon)} ${GOODS[g].name} ${n}${miss ? ` · faltam ${miss.missing}` : ' ✓'}</span>`;
     }).join('') || '<small>Autossuficiente.</small>'}</div>
+    ${shortages.map((sh) => {
+      // quem tem sobra dessa mercadoria para mandar para cá?
+      const sources = KINGDOM_PROVINCES.filter((p) => p !== sel && (eco.surplus[p]?.[sh.good] ?? 0) > 0 && !s.routes.some((r) => r.from === p && r.to === sel && r.good === sh.good));
+      return sources.length
+        ? `<div class="fix">${iconImg(GOODS[sh.good].icon)}<span>Falta <b>${GOODS[sh.good].name.toLowerCase()}</b>. Traga de outra província:</span>${sources.map((p) => `<button class="btn sm" data-act="fixShortage" data-arg="${p}|${sh.good}">Trazer de ${PROVINCES[p].name} <small>${eco.surplus[p]![sh.good]} sobrando · 1h</small></button>`).join('')}</div>`
+        : `<div class="fix none">${iconImg(GOODS[sh.good].icon)}<span>Ninguém no reino tem <b>${GOODS[sh.good].name.toLowerCase()}</b> sobrando. Invista numa província que produz ${GOODS[sh.good].name.toLowerCase()} (filtro <b>Produção</b>) ou cancele rotas que levam essa mercadoria para fora.</span></div>`;
+    }).join('')}
     <h3>Impostos ${key === 'coroa' ? '(afeta o Povo)' : '(afeta a lealdade)'} · ${DECREE_HOURS}h</h3>
     <div class="seg">${(['baixo', 'normal', 'alto'] as TaxLevel[]).map((t) => `<button class="${s.taxes[key] === t ? 'on' : ''}" data-act="tax" data-arg="${t}">${t}</button>`).join('')}</div>
     <h3>Rotas comerciais</h3>
@@ -162,6 +169,14 @@ export function handle(app: App, act: string, arg: string) {
       }
       app.ui.lens = 'rotas';
       app.toast('Nova rota decretada. Veja as caravanas no mapa.');
+      break;
+    }
+    case 'fixShortage': {
+      const [from, good] = arg.split('|') as [ProvinceId, Good];
+      if (!decree(app)) return;
+      s.routes.push({ id: nextRouteId(s), from, to: sel, good });
+      app.ui.lens = 'escassez';
+      app.toast(`Rota criada: ${GOODS[good].name} de ${PROVINCES[from].name} para ${PROVINCES[sel].name}.`);
       break;
     }
     case 'invest': {

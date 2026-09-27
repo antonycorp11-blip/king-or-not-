@@ -1,5 +1,5 @@
 // Tutorial contextual: cada dica aparece uma vez, na primeira vez que a situação acontece.
-export type TipId = 'inicio' | 'dialogo' | 'chegada' | 'influencia' | 'resumo' | 'provincias' | 'biblioteca' | 'rei' | 'corte' | 'guerra';
+export type TipId = 'inicio' | 'dialogo' | 'chegada' | 'influencia' | 'resumo' | 'provincias' | 'escassez' | 'biblioteca' | 'rei' | 'corte' | 'guerra';
 
 export const TIPS: Record<TipId, { title: string; text: string; pos?: 'center' | 'top' | 'right' | 'left' }> = {
   inicio: {
@@ -29,7 +29,12 @@ export const TIPS: Record<TipId, { title: string; text: string; pos?: 'center' |
   },
   provincias: {
     title: 'Províncias e comércio',
-    text: 'Cada província produz algo e precisa de algo. <b>Rotas comerciais</b> levam o excedente para quem precisa, e cada rota rende tarifas à coroa. Onde falta alguma coisa, a lealdade cai. Mudar impostos ou rotas é um decreto e custa <b>1 hora</b>.',
+    text: 'Cada província produz algo e precisa de algo. Toque numa província no mapa para abrir a ficha dela. Os filtros à esquerda mostram quem é leal, o que cada uma produz e <b>onde está faltando</b>. Mudar impostos ou rotas é um decreto e custa <b>1 hora</b>.',
+    pos: 'center',
+  },
+  escassez: {
+    title: 'Como ajudar uma cidade',
+    text: 'Quando falta algo numa província, a lealdade dela cai todo dia (na capital, cai o Povo). Para resolver: na ficha, em <b>Necessidades</b>, toque em <b>Trazer de…</b>. Isso cria uma <b>rota comercial</b> de quem tem sobra para quem precisa, e a rota ainda rende tarifas para a coroa. Se ninguém tiver sobra, <b>invista</b> numa província que produz aquilo.',
     pos: 'center',
   },
   biblioteca: {

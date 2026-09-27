@@ -1,5 +1,6 @@
 import type { GameState, Good, LogEntry, ScreenId } from '../types';
-import { governabilidade, govLabel, influenceGain, load, newGame, save, clearSave } from '../engine/core';
+import { governabilidade, govLabel, influenceGain, load, newGame, save, clearSave, storeLocal } from '../engine/core';
+import { athgGameStarted, athgReady, cloudLoad, inPortal } from '../engine/cloud';
 import { computeEconomy } from '../engine/economy';
 import { currentObjective, endDay, eventOf, startDay, visibleAudiences } from '../engine/day';
 import { loadCharacterAssets, setCrowned, type Expr } from '../render/actors';
@@ -91,6 +92,21 @@ export class App {
     this.render();
     // o salão tem vida: guardas, quem espera e o conselheiro comentam de tempos em tempos
     window.setInterval(() => this.lifeTick(), 1000);
+    // Portal ATHG: avisa que carregou e busca o save da conta (vale o mais recente)
+    document.documentElement.classList.toggle('embedded', inPortal());
+    athgReady();
+    void cloudLoad().then((cloud) => {
+      if (!cloud) {
+        const local = load();
+        if (local) save(local); // primeiro acesso depois da atualização: sobe o progresso atual para a conta
+        return;
+      }
+      const local = load();
+      if (!local || (cloud.savedAt ?? 0) > (local.savedAt ?? 0)) {
+        storeLocal(cloud);
+        if (this.ui.screen === 'titulo') this.render();
+      }
+    });
     // pré-gera o mapa-diorama em segundo plano (leva ~1,5s)
     window.setTimeout(() => void this.map, 1200);
     // quando a arte gerada existir em assets/personagens, ela substitui os bonecos provisórios
@@ -136,6 +152,7 @@ export class App {
     clearSave();
     this.s = newGame(name || 'Edric');
     startDay(this.s);
+    athgGameStarted();
     this.ui.screen = 'trono';
     this.ui.dialog = null;
     this.render();
@@ -229,7 +246,10 @@ export class App {
     else if (this.ui.screen === 'trono') {
       if (this.ui.dialog?.phase === 'talk' && !this.ui.dialog.reply) want.push('dialogo');
       else if (!this.ui.dialog) want.push('inicio', ...(s.day >= 2 ? (['influencia'] as TipId[]) : []), ...(visibleAudiences(s).length < s.audiences.filter((a) => !a.done).length ? (['chegada'] as TipId[]) : []));
-    } else want.push(this.ui.screen as TipId);
+    } else {
+      want.push(this.ui.screen as TipId);
+      if (this.ui.screen === 'provincias' && computeEconomy(s).shortages.some((x) => x.province === this.ui.province)) want.push('escassez');
+    }
     return want.find((t) => TIPS[t] && !s.flags[`tip_${t}`]) ?? null;
   }
 

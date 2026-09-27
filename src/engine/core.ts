@@ -2,6 +2,7 @@ import type { Attr, Effect, GameState, HouseId, LogEntry, Resources } from '../t
 import { BOOKS, SKILLS, XP_PER_POINT } from '../data/progression';
 import { HOUSE_IDS, HOUSES } from '../data/realm';
 import { CHARACTERS } from '../data/characters';
+import { cloudSave } from './cloud';
 
 export const SAVE_KEY = 'king-or-not-save-v1';
 export const DAY_START = 8;
@@ -169,10 +170,21 @@ export function houseName(h: string) {
 
 // ---------- persistência ----------
 export function save(s: GameState) {
+  s.savedAt = Date.now();
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(s));
   } catch {
     /* armazenamento indisponível: o jogo segue sem salvar */
+  }
+  cloudSave(s);
+}
+
+// Grava um save vindo de fora (nuvem) sem reenviá-lo.
+export function storeLocal(s: GameState) {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+  } catch {
+    /* ignora */
   }
 }
 

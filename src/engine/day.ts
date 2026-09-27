@@ -43,7 +43,7 @@ export function startDay(s: GameState) {
   for (const ev of EVENTS) if (ev.day === s.day && eligible(s, ev)) addAudience(s, ev);
 
   // demandas aleatórias até preencher a agenda
-  const target = s.day <= 2 ? 3 : 5;
+  const target = s.day === 1 ? 4 : s.day <= 3 ? 6 : 7;
   let guard = 0;
   while (s.audiences.length < target && guard++ < 20) {
     const pool = EVENTS.filter((e) => e.weight && eligible(s, e));
@@ -150,7 +150,7 @@ export function endDay(s: GameState): LogEntry[] {
   if (hurt.size) {
     const names = [...hurt].map((p) => PROVINCES[p as keyof typeof PROVINCES].name).join(', ');
     const goods = [...new Set(eco.shortages.map((x) => GOODS[x.good].name.toLowerCase()))].join(', ');
-    entries.push({ icon: 'trigo', title: 'Escassez', text: `Faltam ${goods} em ${names}. O descontentamento cresce.`, tone: 'ruim' });
+    entries.push({ icon: 'trigo', title: 'Escassez', text: `Faltam ${goods} em ${names}. O descontentamento cresce. Em Províncias, abra a ficha e use "Trazer de…" para criar uma rota.`, tone: 'ruim' });
   }
   // rotas comerciais agradam quem vende
   for (const h of HOUSE_IDS) {

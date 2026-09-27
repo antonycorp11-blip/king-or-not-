@@ -833,3 +833,13 @@ span.wm-label { pointer-events: none; }
 .m .infl-toggle, .m .consult { width: 168px; white-space: nowrap; font-size: 14px; }
 .m .consult { top: 52px; }
 .m .consult span { overflow: hidden; text-overflow: ellipsis; }
+
+/* Dentro do portal ATHG no celular, o botão X do portal fica no canto superior direito */
+.m.embedded .topbar { right: 78px; }
+.m.embedded .prov-card, .m.embedded .card-tab { right: 14px; }
+
+.fix { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; padding: 8px 10px; background: rgba(216, 58, 42, .1); border: 2px solid #c8503a; font-size: 17px; }
+.fix > span { flex: 1 1 100%; }
+.fix .btn { flex-direction: row; gap: 8px; align-items: baseline; }
+.fix.none { background: rgba(90, 60, 20, .1); border-color: #b8903a; }
+.m .fix { font-size: 16px; }

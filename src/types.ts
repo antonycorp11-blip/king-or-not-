@@ -186,5 +186,6 @@ export interface GameState {
   spouse?: string;
   war?: WarState;
   nextUid: number;
+  savedAt?: number; // quando foi salvo (para comparar com o save da nuvem)
   ended?: { kind: 'derrota' | 'fimAto'; title: string; text: string };
 }
