@@ -706,3 +706,130 @@ span.wm-label { pointer-events: none; }
 .m .army-stats b { font-size: 24px; }
 .m .war-card h2 { font-size: 28px; }
 .m .die { width: 30px; height: 30px; font-size: 18px; }
+
+/* ---------- Celular: textos e toques maiores (o palco fica ~0,55–0,65x) ---------- */
+.m #stage { font-size: 23px; }
+.m .topbar { height: 66px; }
+.m .date-ribbon .day { font-size: 32px; }
+.m .date-ribbon .clock { font-size: 22px; }
+.m .objective { width: 200px; }
+.m .objective b { font-size: 18px; }
+.m .chip b { font-size: 25px; }
+.m .chip small { display: none; }
+.m .chip .ico { width: 26px; height: 26px; }
+.m .medal { width: 60px; height: 66px; }
+.m .medal .ico-lg { width: 58px; height: 58px; padding: 11px; }
+.m .medal em { font-size: 15px; min-width: 22px; height: 22px; line-height: 18px; }
+.m .queue { top: 80px; }
+.m .queue-title { font-size: 17px; }
+.m .q-card { width: 84px; }
+.m .q-portrait { width: 74px; height: 74px; }
+.m .q-meta { font-size: 15px; }
+.m .idle-hint { font-size: 22px; }
+.m .end-day b { font-size: 30px; }
+.m .end-day small { font-size: 16px; }
+
+/* diálogo: o topo e a fila saem de cena e o salão se ajusta para o personagem caber inteiro */
+.m .topbar, .m .queue { transition: transform .35s ease, opacity .35s ease; }
+.m #stage.talking .topbar, .m #stage.talking .queue { transform: translateY(-110%); opacity: 0; pointer-events: none; }
+.m #stage.talking .scene { top: -70px; transform: translateY(-43px) scale(.78); transform-origin: 50% 0; }
+.m .scene { transition: top .45s ease, transform .45s ease; }
+.m #stage { background: radial-gradient(ellipse at 50% 40%, #2a2030, #0c0910 75%); }
+.m .dialog { height: 310px; }
+.m .d-portrait { width: 196px; height: 290px; }
+.m .big-portrait.art, .m .big-portrait { width: 176px; height: 176px; left: 10px; top: 24px; }
+.m .d-house { height: 70px; }
+.m .d-house b { font-size: 18px; }
+.m .d-house small { font-size: 13px; }
+.m .speech { left: 212px; bottom: 148px; padding: 12px 172px 12px 18px; }
+.m .speech h3 { font-size: 25px; }
+.m .speech h3 small { font-size: 16px; }
+.m .speech p { font-size: 25px; line-height: 1.25; }
+.m .choices { left: 212px; height: 132px; }
+.m .choice-text b { font-size: 21px; }
+.m .choice-text small { font-size: 16px; }
+.m .choice-ico .ico-xl { width: 38px; height: 38px; }
+.m .infl-toggle, .m .consult { width: 156px; font-size: 15px; }
+.m .infl-toggle b { font-size: 18px; }
+.m .consult { top: 50px; }
+.m .consult-portrait { width: 34px; height: 34px; }
+.m .whisper p { font-size: 21px !important; }
+.m .entering { font-size: 24px; }
+
+.m .tip { width: 640px; font-size: 22px; }
+.m .tip-head h3 { font-size: 26px; }
+.m .tip-center, .m .tip-top, .m .tip-right, .m .tip-left { top: 84px; }
+.m .toast { font-size: 21px; }
+.m .modal { font-size: 21px; }
+.m .modal h2 { font-size: 38px; }
+.m .comp-portrait { width: 110px; height: 110px; }
+.m .comp-card b { font-size: 24px; }
+.m .comp-card p { font-size: 18px; }
+.m .comp-card em, .m .comp-card .role { font-size: 16px; }
+.m .summary { width: 720px; }
+.m .sum-row b { font-size: 22px; }
+.m .sum-row p { font-size: 18px; }
+.m .sum-row .delta { font-size: 26px; }
+.m .title-card { width: 700px; }
+.m .tagline { font-size: 22px; }
+.m .title-card label, .m .title-card details { font-size: 20px; }
+.m .title-card input { font-size: 24px; }
+.m .btn { font-size: 21px; padding: 8px 18px; }
+
+.m .library-panel, .m .king-panel, .m .court-panel, .m .map-stage, .m .prov-card { top: 80px; }
+.m .panel h2 { font-size: 30px; }
+.m .panel h3 { font-size: 22px; }
+.m .sub { font-size: 18px; }
+.m .library-panel { width: 660px; }
+.m .book-info b { font-size: 21px; }
+.m .book-info small { font-size: 15px; }
+.m .book-info p { font-size: 17px; }
+.m .speech-small { font-size: 19px; }
+.m .xp { font-size: 17px; }
+.m .attr b { font-size: 28px; }
+.m .attr small { font-size: 14px; }
+.m .skill b { font-size: 19px; }
+.m .skill small { font-size: 15px; }
+.m .hc-body { font-size: 18px; }
+.m .hc-body b { font-size: 21px; }
+.m .hc-body small { font-size: 15px; }
+.m .people { grid-template-columns: repeat(2, 1fr); }
+.m .person b { font-size: 18px; }
+.m .person small { font-size: 15px; }
+.m .pill { font-size: 16px; }
+.m .map-stage.with-card .map-slot { right: 450px; }
+.m .prov-card { width: 440px; font-size: 18px; }
+.m .prov-card h2 { font-size: 34px; }
+.m .prov-card h3 { font-size: 20px; }
+.m .desc, .m .pd-row { font-size: 17px; }
+.m .prod { grid-template-columns: 28px 84px 1fr 40px; font-size: 17px; }
+.m .need, .m .route { font-size: 16px; }
+.m .seg button { font-size: 18px; padding: 8px; }
+.m .new-route select { font-size: 16px; }
+.m .act-btn b { font-size: 20px; }
+.m .act-btn small { font-size: 15px; }
+.m .lens-bar { width: 170px; }
+.m .lens-bar h3 { font-size: 18px; }
+.m .lens { font-size: 17px; padding: 6px 8px; }
+.m .legend { font-size: 14px; }
+.m .eco-card { font-size: 16px; }
+.m .card-tab { top: 86px; font-size: 18px; }
+.m .wm-label { font-size: 15px; }
+.m .army-card { width: 320px; }
+.m .army-card h2 { font-size: 24px; }
+.m .levy { font-size: 17px; }
+.m .war-card h2 { font-size: 32px; }
+.m .war-log { font-size: 16px; }
+.m .die { width: 36px; height: 36px; font-size: 22px; }
+.m .objective { width: 150px; }
+.m .objective b { font-size: 15px; line-height: 1.1; }
+.m .objective .ico { width: 22px; height: 22px; }
+.m .medal { width: 54px; }
+.m .medal .ico-lg { width: 54px; height: 54px; padding: 10px; }
+.m .chips { gap: 3px; }
+.m .chip { padding: 2px 5px; gap: 3px; justify-content: center; }
+.m .chip b { font-size: 22px; }
+.m .chip .ico { width: 20px; height: 20px; }
+.m .infl-toggle, .m .consult { width: 168px; white-space: nowrap; font-size: 14px; }
+.m .consult { top: 52px; }
+.m .consult span { overflow: hidden; text-overflow: ellipsis; }
