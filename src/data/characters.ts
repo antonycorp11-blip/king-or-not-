@@ -137,6 +137,33 @@ export const CHARACTERS: Record<string, Character> = {
   dama_carvalhal: { id: 'dama_carvalhal', name: 'Lady Brígida Carvalhal', title: 'Dama vassala dos Seren', realm: 'seren', base: 'dama', tint: '#1f6a44', look: { female: true, skin: SKIN.claro, hair: '#8a3a22', hairStyle: 'coque', eyes: '#4a6a4a', outfit: '#1f6a44', trim: '#f0ece0' }, traits: ['Fé', 'Bosques', 'Medo'] },
 };
 
+// Personagens que reaproveitam a arte de outro (recolorida quando a roupa é neutra)
+function variant(id: string, name: string, title: string, realm: Character['realm'], base: string, tint: string | undefined, traits: string[]): Character {
+  const b = CHARACTERS[base];
+  return { id, name, title, realm, base, tint, look: { ...b.look, ...(tint ? { outfit: tint } : {}) }, traits };
+}
+
+const EXTRA: Character[] = [
+  variant('clara', 'Clara', 'Camareira do Castelo', 'coroa', 'dama', '#5a7a9a', ['Toalhas', 'Suspiros', 'Segredos']),
+  variant('bianca', 'Bianca', 'Confeiteira Real', 'coroa', 'dama', '#8a5a3a', ['Tortas', 'Paixão', 'Fofoca']),
+  variant('pimenta', 'Pimenta', 'Bobo da Corte', 'coroa', 'mensageiro', undefined, ['Piadas', 'Verdades', 'Insolência']),
+  variant('kasim', 'Kasim', 'Mercador de Véridian', 'veridian', 'tobias', undefined, ['Especiarias', 'Papagaios', 'Lábia']),
+  variant('sir_osric', 'Sir Osric Âncora', 'Cavaleiro vassalo dos Valmont', 'valmont', 'cavaleiro', '#2350b0', ['Torneios', 'Vaidade', 'Mar']),
+  variant('viuva', 'Viúva Greta', 'Viúva de guerra', 'coroa', 'camponesa', undefined, ['Luto', 'Netos', 'Pão']),
+  variant('sombra', 'A Sombra', 'Mestre dos Sussurros', 'coroa', 'irma', undefined, ['Corvos', 'Segredos', 'Preço']),
+  variant('cedric', 'Cedric de Lys', 'Diz ser filho do falecido rei', 'coroa', 'cavaleiro', '#7a2a5a', ['Sangue', 'Carisma', 'Ambição']),
+  variant('lysandra', 'Lady Lysandra Cinzel', 'Dama vassala dos Montclair', 'montclair', 'dama', '#4a4d57', ['Veneno', 'Sorrisos', 'Cartas']),
+  variant('morgana', 'Lady Morgana Rocha-Negra', 'Dama vassala dos Drakon', 'drakon', 'dama', '#6a1018', ['Orgulho', 'Luto', 'Vingança']),
+  variant('florian', 'Lorde Florian', 'Poeta da corte', 'coroa', 'cavaleiro', '#8a3a9a', ['Versos', 'Vaidade', 'Dívidas']),
+  variant('ragnar', 'Príncipe Ragnar', 'Herdeiro de Norhelm', 'norhelm', 'haakon', undefined, ['Guerra', 'Orgulho', 'Fome']),
+  variant('tomas', 'Tomás', 'Padeiro da cidade baixa', 'coroa', 'campones', undefined, ['Pão', 'Queixas', 'Farinha']),
+  variant('bruna', 'Bruna', 'Ferreira da capital', 'coroa', 'marta', undefined, ['Martelo', 'Brasas', 'Franqueza']),
+  variant('salvio', 'Mestre Sálvio', 'Cozinheiro-chefe', 'coroa', 'corvin', undefined, ['Molhos', 'Venenos?', 'Drama']),
+  variant('frei_aske', 'Frei Aske', 'Monge cronista', 'coroa', 'theodric', undefined, ['Crônicas', 'Profecias', 'Vinho']),
+  variant('sir_bram', 'Sir Bram Salgueiro', 'Cavaleiro vassalo dos Seren', 'seren', 'cavaleiro', '#1f6a44', ['Fé', 'Arco', 'Silêncio']),
+];
+for (const c of EXTRA) CHARACTERS[c.id] = c;
+
 // Nome-base dos arquivos de arte em assets/personagens/ (NN_id_corpo.png / NN_id_retrato.png)
 export const ASSET_FILES: Record<string, string> = {
   rei: '01_rei', isabelle: '02_isabelle', lucas: '03_lucas', aldric: '04_aldric', corvin: '05_corvin',

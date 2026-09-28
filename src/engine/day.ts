@@ -3,8 +3,10 @@ import { EVENTS, EVENT_MAP } from '../data/events';
 import { HOUSE_IDS, HOUSES, PROVINCES, GOODS } from '../data/realm';
 import { char } from '../data/characters';
 import { ACT_END, DAY_END, DAY_START, MARRIAGE_DEADLINE, applyEffect, clamp, governabilidade, hasSkill, influenceGain, rand, save } from './core';
-import { warEndOfDay } from './war';
+import { enemyLabel, warEndOfDay } from './war';
 import { armyDaily } from './army';
+import { deliverLetters } from './letters';
+import { checkRebellions } from '../data/events/crisis';
 import { companion } from '../data/companions';
 import { computeEconomy, taxKey } from './economy';
 
@@ -26,6 +28,23 @@ function addAudience(s: GameState, ev: GameEvent, arrive = DAY_START) {
   s.seen[ev.id] = s.day;
 }
 
+// Coloca alguém na fila de audiências (usado por convocações e pelas noites)
+export function pushAudience(s: GameState, eventId: string, arrive: number) {
+  const ev = EVENT_MAP[eventId];
+  if (!ev || s.audiences.some((a) => a.eventId === eventId && !a.done)) return;
+  addAudience(s, ev, arrive);
+}
+
+// Noite: às vezes alguém aborda o rei quando ele encerra o dia
+export function pickNight(s: GameState): GameEvent | null {
+  if (rand(s) > 0.5) return null;
+  const pool = EVENTS.filter((e) => e.kind === 'noite' && e.weight && eligible(s, e));
+  if (!pool.length) return null;
+  const total = pool.reduce((a, e) => a + e.weight!, 0);
+  let r = rand(s) * total;
+  return pool.find((e) => (r -= e.weight!) <= 0) ?? pool[0];
+}
+
 export function startDay(s: GameState) {
   s.hour = DAY_START;
   s.log = [];
@@ -43,11 +62,13 @@ export function startDay(s: GameState) {
   // roteiro do dia
   for (const ev of EVENTS) if (ev.day === s.day && eligible(s, ev)) addAudience(s, ev);
 
+  deliverLetters(s);
+
   // demandas aleatórias até preencher a agenda
   const target = s.day === 1 ? 4 : s.day <= 3 ? 6 : 7;
   let guard = 0;
   while (s.audiences.length < target && guard++ < 20) {
-    const pool = EVENTS.filter((e) => e.weight && eligible(s, e));
+    const pool = EVENTS.filter((e) => e.weight && e.kind !== 'noite' && eligible(s, e));
     if (!pool.length) break;
     const total = pool.reduce((a, e) => a + e.weight!, 0);
     let r = rand(s) * total;
@@ -66,11 +87,12 @@ export function visibleAudiences(s: GameState) {
 }
 
 export function currentObjective(s: GameState): { title: string; text: string } {
-  if (s.war && !s.war.result) return { title: 'Vencer a guerra', text: `Contra ${s.war.enemy === 'norhelm' ? 'Norhelm' : 'os rebeldes Drakon'} · turno ${s.war.turn}` };
+  if (s.war && !s.war.result) return { title: 'Vencer a guerra', text: `Contra ${enemyLabel(s.war.enemy)} · turno ${s.war.turn}` };
   if (!s.spouse && !s.flags.noiva) return { title: 'Escolher uma rainha', text: `O conselho exige um casamento até o Dia ${MARRIAGE_DEADLINE}` };
   if (!s.spouse && s.flags.noiva) return { title: 'O casamento real', text: `Cerimônia no Dia ${MARRIAGE_DEADLINE}` };
   if (s.day < 22) return { title: 'Consolidar o reino', text: 'O norte está quieto demais...' };
-  return { title: 'Sobreviver ao primeiro mês', text: `Fim do Ato I no Dia ${ACT_END}` };
+  if (s.day <= 30) return { title: 'Sobreviver ao primeiro mês', text: 'O inverno se aproxima...' };
+  return { title: 'O primeiro inverno', text: `Fim do Ato II no Dia ${ACT_END}` };
 }
 
 export function canSpend(s: GameState, hours: number) {
@@ -143,6 +165,7 @@ export function endDay(s: GameState): LogEntry[] {
   // 3. Escassez nas províncias
   const hurt = new Set<string>();
   for (const sh of eco.shortages) {
+    if (hasSkill(s, 'celeiros') && s.day % 2 === 1) break;
     const key = taxKey(sh.province);
     if (hurt.has(sh.province)) continue;
     hurt.add(sh.province);
@@ -167,6 +190,11 @@ export function endDay(s: GameState): LogEntry[] {
     if (s.taxes[h] === 'alto') s.loyalty[h] = clamp(s.loyalty[h] - 2, -100, 100);
     if (s.taxes[h] === 'baixo') s.loyalty[h] = clamp(s.loyalty[h] + 1, -100, 100);
   }
+
+  // 5b. Habilidades de carisma
+  if (hasSkill(s, 'amado')) s.res.povo = clamp(s.res.povo + 1, 0, 100);
+  if (hasSkill(s, 'lenda')) s.res.prestigio = clamp(s.res.prestigio + 1, 0, 100);
+  if (hasSkill(s, 'coracaoleao')) s.res.moral = clamp(s.res.moral + 1, 0, 100);
 
   // 5a. Quem ficou ao lado do trono
   const comp = companion(s);
@@ -214,13 +242,14 @@ export function endDay(s: GameState): LogEntry[] {
   const rumor = pickRumor(s);
   if (rumor) entries.push(rumor);
 
-  // 9. Fim de jogo?
+  // 9. Casas furiosas se rebelam; fim de jogo?
+  checkRebellions(s);
   checkEnd(s);
 
   s.history.push({ day: s.day, entries });
   s.day++;
   if (!s.ended && s.day > ACT_END) {
-    s.ended = { kind: 'fimAto', title: 'Fim do Ato I', text: epilogue(s) };
+    s.ended = { kind: 'fimAto', title: 'Fim do Ato II', text: epilogue(s) };
   }
   if (!s.ended) startDay(s);
   else save(s);
@@ -262,9 +291,9 @@ function epilogue(s: GameState): string {
   const gov = governabilidade(s);
   const war = s.war?.result === 'vitoria' ? 'venceu a guerra' : s.war?.result === 'paz' ? 'selou uma paz frágil' : s.war ? 'ainda luta uma guerra' : 'evitou a guerra';
   const worst = [...HOUSE_IDS].sort((a, b) => s.loyalty[a] - s.loyalty[b])[0];
-  return `Trinta dias depois da coroação, o rei ${s.kingName} está casado com ${spouse}, ${war} e governa um reino ${govLabel2(gov)}. ` +
+  return `${ACT_END} dias depois da coroação, o rei ${s.kingName} está casado com ${spouse}, ${war} e governa um reino ${govLabel2(gov)}. ` +
     `A ${HOUSES[worst].name} é quem mais o despreza (${s.loyalty[worst]}). Leis aprovadas: ${s.laws.length ? s.laws.join('; ') : 'nenhuma'}. ` +
-    `A história continua no Ato II.`;
+    `A história continua no Ato III.`;
 }
 
 export { DAY_END, DAY_START };

@@ -4,7 +4,7 @@ export type HouseId = 'valmont' | 'drakon' | 'seren' | 'montclair';
 export type RealmId = 'coroa' | HouseId | 'norhelm' | 'veridian';
 export type ProvinceId = 'castelmar' | 'costa' | 'vale' | 'bosques' | 'montanhas' | 'hjalmgard' | 'fiorde' | 'passo';
 export type Good = 'graos' | 'madeira' | 'ferro' | 'peixe' | 'vinho' | 'prata';
-export type Attr = 'diplomacia' | 'estrategia' | 'comercio' | 'intriga';
+export type Attr = 'diplomacia' | 'estrategia' | 'comercio' | 'intriga' | 'carisma' | 'justica';
 export type Tone = 'bom' | 'ruim' | 'neutro' | 'rumor' | 'lei';
 export type ChoiceColor = 'azul' | 'dourado' | 'vermelho' | 'roxo' | 'verde';
 export type ScreenId = 'trono' | 'provincias' | 'biblioteca' | 'rei' | 'corte' | 'guerra';
@@ -102,7 +102,7 @@ export interface Advice {
   choice: Choice; // a nova saída que ele oferece
 }
 
-export type EventKind = 'audiencia' | 'urgente' | 'familia' | 'conselho' | 'casamento';
+export type EventKind = 'audiencia' | 'urgente' | 'familia' | 'conselho' | 'casamento' | 'noite';
 
 export interface GameEvent {
   id: string;
@@ -119,6 +119,30 @@ export interface GameEvent {
   repeat?: number; // pode voltar após N dias (senão, único)
   lasts?: number; // dias que fica pendente (padrão 1)
   ignored?: Effect & { text: string };
+}
+
+// Cartas: recados que chegam ao rei sem audiência (não gastam horas)
+export interface LetterDef {
+  id: string;
+  from: string; // personagem
+  subject: string;
+  text: Txt;
+  choices?: Choice[]; // respostas possíveis (só efeitos, sem continuação)
+  day?: number;
+  minDay?: number;
+  maxDay?: number;
+  cond?: (s: GameState) => boolean;
+  weight?: number;
+  repeat?: number;
+}
+
+export interface Letter {
+  uid: number;
+  defId: string;
+  day: number;
+  read: boolean;
+  answer?: number; // índice da resposta escolhida
+  reply?: string;
 }
 
 export interface Audience {
@@ -143,7 +167,7 @@ export interface WarTerritory {
 }
 
 export interface WarState {
-  enemy: 'norhelm' | 'drakon';
+  enemy: 'norhelm' | HouseId;
   turn: number;
   lastTurnDay: number;
   territories: WarTerritory[];
@@ -186,6 +210,8 @@ export interface GameState {
   spouse?: string;
   war?: WarState;
   nextUid: number;
-  savedAt?: number; // quando foi salvo (para comparar com o save da nuvem)
+  savedAt?: number;
+  letters?: Letter[];
+  summoned?: Record<string, number>; // último dia em que cada personagem foi convocado // quando foi salvo (para comparar com o save da nuvem)
   ended?: { kind: 'derrota' | 'fimAto'; title: string; text: string };
 }

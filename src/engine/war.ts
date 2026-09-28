@@ -1,4 +1,4 @@
-import type { GameState, LogEntry, ProvinceId, WarState, WarTerritory } from '../types';
+import type { GameState, HouseId, LogEntry, ProvinceId, WarState, WarTerritory } from '../types';
 import { HOUSES, PROVINCES } from '../data/realm';
 import { clamp, hasSkill, knows, rand } from './core';
 
@@ -15,6 +15,7 @@ export const ADJ: Record<ProvinceId, ProvinceId[]> = {
 };
 
 export const WAR_TURN_HOURS = 2;
+export const warTurnHours = (s: GameState) => (hasSkill(s, 'vanguarda') ? 1 : WAR_TURN_HOURS);
 
 export function levyUnits(s: GameState, house: 'valmont' | 'drakon' | 'seren' | 'montclair'): number {
   if (s.loyalty[house] < -20) return 0; // casas hostis não enviam tropas
@@ -24,22 +25,30 @@ export function levyUnits(s: GameState, house: 'valmont' | 'drakon' | 'seren' | 
   return Math.floor(n);
 }
 
-export function startWar(s: GameState, enemy: 'norhelm' | 'drakon') {
+const HOUSE_SEAT: Record<HouseId, ProvinceId> = { valmont: 'costa', drakon: 'vale', seren: 'bosques', montclair: 'montanhas' };
+export const warSeat = (enemy: 'norhelm' | HouseId): ProvinceId => (enemy === 'norhelm' ? 'hjalmgard' : HOUSE_SEAT[enemy]);
+export const enemyLabel = (enemy: 'norhelm' | HouseId) => (enemy === 'norhelm' ? 'Norhelm' : { valmont: 'os rebeldes Valmont', drakon: 'os rebeldes Drakon', seren: 'os rebeldes Seren', montclair: 'os rebeldes Montclair' }[enemy]);
+
+export function startWar(s: GameState, enemy: 'norhelm' | HouseId) {
   const moraleMul = s.res.moral < 40 ? 0.75 : 1;
   const u = (n: number) => Math.max(1, Math.round(n * moraleMul));
   const t: WarTerritory[] = [];
   const royal = Math.floor(s.res.exercito / 100);
-  t.push({ id: 'castelmar', owner: 'rei', units: u(royal) });
-  t.push({ id: 'costa', owner: 'rei', units: u(levyUnits(s, 'valmont') + (s.spouse === 'isolde' ? 8 : 0)) });
-  t.push({ id: 'bosques', owner: 'rei', units: u(levyUnits(s, 'seren')) });
-  t.push({ id: 'montanhas', owner: 'rei', units: u(levyUnits(s, 'montclair')) });
+  const levy = (h: HouseId) => (enemy === h ? 0 : levyUnits(s, h));
+  t.push({ id: 'castelmar', owner: 'rei', units: u(royal) + (hasSkill(s, 'fortaleza') ? 2 : 0) });
+  t.push({ id: 'costa', owner: 'rei', units: u(levy('valmont') + (s.spouse === 'isolde' ? 8 : 0)) });
+  t.push({ id: 'bosques', owner: 'rei', units: u(levy('seren')) });
+  t.push({ id: 'montanhas', owner: 'rei', units: u(levy('montclair')) });
+  t.push({ id: 'vale', owner: 'rei', units: u(levy('drakon')) });
   if (enemy === 'norhelm') {
-    t.push({ id: 'vale', owner: 'rei', units: u(levyUnits(s, 'drakon')) });
     t.push({ id: 'hjalmgard', owner: 'inimigo', units: 14 });
     t.push({ id: 'fiorde', owner: 'inimigo', units: 10 });
     t.push({ id: 'passo', owner: 'inimigo', units: 12 });
   } else {
-    t.push({ id: 'vale', owner: 'inimigo', units: 14 + Math.max(0, Math.floor(-s.loyalty.drakon / 20)) });
+    // a casa rebelde toma a própria província com todas as suas tropas
+    const seat = t.find((x) => x.id === HOUSE_SEAT[enemy])!;
+    seat.owner = 'inimigo';
+    seat.units = 10 + Math.floor(HOUSES[enemy].levy / 100) + Math.max(0, Math.floor(-s.loyalty[enemy] / 20));
   }
   // o exército real luta de onde está acampado (a capital fica com uma guarnição)
   const camp = (s.flags.armyAt as ProvinceId) || 'castelmar';
@@ -169,7 +178,7 @@ export function enemyTurn(s: GameState): string[] {
   const mine = w.territories.filter((t) => t.owner === 'inimigo');
   if (!mine.length) return out;
   const frontier = mine.filter((t) => neighbors(w, t.id).some((n) => n.owner === 'rei'));
-  const reinf = w.enemy === 'norhelm' ? 4 : 3;
+  const reinf = w.enemy === 'norhelm' ? 4 : 2 + Math.floor(w.turn / 3);
   const target = frontier.length ? frontier[Math.floor(rand(s) * frontier.length)] : mine[0];
   target.units += reinf;
   out.push(`O inimigo reforçou ${PROVINCES[target.id].name} (+${reinf}).`);
@@ -231,21 +240,21 @@ export function checkWarEnd(s: GameState) {
     w.result = 'derrota';
     return;
   }
-  const enemyCapital = w.enemy === 'norhelm' ? 'hjalmgard' : 'vale';
+  const enemyCapital = warSeat(w.enemy);
   if (terr(w, enemyCapital)!.owner === 'rei' || tot.inimigo <= 2) {
     w.result = 'vitoria';
     s.res.prestigio = clamp(s.res.prestigio + 20, 0, 100);
     s.res.povo = clamp(s.res.povo + 10, 0, 100);
     s.res.moral = clamp(s.res.moral + 20, 0, 100);
-    s.log.push({ icon: 'coroa', title: 'Vitória!', text: w.enemy === 'norhelm' ? 'Norhelm foi derrotado. Os sinos de Castelmar tocam o dia inteiro.' : 'A rebelião dos Drakon foi esmagada. O Vale Rubro volta à coroa.', delta: '+20', tone: 'bom' });
-    if (w.enemy === 'drakon') s.loyalty.drakon = -10;
+    s.log.push({ icon: 'coroa', title: 'Vitória!', text: w.enemy === 'norhelm' ? 'Norhelm foi derrotado. Os sinos de Castelmar tocam o dia inteiro.' : `A rebelião foi esmagada. ${PROVINCES[enemyCapital].name} volta à coroa.`, delta: '+20', tone: 'bom' });
+    if (w.enemy !== 'norhelm') s.loyalty[w.enemy] = -10;
   }
 }
 
 export function canNegotiatePeace(s: GameState) {
   const w = s.war;
   if (!w || w.result) return false;
-  const enemyLost = w.territories.some((t) => t.owner === 'rei' && PROVINCES[t.id].house === (w.enemy === 'norhelm' ? 'norhelm' : 'drakon'));
+  const enemyLost = w.territories.some((t) => t.owner === 'rei' && PROVINCES[t.id].house === w.enemy);
   return w.turn >= 4 || enemyLost;
 }
 
@@ -258,5 +267,5 @@ export function negotiatePeace(s: GameState) {
   w.result = 'paz';
   s.res.prestigio = clamp(s.res.prestigio - 5, 0, 100);
   s.log.push({ icon: 'aperto', title: 'Tratado de Paz', text: 'A guerra terminou com um tratado. Ninguém venceu, mas o reino respira.', tone: 'neutro' });
-  if (w.enemy === 'drakon') s.loyalty.drakon = 0;
+  if (w.enemy !== 'norhelm') s.loyalty[w.enemy] = 0;
 }

@@ -11,6 +11,8 @@ const ATTRS: [Attr, string, string][] = [
   ['estrategia', 'Estratégia', 'espadas'],
   ['comercio', 'Comércio', 'moedas'],
   ['intriga', 'Intriga', 'mascara'],
+  ['carisma', 'Carisma', 'coracao'],
+  ['justica', 'Justiça', 'pergaminho'],
 ];
 
 export function render(app: App): string {

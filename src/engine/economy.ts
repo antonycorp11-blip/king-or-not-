@@ -81,6 +81,7 @@ export function computeEconomy(s: GameState): Economy {
     const key = taxKey(p);
     let t = PROVINCES[p].baseTax * TAX_MULT[s.taxes[key]] * (1 + 0.15 * (s.investments[p] ?? 0));
     if (hasSkill(s, 'contas')) t *= 1.1;
+    if (hasSkill(s, 'banqueiro')) t *= 1.15;
     if (key !== 'coroa' && s.loyalty[key] < -30) t *= 0.5; // casas hostis sonegam
     if (s.war && s.war.territories.find((w) => w.id === p)?.owner === 'inimigo') t = 0;
     taxes[p] = Math.round(t);

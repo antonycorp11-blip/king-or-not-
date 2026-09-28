@@ -4,7 +4,7 @@ import { HOUSES, HOUSE_IDS, PROVINCES } from '../../data/realm';
 import { clamp, hasSkill, knows, save } from '../../engine/core';
 import { canSpend, spendHours } from '../../engine/day';
 import { computeEconomy } from '../../engine/economy';
-import { ADJ, PEACE_COST, WAR_TURN_HOURS, attackOnce, blitz, canNegotiatePeace, canTakeTurn, endPlayerTurn, fortify, levyUnits, negotiatePeace, playerReinforcement, reinforce, terr, totals, type BattleRound } from '../../engine/war';
+import { enemyLabel, warTurnHours, ADJ, PEACE_COST, attackOnce, blitz, canNegotiatePeace, canTakeTurn, endPlayerTurn, fortify, levyUnits, negotiatePeace, playerReinforcement, reinforce, terr, totals, type BattleRound } from '../../engine/war';
 import { iconImg } from '../../render/pixel';
 import { esc, shield } from '../common';
 import { MARCH_HOURS, MARCH_TARGETS, armyAt, marchArmy, marchPreview, northThreat, tension, tensionLabel } from '../../engine/army';
@@ -68,7 +68,7 @@ export function render(app: App): string {
       }).join('')}</div>
       ${target && target !== at ? `<div class="march-plan"><p>${esc(marchPreview(s, target))}</p><button class="act-btn a-vermelho" data-act="march">${iconImg('espadas', 'ico-lg')}<span><b>Marchar para ${PROVINCES[target].name}</b><small>${MARCH_HOURS}h · os lordes vão reagir</small></span></button></div>` : ''}`;
   } else {
-    const enemyName = w.enemy === 'norhelm' ? 'Norhelm' : 'Rebeldes Drakon';
+    const enemyName = enemyLabel(w.enemy);
     const open = turnOpen(app);
     const sel = ((app.ui.warSel ?? '').split('>')[0] || null) as ProvinceId | null;
     const tot = totals(w);
@@ -79,7 +79,7 @@ export function render(app: App): string {
     } else if (!open) {
       body = canTakeTurn(s)
         ? `<p>Reúna os generais para planejar o turno de hoje. Você receberá <b>${playerReinforcement(s)}</b> tropas de reforço.</p>
-           <button class="act-btn a-vermelho" data-act="council">${iconImg('espadas', 'ico-lg')}<span><b>Conselho de Guerra</b><small>Comandar este turno · ${WAR_TURN_HOURS}h</small></span></button>
+           <button class="act-btn a-vermelho" data-act="council">${iconImg('espadas', 'ico-lg')}<span><b>Conselho de Guerra</b><small>Comandar este turno · ${warTurnHours(s)}h</small></span></button>
            <p class="sub warn">Se você não comandar hoje, o inimigo age mesmo assim e a moral cai.</p>`
         : '<p>Você já comandou a guerra hoje. O inimigo se move durante a noite.</p>';
     } else {
@@ -165,8 +165,8 @@ export function handle(app: App, act: string, arg: string) {
       break;
     case 'council':
       if (!w || !canTakeTurn(s)) return;
-      if (!canSpend(s, WAR_TURN_HOURS)) return app.toast('Não há horas suficientes hoje.');
-      spendHours(s, WAR_TURN_HOURS);
+      if (!canSpend(s, warTurnHours(s))) return app.toast('Não há horas suficientes hoje.');
+      spendHours(s, warTurnHours(s));
       s.flags.warTurnDay = s.day;
       app.ui.warMode = 'reforcar';
       app.ui.warSel = null;

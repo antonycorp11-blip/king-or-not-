@@ -2,7 +2,7 @@ import type { Effect, GameState, RealmId, Req, Txt } from '../types';
 import { BOOKS } from '../data/progression';
 import { HOUSES } from '../data/realm';
 import { CHARACTERS } from '../data/characters';
-import { attr, knows } from '../engine/core';
+import { attr, hasSkill, knows } from '../engine/core';
 import { iconUrl } from '../render/pixel';
 import { portraitUrl } from '../render/portraits';
 import { isCrowned, portraitFromSheet, type Expr } from '../render/actors';
@@ -16,11 +16,11 @@ export function esc(str: string) {
   return str.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 }
 
-const ATTR_NAMES = { diplomacia: 'Diplomacia', estrategia: 'Estratégia', comercio: 'Comércio', intriga: 'Intriga' };
+const ATTR_NAMES = { diplomacia: 'Diplomacia', estrategia: 'Estratégia', comercio: 'Comércio', intriga: 'Intriga', carisma: 'Carisma', justica: 'Justiça' };
 
 export function reqCheck(s: GameState, r: Req | undefined): { ok: boolean; why: string } {
   if (!r) return { ok: true, why: '' };
-  if (r.knowledge && !knows(s, r.knowledge)) {
+  if (r.knowledge && !knows(s, r.knowledge) && !(r.knowledge === 'leis' && hasSkill(s, 'leiantiga'))) {
     const b = BOOKS.find((x) => x.knowledge === r.knowledge);
     return { ok: false, why: `Leia "${b?.title ?? r.knowledge}"` };
   }

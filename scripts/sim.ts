@@ -26,7 +26,7 @@ for (let run = 0; run < 300; run++) {
   const s = newGame('Sim');
   startDay(s);
   let guard = 0;
-  while (!s.ended && guard++ < 40) {
+  while (!s.ended && guard++ < 60) {
     // lê um livro às vezes
     if (Math.random() < 0.3 && canSpend(s, 2)) {
       const b = BOOKS.find((x) => !s.knowledge.includes(x.knowledge))!;
@@ -42,7 +42,7 @@ for (let run = 0; run < 300; run++) {
       if (!canSpend(s, ev.hours ?? 1)) break;
       let node = 'start';
       for (let depth = 0; depth < 5; depth++) {
-        const dyn = node === 'start' ? dynamicChoices(ev.id, s) : null;
+        const dyn = dynamicChoices(ev.id, s, node);
         const choices = (dyn ?? ev.nodes[node].choices) as Choice[];
         const adv = ev.nodes[node].advice?.[s.flags.companion as string] ?? genericAdvice(s, ev);
         const avail = [...choices, ...(adv && Math.random() < 0.3 ? [adv.choice] : [])].filter((c) => ok(s, c.req));

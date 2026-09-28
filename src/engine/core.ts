@@ -8,7 +8,7 @@ export const SAVE_KEY = 'king-or-not-save-v1';
 export const DAY_START = 8;
 export const DAY_END = 20;
 export const MARRIAGE_DEADLINE = 20;
-export const ACT_END = 30;
+export const ACT_END = 45;
 
 export function newGame(kingName = 'Edric'): GameState {
   const rel: Record<string, number> = {};
@@ -79,6 +79,7 @@ export function governabilidade(s: GameState): number {
   const [wp, wr, wl] = hasSkill(s, 'reidopovo') ? [0.55, 0.25, 0.2] : [0.45, 0.3, 0.25];
   let g = s.res.povo * wp + s.res.prestigio * wr + loy01 * wl;
   if (s.laws.includes('Carta dos Direitos Comuns')) g += 5;
+  if (hasSkill(s, 'reijusto')) g += 5;
   return Math.round(clamp(g, 0, 100));
 }
 
@@ -91,7 +92,7 @@ export function govLabel(g: number): string {
 }
 
 export function influenceGain(s: GameState): number {
-  return 1 + Math.floor(governabilidade(s) / 20) + (hasSkill(s, 'palavra') ? 1 : 0);
+  return 1 + Math.floor(governabilidade(s) / 20) + (hasSkill(s, 'palavra') ? 1 : 0) + (hasSkill(s, 'lingua') ? 1 : 0);
 }
 
 export function relLabel(v: number): string {
@@ -138,9 +139,12 @@ export function softenCost(s: GameState, e: Effect | undefined): number {
 
 export function applyEffect(s: GameState, e: Effect | undefined, opts: { soften?: boolean; ignoredMode?: boolean } = {}) {
   if (!e) return;
-  const posMul = hasSkill(s, 'carisma') ? 1.25 : 1;
-  const negMul = opts.soften ? 0.25 : opts.ignoredMode && hasSkill(s, 'arbitro') ? 0.5 : 1;
+  const posMul = (hasSkill(s, 'carisma') ? 1.25 : 1) * (hasSkill(s, 'sorriso') ? 1.1 : 1);
+  const ignoredMul = opts.ignoredMode ? (hasSkill(s, 'arbitro') ? 0.5 : 1) * (hasSkill(s, 'clemencia') ? 0.75 : 1) : 1;
+  const negMul = opts.soften ? 0.25 : ignoredMul;
   const scale = (v: number) => Math.round(v >= 0 ? v * posMul : v * negMul);
+  const HEARTS = ['elenora', 'rhoswen', 'isolde', 'sigrid', 'clara', 'bianca'];
+  const relScale = (c: string, v: number) => (v > 0 && hasSkill(s, 'galanteio') && HEARTS.includes(c) ? Math.round(scale(v) * 1.25) : scale(v));
 
   if (e.res) {
     for (const [k, v] of Object.entries(e.res) as [keyof Resources, number][]) {
@@ -151,13 +155,15 @@ export function applyEffect(s: GameState, e: Effect | undefined, opts: { soften?
     }
   }
   if (e.loyalty) for (const [h, v] of Object.entries(e.loyalty) as [HouseId, number][]) s.loyalty[h] = clamp(s.loyalty[h] + scale(v), -100, 100);
-  if (e.rel) for (const [c, v] of Object.entries(e.rel)) s.rel[c] = clamp((s.rel[c] ?? 0) + scale(v), -100, 100);
+  if (e.rel) for (const [c, v] of Object.entries(e.rel)) s.rel[c] = clamp((s.rel[c] ?? 0) + relScale(c, v), -100, 100);
   if (e.flags) Object.assign(s.flags, e.flags);
   if (e.schedule) for (const sc of e.schedule) s.scheduled.push({ id: sc.id, day: s.day + sc.in });
   if (e.law && !s.laws.includes(e.law)) {
     s.laws.push(e.law);
     log(s, { icon: 'pergaminho', title: 'Lei aprovada', text: e.law, tone: 'lei' });
     if (hasSkill(s, 'reformador')) s.res.povo = clamp(s.res.povo + 5, 0, 100);
+    if (hasSkill(s, 'juiz')) s.res.povo = clamp(s.res.povo + 2, 0, 100);
+    if (hasSkill(s, 'codigo')) s.res.prestigio = clamp(s.res.prestigio + 3, 0, 100);
   }
   if (e.log) for (const l of Array.isArray(e.log) ? e.log : [e.log]) log(s, l);
   if (e.xp) addXp(s, e.xp);

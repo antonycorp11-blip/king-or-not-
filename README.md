@@ -22,12 +22,13 @@ npm run sim        # joga 300 partidas automáticas e mostra estatísticas (bala
 | **Influência** é gasta para suavizar as penalidades políticas de uma escolha (botão "Usar Influência"). | `engine/core.ts` (`softenCost`) |
 | **Povo e Governabilidade**: Governabilidade = apoio do povo + prestígio + lealdade das casas. Gera Influência todo dia. Abaixo de 25, há tumulto; com Povo em 0, revolta. | `engine/core.ts` (`governabilidade`), `data/events/people.ts` |
 | **Casas e relações**: lealdade de cada casa (−100 a 100) e relação com cada personagem. | tela Corte |
-| **Livros** destravam opções de diálogo. A **árvore de habilidades** (4 ramos) faz o rei crescer; os pontos vêm da experiência. | `data/progression.ts` |
+| **Livros** destravam opções de diálogo. A leitura tem um minijogo de atenção. A **árvore de habilidades** (6 ramos) faz o rei crescer; os pontos vêm da experiência. | `data/progression.ts`, tela Biblioteca |
 | **Comércio**: produção e necessidades por província, rotas (inclusive exportação para Véridian), impostos e investimento. A escassez derruba a lealdade. | `engine/economy.ts`, tela Províncias |
-| **Guerra** estilo War: territórios, dados 3×2, reforços, turno do inimigo. Um turno por dia; se o rei não comandar, o inimigo age mesmo assim. | `engine/war.ts`, tela Guerra |
+| **Guerra** estilo War: territórios, dados 3×2, reforços, turno do inimigo. Um turno por dia; se o rei não comandar, o inimigo age mesmo assim. Casas rebeldes também podem iniciar uma guerra civil. | `engine/war.ts`, `data/events/crisis.ts`, tela Guerra |
+| **Corte**: convocar personagens com chance de comparecer, trocar cartas e responder a pedidos fora das audiências. Algumas noites trazem encontros inesperados antes do resumo do dia. | `engine/summon.ts`, `engine/letters.ts`, `data/events/night.ts`, tela Corte |
 | **Resumo do dia** à noite: renda, casas satisfeitas ou descontentes, leis, demandas ignoradas e rumores. | `engine/day.ts` (`endDay`) |
 
-### Ato I (vertical slice, 30 dias)
+### Atos I e II (45 dias)
 
 - **Dias 1 a 20: o casamento.** Há quatro pretendentes, e todas têm bônus e ônus (`MARRIAGE_TERMS` em `data/events/marriage.ts`):
   - **Elenora Valmont**: ouro e comércio, mas irrita os Drakon.
@@ -35,7 +36,7 @@ npm run sim        # joga 300 partidas automáticas e mostra estatísticas (bala
   - **Isolde de Véridian**: aliança estrangeira e exportações em dobro, mas todas as casas desconfiam e os Seren se opõem pela fé.
   - **Sigrid de Norhelm**: evita a guerra, mas os Drakon se revoltam.
 - **Dia 22: a consequência.** Pode vir a invasão de Norhelm, a rebelião dos Drakon ou o tributo do norte, conforme as escolhas anteriores.
-- **Dia 30:** epílogo do Ato I.
+- **Após o casamento:** conspirações, disputas de herança, conflitos familiares e eventos do front continuam a história até o Dia 45.
 
 ## Arte
 

@@ -11,15 +11,13 @@ import { iconImg } from '../../render/pixel';
 import { effectTags, esc, portrait, reqCheck, txt } from '../common';
 import { genericAdvice } from '../../data/companions';
 
-const KIND_LABEL: Record<string, string> = { audiencia: 'Audiência', urgente: 'Urgente', familia: 'Família', conselho: 'Conselho', casamento: 'Casamento' };
+const KIND_LABEL: Record<string, string> = { audiencia: 'Audiência', urgente: 'Urgente', familia: 'Família', conselho: 'Conselho', casamento: 'Casamento', noite: 'Noite' };
 const WAIT_X = [26, 76];
 const WAIT_FOOT = 176;
 
 export function choicesFor(app: App, ev: GameEvent, node: string): Choice[] {
-  if (node === 'start') {
-    const dyn = dynamicChoices(ev.id, app.s);
-    if (dyn) return dyn as Choice[];
-  }
+  const dyn = dynamicChoices(ev.id, app.s, node);
+  if (dyn) return dyn;
   return ev.nodes[node].choices;
 }
 
@@ -34,7 +32,7 @@ export function openAudience(app: App, uid: number) {
   const a = s.audiences.find((x) => x.uid === uid);
   if (!a || a.done) return;
   const ev = eventOf(a);
-  if (!canSpend(s, ev.hours ?? 1)) {
+  if (ev.kind !== 'noite' && !canSpend(s, ev.hours ?? 1)) {
     app.toast('Não há horas suficientes hoje. Encerre o dia.');
     return;
   }
@@ -87,6 +85,7 @@ export function render(app: App): string {
   app.scene.setRoom('trono');
   app.scene.sync(sceneActors(app));
   app.scene.setMode('full');
+  if (ev?.kind === 'noite') app.scene.setHour(20.6);
 
   // fila: só o rosto de quem espera, sem nome nem assunto
   const queue = `<div class="queue">
@@ -112,6 +111,7 @@ export function render(app: App): string {
         <div class="parchment idle-hint">
           <p>${s.hour >= DAY_END ? 'O sol se pôs. Não há mais tempo para audiências hoje.' : vis.length ? 'Clique em um rosto na fila para mandar a pessoa entrar. Você só saberá o que ela quer quando estiver diante do trono.' : 'O salão está vazio por enquanto. Visite a biblioteca ou as províncias: novas pessoas podem chegar ao longo do dia.'}</p>
         </div>
+        ${!vis.length && s.hour < DAY_END ? `<button class="wait-hour" data-act="waitHour">${iconImg('ampulheta', 'ico-lg')}<span><b>Esperar 1 hora</b><small>Talvez alguém apareça</small></span></button>` : ''}
         <button class="end-day" data-act="endDay">${iconImg('selo', 'ico-lg')}<span><b>Encerrar o Dia</b><small>Ver o resumo e avançar</small></span></button>
       </div>`;
   }
@@ -138,13 +138,11 @@ export function render(app: App): string {
       const r = reqCheck(s, ch.req);
       const cost = app.ui.useInfluence ? softenCost(s, ch.effects) : 0;
       const costTag = cost ? `<span class="tag infl">−${cost} Influência · suaviza</span>` : '';
-      // O botão mostra só o TOM e o significado da resposta; a fala exata do rei aparece depois.
-      const tone = isAdv ? `Conselho de ${char(d.advice!.who).name.split(' ').pop()}` : toneOf(ch);
-      return `<button class="choice tone c-${ch.color} ${r.ok ? '' : 'locked'} ${isAdv ? 'advice' : ''}" data-act="choose" data-arg="${isAdv ? 'adv' : i}" ${r.ok ? '' : 'disabled'} title="${esc(tone)}">
-        <span class="orb">${isAdv ? portrait(d.advice!.who, 'orb-portrait') : iconImg(r.ok ? toneIcon(ch) : 'cadeado', 'ico-xl')}</span>
-        <span class="tone-name">${esc(tone)}</span>
-        <span class="meaning">${r.ok ? esc(ch.sub) : 'Requer: ' + esc(r.why)}</span>
-        ${see && r.ok && !ch.goto ? `<span class="tags">${effectTags(ch.effects)}</span>` : ''}${costTag}
+      return `<button class="choice c-${ch.color} ${r.ok ? '' : 'locked'} ${isAdv ? 'advice' : ''}" data-act="choose" data-arg="${isAdv ? 'adv' : i}" ${r.ok ? '' : 'disabled'}>
+        ${isAdv ? `${portrait(d.advice!.who, 'adv-badge')}` : ''}
+        <span class="choice-ico">${iconImg(r.ok ? ch.icon : 'cadeado', 'ico-xl')}</span>
+        <span class="choice-text"><b>${esc(ch.label)}</b><small>${r.ok ? esc(ch.sub) : 'Requer: ' + esc(r.why)}</small>
+        ${see && r.ok && !ch.goto ? `<span class="tags">${effectTags(ch.effects)}</span>` : ''}${costTag}</span>
       </button>`;
     })
     .join('');
@@ -158,7 +156,6 @@ export function render(app: App): string {
       <div class="speech parchment">
         ${ev.kind === 'urgente' ? `<span class="alert">${iconImg('selo', 'ico-lg')}</span>` : ''}
         <h3>${esc(c.name)} <small>${esc(c.title)} · ${KIND_LABEL[ev.kind]}</small></h3>
-        ${d.said ? `<p class="said">${esc(char('rei').name)} ${esc(app.s.kingName)}: “${esc(d.said)}”</p>` : ''}
         <p>${esc(text)}</p>
         ${d.advice && !d.reply ? `<div class="whisper">${portrait(d.advice.who, 'whisper-portrait')}<p>${esc(d.advice.text)}</p></div>` : ''}
         ${canConsult ? `<button class="consult ${eager ? 'eager' : ''}" data-act="consult" title="Quem está ao seu lado pode sugerir outra saída">${portrait(comp!, 'consult-portrait')}<span>${eager ? `${esc(char(comp!).name.split(' ')[0])} quer dizer algo` : `Pedir conselho`}</span></button>` : ''}
@@ -173,6 +170,14 @@ export function render(app: App): string {
 export function handle(app: App, act: string, arg: string) {
   const s = app.s;
   if (act === 'open') return openAudience(app, Number(arg));
+  if (act === 'waitHour') {
+    if (s.hour >= DAY_END) return;
+    spendHours(s, 1);
+    save(s);
+    app.render();
+    if (!visibleAudiences(s).length) app.toast(s.hour >= DAY_END ? 'O sol se pôs.' : 'Uma hora passa. O salão continua em silêncio.');
+    return app.autoOpenUrgent();
+  }
   if (act === 'skipWalk') {
     app.scene.finishWalks();
     const d = app.ui.dialog;
@@ -219,20 +224,19 @@ export function handle(app: App, act: string, arg: string) {
     // a audiência conta como atendida na primeira escolha (evita repetir efeitos ao recarregar)
     if (!a.done) {
       a.done = true;
-      spendHours(s, ev.hours ?? 1);
+      if (ev.kind !== 'noite') spendHours(s, ev.hours ?? 1);
     }
     const realm = char(ev.speaker).realm;
     const mood = () => (s.rel[ev.speaker] ?? 0) + (realm in s.loyalty ? s.loyalty[realm as keyof typeof s.loyalty] : 0);
     const before = mood();
     applyEffect(s, ch.effects, { soften });
     // seguir (ou ignorar) o conselho mexe com quem aconselhou
-    if (d.advice) applyEffect(s, { rel: { [d.advice.who]: isAdv ? 3 : -2 } });
+    if (d.advice) applyEffect(s, { rel: { [d.advice.who]: isAdv ? (hasSkill(s, 'confidente') ? 6 : 3) : -2 } });
     d.advice = null;
     const after = mood();
     d.expr = after > before ? 'feliz' : after < before ? 'irritado' : d.expr;
     save(s);
     app.ui.useInfluence = false;
-    d.said = ch.label; // agora o jogador descobre o que o rei disse
     if (ch.goto) {
       d.node = ch.goto;
       return app.render();
@@ -244,28 +248,11 @@ export function handle(app: App, act: string, arg: string) {
     dismissSpeaker(app);
     app.ui.dialog = null;
     save(s);
+    if (ev.kind === 'noite') return app.doEndDay(); // depois do encontro noturno, o dia acaba
     app.render();
     if (s.war && ev.id === 'invasao') app.toast('A guerra começou! Abra a tela de Guerra para comandar.');
     app.autoOpenUrgent();
   }
-}
-
-const TONES: Record<string, [string, string]> = {
-  azul: ['Diplomático', 'aperto'],
-  dourado: ['Astuto', 'olho'],
-  vermelho: ['Autoritário', 'coroa'],
-  roxo: ['Desconfiado', 'mascara'],
-  verde: ['Gentil', 'coracao'],
-};
-
-function toneOf(ch: Choice) {
-  if (ch.req?.knowledge) return 'Erudito';
-  return TONES[ch.color][0];
-}
-
-function toneIcon(ch: Choice) {
-  if (ch.req?.knowledge) return 'livro';
-  return TONES[ch.color][1];
 }
 
 function defaultReply(ch: Choice) {

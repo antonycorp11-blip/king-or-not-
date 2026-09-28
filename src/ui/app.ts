@@ -2,7 +2,8 @@ import type { GameState, Good, LogEntry, ScreenId } from '../types';
 import { governabilidade, govLabel, influenceGain, load, newGame, save, clearSave, storeLocal } from '../engine/core';
 import { athgGameStarted, athgReady, cloudLoad, inPortal } from '../engine/cloud';
 import { computeEconomy } from '../engine/economy';
-import { currentObjective, endDay, eventOf, startDay, visibleAudiences } from '../engine/day';
+import { currentObjective, endDay, eventOf, pickNight, pushAudience, startDay, visibleAudiences } from '../engine/day';
+import { unreadCount } from '../engine/letters';
 import { loadCharacterAssets, setCrowned, type Expr } from '../render/actors';
 import { companionsFor } from '../data/companions';
 import { companionLine, guardLine, waitingLine } from '../data/banter';
@@ -25,7 +26,6 @@ export interface Dialog {
   node: string;
   phase: 'entering' | 'talk';
   reply?: string;
-  said?: string; // o que o rei disse na última escolha
   expr?: Expr;
   advice?: { who: string; text: string; choice: import('../types').Choice } | null;
   consulted?: boolean;
@@ -48,6 +48,7 @@ export interface UIState {
   cardOpen: boolean;
   armyOpen: boolean;
   warClash: string | null;
+  courtTab?: 'pessoas' | 'correio';
 }
 
 export interface ScreenModule {
@@ -166,6 +167,14 @@ export class App {
     this.s = s;
     if (!s.dayStart) startDay(s);
     this.ui.screen = 'trono';
+    if (s.flags.nightPending) {
+      const night = s.audiences.find((a) => eventOf(a)?.kind === 'noite' && a.expires === s.day);
+      if (night && !night.done) {
+        this.render();
+        return Throne.openAudience(this, night.uid);
+      }
+      return this.doEndDay();
+    }
     this.render();
   }
 
@@ -212,6 +221,22 @@ export class App {
 
   doEndDay() {
     this.ui.confirmEnd = false;
+    const s = this.s;
+    if (s.flags.nightDay !== s.day) {
+      s.flags.nightDay = s.day;
+      const night = pickNight(s);
+      if (night) {
+        pushAudience(s, night.id, 21);
+        const a = s.audiences.find((x) => x.eventId === night.id && !x.done);
+        if (a) {
+          s.flags.nightPending = true;
+          this.ui.screen = 'trono';
+          this.toast('Antes de dormir, alguém o aborda no corredor...');
+          return Throne.openAudience(this, a.uid);
+        }
+      }
+    }
+    s.flags.nightPending = false;
     this.ui.dialog = null;
     const day = this.s.day;
     const entries = endDay(this.s);
@@ -300,7 +325,7 @@ export class App {
     setCrowned(s.spouse ? [s.spouse] : []);
     this.stage.classList.toggle('talking', ui.screen === 'trono' && !!ui.dialog);
     const screen = ui.screen as ScreenId;
-    this.scene.setHour(s.hour);
+    this.scene.setHour(s.flags.nightPending ? 20.6 : s.hour);
     const mod = SCREENS[screen];
     if (screen !== 'biblioteca') this.scene.setRoom('trono');
     if (screen !== 'trono' && screen !== 'biblioteca') this.scene.sync(this.throneActors());
@@ -346,7 +371,7 @@ export class App {
 
   needsCompanion() {
     const s = this.s;
-    return this.ui.screen === 'trono' && !this.ui.summary && !s.ended && s.flags.compDay !== s.day;
+    return this.ui.screen === 'trono' && !this.ui.summary && !s.ended && !s.flags.nightPending && s.flags.compDay !== s.day;
   }
 
   private companionModal() {
@@ -381,8 +406,9 @@ export class App {
     const s = this.s;
     const gov = governabilidade(s);
     const eco = computeEconomy(s);
-    const hoursLeft = 20 - s.hour;
-    const hh = String(Math.floor(s.hour)).padStart(2, '0');
+    const night = !!s.flags.nightPending;
+    const hoursLeft = night ? 0 : 20 - s.hour;
+    const hh = night ? '21' : String(Math.floor(s.hour)).padStart(2, '0');
     const obj = currentObjective(s);
     const chip = (icon: string, val: string, label: string, tip: string, cls = '') => `<div class="chip ${cls}" title="${tip}">${iconImg(icon)}<div><b>${val}</b><small>${label}</small></div></div>`;
     const items: [ScreenId, string, string][] = [
@@ -399,6 +425,10 @@ export class App {
       if (id === 'trono') {
         const n = visibleAudiences(s).length;
         return n ? `<em>${n}</em>` : '';
+      }
+      if (id === 'corte') {
+        const n = unreadCount(s);
+        return n ? `<em class="mail-badge">${n}</em>` : '';
       }
       return '';
     };
@@ -418,8 +448,8 @@ export class App {
         ${chip('espadas', String(s.res.exercito), `Moral ${s.res.moral}`, `Soldo: ${eco.upkeep} de ouro por dia`, s.res.moral < 35 ? 'bad' : '')}
       </div>
       <nav class="nav">${items
-        .map(([id, icon, label]) => `<button class="medal ${this.ui.screen === id ? 'on' : ''}" data-act="go" data-arg="${id}" title="${label}">${iconImg(icon, 'ico-lg')}${badge(id)}<span>${label}</span></button>`)
-        .join('')}<button class="medal help-btn" data-act="help" title="Como jogar">${iconImg('balao', 'ico-lg')}<span>Ajuda</span></button></nav>
+        .map(([id, icon, label]) => `<button class="medal ${this.ui.screen === id ? 'on' : ''} ${id === 'corte' && unreadCount(s) ? 'blink' : ''}" data-act="go" data-arg="${id}" title="${label}" ${night ? 'disabled' : ''}>${iconImg(icon, 'ico-lg')}${badge(id)}<span>${label}</span></button>`)
+        .join('')}<button class="medal help-btn" data-act="help" title="Como jogar" ${night ? 'disabled' : ''}>${iconImg('balao', 'ico-lg')}<span>Ajuda</span></button></nav>
     </div>`;
   }
 
