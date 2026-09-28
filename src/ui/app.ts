@@ -25,6 +25,7 @@ export interface Dialog {
   uid: number;
   node: string;
   phase: 'entering' | 'talk';
+  tension: number;
   reply?: string;
   expr?: Expr;
   advice?: { who: string; text: string; choice: import('../types').Choice } | null;

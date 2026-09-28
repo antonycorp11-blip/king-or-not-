@@ -41,6 +41,7 @@ export interface Character {
   name: string;
   title: string;
   realm: RealmId;
+  ageYears?: number;
   look: Look;
   traits?: string[]; // palavras exibidas no estandarte (ex.: Alianças, Comércio)
   base?: string; // usa a arte de outro personagem (ex.: cavaleiro genérico)
@@ -85,6 +86,7 @@ export interface Choice {
   effects?: Effect;
   reply?: Txt; // reação do interlocutor
   goto?: string; // continua o diálogo em outro nó (sem custo extra de tempo)
+  tension?: number; // mudança dramática da tensão, além dos efeitos políticos
 }
 
 export type Txt = string | ((s: GameState) => string);
@@ -119,6 +121,14 @@ export interface GameEvent {
   repeat?: number; // pode voltar após N dias (senão, único)
   lasts?: number; // dias que fica pendente (padrão 1)
   ignored?: Effect & { text: string };
+  cause?: string; // flag cuja decisão originou esta consequência
+  followup?: boolean; // desdobramento que deve entrar antes dos pedidos aleatórios
+}
+
+export interface DecisionOrigin {
+  day: number;
+  event: string;
+  decision: string;
 }
 
 // Cartas: recados que chegam ao rei sem audiência (não gastam horas)
@@ -151,6 +161,7 @@ export interface Audience {
   expires: number; // último dia em que pode ser atendida
   arrive?: number; // hora em que a pessoa chega ao castelo (padrão 8h)
   done: boolean;
+  origin?: DecisionOrigin;
 }
 
 export interface TradeRoute {
@@ -202,7 +213,8 @@ export interface GameState {
   routes: TradeRoute[];
   investments: Partial<Record<ProvinceId, number>>;
   audiences: Audience[];
-  scheduled: { id: string; day: number }[];
+  scheduled: { id: string; day: number; origin?: DecisionOrigin }[];
+  flagOrigins?: Record<string, DecisionOrigin>;
   seen: Record<string, number>;
   log: LogEntry[];
   dayStart?: { res: Resources; loyalty: Record<HouseId, number> };

@@ -52,7 +52,7 @@ export function answerLetter(s: GameState, uid: number, idx: number): string {
   if (!ch) return '';
   l.answer = idx;
   l.read = true;
-  applyEffect(s, ch.effects);
+  applyEffect(s, ch.effects, { origin: { day: s.day, event: `Carta: ${defOf(l).subject}`, decision: ch.label } });
   const reply = typeof ch.reply === 'function' ? ch.reply(s) : ch.reply;
   l.reply = reply ?? 'Sua resposta foi selada e enviada.';
   return l.reply;

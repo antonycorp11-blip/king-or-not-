@@ -38,7 +38,7 @@ export function render(app: App): string {
       ${portrait('rei', 'mid-portrait')}
       <div>
         <h2>Rei ${esc(s.kingName)}</h2>
-        <p class="sub">16 anos · ${s.spouse ? `Casado com ${esc(char(s.spouse).name)}` : s.flags.noiva ? `Noivo de ${esc(char(String(s.flags.noiva)).name)}` : 'Solteiro'}</p>
+        <p class="sub">21 anos · ${s.spouse ? `Casado com ${esc(char(s.spouse).name)}` : s.flags.noiva ? `Noivo de ${esc(char(String(s.flags.noiva)).name)}` : 'Solteiro'}</p>
         <div class="xp">Experiência <div class="bar gold"><i style="width:${(s.xp / XP_PER_POINT) * 100}%"></i></div><small>${s.xp}/${XP_PER_POINT} · <b>${s.skillPoints}</b> ponto(s) para gastar</small></div>
       </div>
       <div class="attrs">${ATTRS.map(([a, n, i]) => `<div class="attr">${iconImg(i, 'ico-lg')}<b>${attr(s, a)}</b><small>${n}</small></div>`).join('')}</div>

@@ -27,6 +27,7 @@ SCALE = {
     '12_elenora': 0.82, '13_rhoswen': 0.86, '14_isolde': 0.84, '15_sigrid': 0.83,
     '02_isabelle': 0.9, '10_aveline': 0.88, '18_marta': 0.88, '21_camponesa': 0.84, '24_dama': 0.85, '25_irma': 0.88,
     '03_lucas': 0.8, '22_mensageiro': 0.9, '01_rei': 0.92,
+    '26_clara': 0.85, '27_bianca': 0.85, '28_pimenta': 0.9, '29_cedric': 0.94,
 }
 
 

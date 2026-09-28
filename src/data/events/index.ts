@@ -9,8 +9,10 @@ import { CRISIS_EVENTS } from './crisis';
 import { NIGHT_EVENTS } from './night';
 import { ARC_EVENTS } from './arcs';
 import { HUMOR_EVENTS } from './humor';
+import { ECHO_EVENTS } from './echoes';
+import { ROUTINE_EVENTS } from './routines';
 
-export const EVENTS: GameEvent[] = [...COURT_EVENTS, ...MARRIAGE_EVENTS, ...PEOPLE_EVENTS, ...WAR_EVENTS, ...ARMY_EVENTS, ...SUMMON_EVENTS, ...CRISIS_EVENTS, ...NIGHT_EVENTS, ...ARC_EVENTS, ...HUMOR_EVENTS];
+export const EVENTS: GameEvent[] = [...COURT_EVENTS, ...MARRIAGE_EVENTS, ...PEOPLE_EVENTS, ...WAR_EVENTS, ...ARMY_EVENTS, ...SUMMON_EVENTS, ...CRISIS_EVENTS, ...NIGHT_EVENTS, ...ARC_EVENTS, ...HUMOR_EVENTS, ...ECHO_EVENTS, ...ROUTINE_EVENTS];
 
 export const EVENT_MAP: Record<string, GameEvent> = Object.fromEntries(EVENTS.map((e) => [e.id, e]));
 

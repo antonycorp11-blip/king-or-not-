@@ -7,7 +7,8 @@
     "dev": "node scripts/dev.mjs",
     "build": "tsc --noEmit && node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
-    "sim": "esbuild scripts/sim.ts --bundle --platform=node --outfile=build/sim.cjs --log-level=warning && node build/sim.cjs"
+    "sim": "esbuild scripts/sim.ts --bundle --platform=node --outfile=build/sim.cjs --log-level=warning && node build/sim.cjs",
+    "pressure": "esbuild scripts/pressure.ts --bundle --platform=node --outfile=build/pressure.cjs --log-level=warning && node build/pressure.cjs"
   },
   "devDependencies": {
     "esbuild": "^0.25.12",

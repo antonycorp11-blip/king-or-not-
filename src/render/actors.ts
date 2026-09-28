@@ -124,9 +124,9 @@ function recolor(src: HTMLCanvasElement, tint: string): HTMLCanvasElement {
 
 function sheetFor(id: string): HTMLCanvasElement | undefined {
   const ch = CHARACTERS[id];
-  const base = ch?.base ?? id;
+  const base = sheets.has(id) ? id : ch?.base ?? id;
   const sh = sheets.get(base);
-  if (!sh || !ch?.tint) return sh;
+  if (!sh || !ch?.tint || base === id) return sh;
   let t = tinted.get(id);
   if (!t) tinted.set(id, (t = recolor(sh, ch.tint)));
   return t;
@@ -134,9 +134,9 @@ function sheetFor(id: string): HTMLCanvasElement | undefined {
 
 function portraitSheetFor(id: string): HTMLCanvasElement | undefined {
   const ch = CHARACTERS[id];
-  const base = ch?.base ?? id;
+  const base = portraitSheets.has(id) ? id : ch?.base ?? id;
   const sh = portraitSheets.get(base);
-  if (!sh || !ch?.tint) return sh;
+  if (!sh || !ch?.tint || base === id) return sh;
   const key = `p:${id}`;
   let t = tinted.get(key);
   if (!t) tinted.set(key, (t = recolor(sh, ch.tint)));
@@ -206,7 +206,7 @@ const frameCache = new Map<string, HTMLCanvasElement>();
 export function getFrame(id: string, anim: Anim, f: number): Frame {
   const sh = sheetFor(id);
   if (sh) {
-    const [cx, cy] = sheetCell(CHARACTERS[id]?.base ?? id, anim, f);
+    const [cx, cy] = sheetCell(sheets.has(id) ? id : CHARACTERS[id]?.base ?? id, anim, f);
     if (!crowned.has(id)) return { src: sh, sx: cx * CELL_W, sy: cy * CELL_H };
     const key = `${id}|${cx}|${cy}`;
     let c = crownCache.get(key);

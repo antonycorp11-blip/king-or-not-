@@ -39,7 +39,9 @@ export function openAudience(app: App, uid: number) {
   const idx = waiting(app).slice(0, 2).findIndex((w) => w.uid === uid);
   const from = idx >= 0 ? WAIT_X[idx] : LAYOUT.doorX;
   app.ui.screen = 'trono';
-  app.ui.dialog = { uid, node: 'start', phase: 'entering', expr: ev.kind === 'urgente' ? 'preocupado' : 'neutro' };
+  const relation = s.rel[ev.speaker] ?? 0;
+  const initialTension = Math.max(8, Math.min(88, 28 + (ev.kind === 'urgente' ? 25 : ev.kind === 'casamento' ? 14 : 0) - Math.round(relation / 4)));
+  app.ui.dialog = { uid, node: 'start', phase: 'entering', tension: initialTension, expr: ev.kind === 'urgente' ? 'preocupado' : 'neutro' };
   app.ui.useInfluence = false;
   app.scene.setRoom('trono');
   app.scene.walk('speaker', ev.speaker, from, LAYOUT.speakerX, LAYOUT.floorY, 'bow', () => {
@@ -147,6 +149,8 @@ export function render(app: App): string {
     })
     .join('');
 
+  const tensionLabel = d.tension >= 70 ? 'À beira do confronto' : d.tension >= 40 ? 'Clima carregado' : 'Conversa sob controle';
+  const origin = current?.origin;
   return `${queue}
     <div class="dialog ${ev.kind === 'urgente' ? 'urgent' : ''}">
       <div class="d-portrait" style="--hc:${H.color};--hd:${H.dark}">
@@ -154,8 +158,12 @@ export function render(app: App): string {
         <div class="d-house">${iconImg(H.sigil, 'ico-lg', '#f2c14e')}<span><b>${esc(H.name)}</b><small>${(c.traits ?? []).map(esc).join(' · ')}</small></span></div>
       </div>
       <div class="speech parchment">
+        ${origin ? `<div class="consequence-origin">Consequência do Dia ${origin.day}: ${esc(origin.decision)} · ${esc(origin.event)}</div>` : ''}
+        <div class="tension-meter" role="meter" aria-label="Tensão da conversa" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${d.tension}">
+          <span>Tensão <b>${d.tension}%</b></span><div class="tension-track"><i style="width:${d.tension}%"></i></div><em>${tensionLabel}</em>
+        </div>
         ${ev.kind === 'urgente' ? `<span class="alert">${iconImg('selo', 'ico-lg')}</span>` : ''}
-        <h3>${esc(c.name)} <small>${esc(c.title)} · ${KIND_LABEL[ev.kind]}</small></h3>
+        <h3>${esc(c.name)} <small>${esc(c.title)}${c.ageYears ? ` · ${c.ageYears} anos` : ''} · ${KIND_LABEL[ev.kind]}</small></h3>
         <p>${esc(text)}</p>
         ${d.advice && !d.reply ? `<div class="whisper">${portrait(d.advice.who, 'whisper-portrait')}<p>${esc(d.advice.text)}</p></div>` : ''}
         ${canConsult ? `<button class="consult ${eager ? 'eager' : ''}" data-act="consult" title="Quem está ao seu lado pode sugerir outra saída">${portrait(comp!, 'consult-portrait')}<span>${eager ? `${esc(char(comp!).name.split(' ')[0])} quer dizer algo` : `Pedir conselho`}</span></button>` : ''}
@@ -229,11 +237,13 @@ export function handle(app: App, act: string, arg: string) {
     const realm = char(ev.speaker).realm;
     const mood = () => (s.rel[ev.speaker] ?? 0) + (realm in s.loyalty ? s.loyalty[realm as keyof typeof s.loyalty] : 0);
     const before = mood();
-    applyEffect(s, ch.effects, { soften });
+    applyEffect(s, ch.effects, { soften, origin: { day: s.day, event: ev.topic, decision: ch.label } });
     // seguir (ou ignorar) o conselho mexe com quem aconselhou
     if (d.advice) applyEffect(s, { rel: { [d.advice.who]: isAdv ? (hasSkill(s, 'confidente') ? 6 : 3) : -2 } });
     d.advice = null;
     const after = mood();
+    const dramatic = ch.tension ?? (ch.color === 'vermelho' ? 12 : ch.color === 'verde' ? -8 : ch.color === 'roxo' ? 4 : 0);
+    d.tension = Math.max(0, Math.min(100, d.tension + dramatic - Math.round((after - before) / 3)));
     d.expr = after > before ? 'feliz' : after < before ? 'irritado' : d.expr;
     save(s);
     app.ui.useInfluence = false;

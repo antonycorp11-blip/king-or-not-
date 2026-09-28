@@ -29,7 +29,7 @@ button[disabled] { cursor: not-allowed; }
 #stage {
   position: absolute; left: 50%; top: 50%;
   width: 1920px; height: 1080px;
-  transform-origin: center; overflow: hidden;
+  transform-origin: center; overflow: clip;
   background: #120e18; font-size: 24px;
 }
 #ui { position: absolute; inset: 0; }
@@ -959,3 +959,88 @@ span.wm-label { pointer-events: none; }
 .attr { width: 96px; }
 .m .attr { width: 70px; }
 .m .tree { gap: 6px; }
+
+/* A cena ocupa o palco inteiro e não muda de escala quando começa uma audiência. */
+.m .scene, .m #stage.talking .scene {
+  left: 0; right: 0; top: 50%; bottom: auto; height: 720px;
+  transform: translateY(-50%); transform-origin: center;
+  transition: filter .6s;
+}
+.m #stage.talking .topbar { transform: none; opacity: 1; }
+.m #stage.talking .queue { transform: none; opacity: 0; }
+.d-portrait { border-color: #4b321a; box-shadow: inset 0 0 0 3px var(--gold), 0 8px 24px rgba(0,0,0,.24); }
+
+/* Leitura da temperatura emocional de cada conversa. */
+.tension-meter {
+  height: 28px; display: flex; align-items: center; gap: 12px;
+  padding: 0 14px; margin-bottom: 8px; color: #ffe2a2; background: rgba(21, 13, 20, .93);
+  border: 1px solid #a4783b; font-size: 19px; letter-spacing: .04em;
+}
+.tension-meter span { white-space: nowrap; text-transform: uppercase; font-family: var(--sc); }
+.tension-meter b { color: #fff4db; }
+.tension-track { flex: 1; height: 8px; background: #3d3030; border: 1px solid #856b52; overflow: hidden; }
+.tension-track i { display: block; height: 100%; background: linear-gradient(90deg, #76aa7b, #d8ad48 48%, #ce4b36); transition: width .28s ease; }
+.tension-meter em { font-style: normal; font-size: 16px; white-space: nowrap; }
+.consequence-origin { min-height: 28px; display: flex; align-items: center; padding: 2px 14px; margin-bottom: 6px; color: #ffe5ae; background: rgba(67, 39, 27, .96); border: 1px solid #b38348; font-family: var(--sc); font-size: 18px; }
+.m .tension-meter { font-size: 16px; height: 24px; gap: 8px; }
+.m .tension-meter em { font-size: 12px; }
+.m .consequence-origin { min-height: 22px; font-size: 13px; }
+
+/* Acervo em estantes: capas, progresso e descoberta ficam visíveis de relance. */
+.library-panel, .m .library-panel {
+  left: 34px; right: 34px; top: 92px; bottom: 24px; width: auto;
+  padding: 0 26px 24px; background: linear-gradient(160deg, #241a1a, #16111b 68%, #20191e);
+  border-color: #a4783b;
+}
+.library-head { position: sticky; z-index: 2; top: 0; margin: 0 -26px; padding: 20px 26px 16px; display: flex; align-items: end; justify-content: space-between; gap: 18px; background: linear-gradient(#32231d, #211819); border-bottom: 3px solid #946b35; }
+.library-heading h2 { margin: 0; font-family: var(--sc); font-size: 38px; }
+.library-heading p { margin: 2px 0 0; color: #d4b98c; font-style: italic; font-size: 18px; }
+.library-kicker { color: #e4b960; text-transform: uppercase; letter-spacing: .18em; font-size: 14px; }
+.library-stats { display: flex; gap: 14px; }
+.library-stats span { display: flex; flex-direction: column; align-items: center; min-width: 100px; padding: 4px 12px; border-left: 1px solid #745635; font-size: 15px; color: #d7c8ad; }
+.library-stats b { font-size: 30px; color: #f2d27a; line-height: 1; }
+.library-guide { display: flex; align-items: center; gap: 14px; margin: 16px 0; padding: 8px 18px; border: 1px solid #765c3e; background: rgba(227, 190, 121, .075); }
+.library-portrait { width: 70px; height: 70px; flex: none; object-fit: cover; object-position: top; border: 2px solid #bb9556; background: #302834; }
+.library-guide p { flex: 1; margin: 0; font-size: 18px; line-height: 1.18; color: #e9d8b9; }
+.library-guide b { color: #f2d27a; }
+.library-guide small { width: 32%; font-size: 15px; line-height: 1.25; color: #c9ad79; }
+.shelf-title { display: flex; align-items: baseline; gap: 16px; border-bottom: 2px solid #876439; margin: 12px 0 14px; }
+.shelf-title h3 { margin: 0 0 4px; color: #f2d27a; font-family: var(--sc); font-size: 25px; }
+.shelf-title span { color: #bca782; font-size: 15px; }
+.books { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.book { position: relative; min-height: 224px; display: grid; grid-template-columns: 72px 1fr; grid-template-rows: 1fr auto; align-items: start; gap: 8px 15px; padding: 15px; background: linear-gradient(145deg, rgba(250,223,170,.1), rgba(36,24,28,.8)); border: 1px solid #80613b; box-shadow: 0 4px 0 #100b0f, inset 0 0 0 1px #352720; }
+.book:hover { border-color: #d8b04a; }
+.book.done { opacity: 1; border-color: #66865e; }
+.book-cover { width: 72px; height: 108px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 8px 4px; color: #f6e4b8; background: linear-gradient(90deg, #201718 0 12%, var(--bc) 14% 82%, #1c1518); border: 3px solid #b89458; box-shadow: 4px 5px 0 #0c090b, inset 0 0 0 2px rgba(255,255,255,.18); }
+.book-cover span { font-size: 13px; letter-spacing: .15em; }
+.book-cover i { width: 65%; border-top: 1px solid #f6e4b8; }
+.book-info { align-self: stretch; }
+.book-info .book-eyebrow { color: #c5a674; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
+.book-info b { display: block; color: #fff0cb; font-family: var(--sc); font-size: 27px; line-height: 1.08; margin: 4px 0 7px; }
+.book-info p { color: #ddcfb5; font-size: 20px; line-height: 1.18; margin: 5px 0; }
+.book-info .unlock { color: #aed2d6; }
+.book-info .unlock .ico { width: 16px; height: 16px; }
+.book-progress { display: flex; align-items: center; gap: 10px; margin-top: 8px; color: #e9c884; font-size: 17px; }
+.book-progress .bar { flex: 1; margin: 0; }
+.book-read { grid-column: 2; justify-self: start; font-size: 16px; padding: 5px 12px; }
+.book-read small { margin-left: 8px; opacity: .7; }
+.book .stamp { position: absolute; right: 16px; bottom: 15px; font-size: 22px; }
+.m .library-panel { left: 8px; right: 8px; top: 80px; bottom: 8px; padding: 0 14px 16px; }
+.m .library-head { margin: 0 -14px; padding: 10px 14px; }
+.m .library-heading h2 { font-size: 27px; }
+.m .library-heading p { font-size: 14px; }
+.m .library-kicker { font-size: 11px; }
+.m .library-stats span { min-width: 70px; font-size: 12px; padding: 2px 6px; }
+.m .library-stats b { font-size: 21px; }
+.m .library-guide { margin: 10px 0; padding: 5px 10px; }
+.m .library-guide p { font-size: 18px; }
+.m .library-guide small { font-size: 15px; }
+.m .library-portrait { width: 54px; height: 54px; }
+.m .shelf-title { margin: 6px 0 10px; }
+.m .books { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.m .book { min-height: 208px; grid-template-columns: 54px 1fr; gap: 6px 10px; padding: 9px; }
+.m .book-cover { width: 54px; height: 82px; }
+.m .book-info b { font-size: 23px; }
+.m .book-info p { font-size: 17px; }
+.m .book-info .book-eyebrow { font-size: 13px; }
+.m .book-read { font-size: 17px; }

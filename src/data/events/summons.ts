@@ -210,24 +210,173 @@ const CHATS: GameEvent[] = [
   },
 ];
 
-// Pretendentes: convocar é cortejar
+// Convocar uma pretendente abre uma conversa própria. Cada uma reage ao histórico
+// e oferece mais de uma maneira de se aproximar (ou se afastar).
 const SUITOR_CHATS: GameEvent[] = [
-  ['elenora', 'Elenora chega corada. "Meu pai achou que era um pedido de casamento. Eu disse que provavelmente era sobre taxas portuárias."'],
-  ['rhoswen', 'Rhoswen chega com lama nas botas. "Vim do treino. Se for para dançar, vou embora. Se for para cavalgar, fico."'],
-  ['isolde', 'Isolde entra devagar, abanando o leque. "Chamou? Uma dama de Véridian conta quantas vezes é chamada. Esta é a primeira. Continue."'],
-  ['sigrid', 'Sigrid para na porta. "Você me chamou. Em Norhelm, quando um jarl chama uma mulher ao salão, é para anunciar um casamento ou uma execução."'],
-].map(([id, text]) => ({
-  id: `conv_${id}`, speaker: id, topic: 'Um convite do rei', kind: 'casamento' as const, lasts: 1,
-  nodes: {
-    start: {
-      text,
-      choices: [
-        { label: 'Um passeio pelos jardins', sub: 'Romance', color: 'verde' as const, icon: 'coracao', effects: { rel: { [id]: 12 }, xp: 8 }, reply: 'O passeio dura mais do que o protocolo permite. Os jardineiros fingem não ver.' },
-        { label: 'Perguntar o que ela quer da vida', sub: 'Conhecê-la', color: 'azul' as const, icon: 'balao', effects: { rel: { [id]: 8 }, res: { influencia: 1 }, xp: 10 }, reply: 'A resposta surpreende você. Não é o que a casa dela quer. É o que ela quer.' },
-        { label: 'Falar de política', sub: 'Pragmatismo', color: 'dourado' as const, icon: 'pergaminho', effects: { rel: { [id]: 2 }, res: { influencia: 3 }, xp: 8 }, reply: 'Ela entende mais de política do que metade do seu conselho. Isso é uma qualidade ou um aviso.' },
-      ],
+  {
+    id: 'conv_elenora', speaker: 'elenora', topic: 'Uma conversa com Elenora', kind: 'casamento', lasts: 1,
+    nodes: {
+      start: {
+        text: (s) => s.spouse === 'elenora'
+          ? '"Um convite formal do meu marido?" Elenora ri. "Espero que seja para falar de algo que não caiba em ata. Passei a manhã lutando com as contas de meu pai."'
+          : s.flags.elenoraAutonomia
+            ? '"Você me chamou sem pedir autorização ao meu pai. Começamos bem." Ela esconde um sorriso. "Diga: quer a minha companhia ou a frota dos Valmont?"'
+            : '"Meu pai achou que era sobre taxas portuárias. Eu disse que não se pode cobrar imposto sobre uma conversa. Ele perguntou: por quê?"',
+        choices: [
+          { label: 'Quero ouvir seus planos', sub: 'Para além da Casa Valmont', color: 'azul', icon: 'balao', goto: 'planos', tension: -6 },
+          { label: 'Roubei uma hora só para nós', sub: 'Fugir dos escribas', color: 'verde', icon: 'coracao', goto: 'passeio', tension: -10 },
+          { label: 'Quanto vale sua frota?', sub: 'Negociação sem disfarce', color: 'dourado', icon: 'moedas', goto: 'frota', tension: 12 },
+        ],
+      },
+      planos: {
+        text: '"Abrir os cais a pequenos capitães. Meu pai diz que a concorrência é uma doença. Eu digo que monopólio também." Ela gira um anel no dedo. "Quando era menina, desenhava mapas. Depois todos começaram a desenhar meu futuro por mim."',
+        choices: [
+          { label: 'Mostre-me seus mapas', sub: 'Interesse verdadeiro', color: 'verde', icon: 'olho', effects: { rel: { elenora: 11 }, flags: { elenoraMapas: true }, xp: 10 }, reply: 'Ela abre os mapas sobre o chão para caber o litoral inteiro. Por uma hora fala como capitã, não como filha. Ao sair, deixa um deles com você.' },
+          { label: 'Seu pai teme perder dinheiro', sub: 'Entender o conflito', color: 'azul', icon: 'aperto', effects: { rel: { elenora: 6 }, res: { influencia: 1 }, xp: 8 }, reply: '"Ele teme perder controle", corrige Elenora. "Dinheiro ele consegue de volta. Controle exige uma pessoa disposta a obedecer."' },
+          { label: 'Concorrência enfraquece Valmont', sub: 'Dar razão a Gaspard', color: 'vermelho', icon: 'coroa', effects: { rel: { elenora: -8, gaspard: 3 }, xp: 5 }, reply: '"Você e ele acabariam amigos." Ela recolhe os mapas antes que a conversa vire a reunião de negócios que temia.' },
+        ],
+      },
+      passeio: {
+        text: 'Elenora aceita o caminho pelos pomares, longe dos lordes. "Tem três damas fingindo que não nos seguem. A de azul é paga por meu pai. A de verde, por sua mãe. A de branco escreve para as duas." Ela oferece o braço. "Vamos decepcioná-las ou dar assunto?"',
+        choices: [
+          { label: 'Desaparecer pelo portão de serviço', sub: 'Uma tarde sem plateia', color: 'roxo', icon: 'mascara', effects: { rel: { elenora: 13 }, res: { prestigio: -1 }, xp: 10 }, reply: 'Vocês dividem vinho barato num banco dos criados. "É melhor que o banquete inteiro do meu pai", ela diz. Desta vez não está sendo educada.' },
+          { label: 'Pedir um beijo, diante delas', sub: 'Se ela quiser', color: 'verde', icon: 'coracao', req: { test: (s) => (s.rel.elenora ?? 0) >= 20, label: 'Elenora ainda não confia em você' }, effects: { rel: { elenora: 13 }, flags: { elenoraBeijo: true }, res: { prestigio: -1 }, xp: 12 }, reply: '"Quero." O beijo é breve, mas as três espiãs discordam sobre quanto durou. Elenora pergunta se você pretende cobrar ingresso da próxima vez.' },
+          { label: 'Falar de política no passeio', sub: 'O rei não descansa', color: 'dourado', icon: 'pergaminho', effects: { rel: { elenora: -4 }, res: { influencia: 2 }, xp: 6 }, reply: '"Você conseguiu transformar um pomar em conselho." Ela aponta uma maçã. "Ao menos aquela ainda não pediu cargo."' },
+        ],
+      },
+      frota: {
+        text: '"Quarenta navios, se contar os pequenos. Meu pai conta cinquenta quando quer impressionar e trinta quando chegam os impostos." Elenora cruza os braços. "Mas a pergunta é o que você acha que eu valho sem eles."',
+        choices: [
+          { label: 'Quero você sem contrato', sub: 'Romper a barganha', color: 'verde', icon: 'coracao', effects: { rel: { elenora: 12 }, flags: { elenoraAutonomia: true }, xp: 12 }, reply: '"Então não vamos contar navios hoje." Ela empurra a lista para longe e pergunta qual foi a última coisa que você fez só porque quis.' },
+          { label: 'Quero uma parceira que os comande', sub: 'Poder compartilhado', color: 'azul', icon: 'aperto', effects: { rel: { elenora: 8 }, res: { influencia: 2 }, xp: 10 }, reply: '"Melhor resposta." Ela entrega uma rota comercial que Gaspard não sabe que existe. "Não diga que fui sentimental."' },
+          { label: 'Seu pai faria um preço', sub: 'Frieza de mercador', color: 'vermelho', icon: 'moedas', effects: { rel: { elenora: -14, gaspard: 5 }, xp: 5 }, reply: '"E você o pagaria." A resposta sai calma. É isso que a torna pior.' },
+        ],
+      },
     },
   },
-}));
+  {
+    id: 'conv_rhoswen', speaker: 'rhoswen', topic: 'Uma conversa com Rhoswen', kind: 'casamento', lasts: 1,
+    nodes: {
+      start: {
+        text: (s) => s.spouse === 'rhoswen'
+          ? '"Outra audiência?" Rhoswen apoia o elmo na mesa. "Então vamos fingir que não jantamos juntos ontem. Fale como rei; depois fale como você."'
+          : s.flags.rhoswenIgual
+            ? '"Trouxe duas espadas de madeira. Antes que reclame: a segunda é para mim. Prometi não deixar você apanhar sozinho."'
+            : '"Vim do treino. Se for para dançar, aviso que minhas botas têm lama. Se for para falar da fronteira, trago um mapa. Se for só para me olhar, pelo menos seja honesto."',
+        choices: [
+          { label: 'Treinar comigo?', sub: 'Ela respeita esforço', color: 'vermelho', icon: 'espadas', goto: 'treino', tension: 9 },
+          { label: 'Conte algo que não contou ao pai', sub: 'Confiança fora do campo', color: 'verde', icon: 'coracao', goto: 'segredo', tension: -5 },
+          { label: 'Que ameaça você teme de verdade?', sub: 'Além de Norhelm', color: 'azul', icon: 'olho', goto: 'medo', tension: 6 },
+        ],
+      },
+      treino: {
+        text: 'Rhoswen gira a espada e sorri. "Três golpes. Se me tocar, conto um segredo. Se não, você contará um." Ela avança antes de você terminar de aceitar. Os guardas fingem estar ocupados.',
+        choices: [
+          { label: 'Lutar sem truques', sub: 'Honra no pátio', color: 'azul', icon: 'escudo', effects: { rel: { rhoswen: 10 }, res: { moral: 2 }, xp: 10 }, reply: 'Ela vence por um golpe. "Seu segredo", exige. Você admite que temia perder. "Ótimo", ela diz. "Medo significa que prestou atenção."' },
+          { label: 'Fingir tropeçar e beijá-la?', sub: 'Arriscar o ridículo', color: 'verde', icon: 'coracao', req: { test: (s) => (s.rel.rhoswen ?? 0) >= 20, label: 'Rhoswen ainda não confia em você' }, effects: { rel: { rhoswen: 13 }, flags: { rhoswenBeijo: true }, xp: 12 }, reply: 'Ela segura você antes da queda. "Péssima técnica", murmura, e aceita o beijo. Depois exige a revanche, mais séria que a primeira luta.' },
+          { label: 'Mandar um guarda lutar por mim', sub: 'Esconder-se no posto', color: 'dourado', icon: 'coroa', effects: { rel: { rhoswen: -8 }, xp: 5 }, reply: '"Ótimo. O guarda tem mais coragem." Ela o derrota em dois movimentos e deixa a terceira espada para você guardar.' },
+        ],
+      },
+      segredo: {
+        text: '"Tenho um caderno." Ela fala tão baixo que você quase pede para repetir. "Escrevo o nome dos soldados que morreram sob meu comando. Meu pai memoriza vitórias. Alguém precisa memorizar gente."',
+        choices: [
+          { label: 'Me deixe ler com você', sub: 'Compartilhar o peso', color: 'verde', icon: 'livro', effects: { rel: { rhoswen: 13 }, flags: { rhoswenCaderno: true }, xp: 12 }, reply: 'Ela lê três nomes em voz alta. Você lembra os três quando ela volta dias depois. É o presente que ela não esperava.' },
+          { label: 'São perdas inevitáveis', sub: 'Estratégia sem consolo', color: 'dourado', icon: 'escudo', effects: { rel: { rhoswen: -10 }, res: { prestigio: 1 }, xp: 5 }, reply: '"Inevitáveis não significa anônimas." Ela fecha o caderno. A conversa termina antes do horário.' },
+          { label: 'Vou evitar a próxima batalha', sub: 'Promessa imprudente', color: 'azul', icon: 'aperto', effects: { rel: { rhoswen: 4 }, res: { influencia: -1 }, xp: 7 }, reply: '"Não prometa o impossível." Ela abre o caderno outra vez. "Prometa lembrar."' },
+        ],
+      },
+      medo: {
+        text: '"Que um dia a guerra acabe e eu não saiba viver em paz." Rhoswen tira uma luva devagar. "Norhelm eu sei enfrentar. Um jantar sem inimigos me deixa sem instruções."',
+        choices: [
+          { label: 'Podemos aprender juntos', sub: 'Futuro além da guerra', color: 'verde', icon: 'coracao', effects: { rel: { rhoswen: 12 }, xp: 11 }, reply: '"Talvez. Mas se o jantar tiver peixe, você explica qual garfo é arma e qual não é."' },
+          { label: 'A guerra sempre voltará', sub: 'Realismo sombrio', color: 'vermelho', icon: 'espadas', effects: { rel: { rhoswen: -4 }, res: { moral: 1 }, xp: 6 }, reply: '"É o que meu pai diria. Eu esperava algo que não coubesse na boca dele."' },
+          { label: 'Comece com este jantar', sub: 'Convite sem estratégia', color: 'azul', icon: 'balao', effects: { rel: { rhoswen: 8 }, xp: 9 }, reply: '"Aceito. Mas se alguém tocar alaúde por mais de dez minutos, declaro guerra ao alaúde."' },
+        ],
+      },
+    },
+  },
+  {
+    id: 'conv_isolde', speaker: 'isolde', topic: 'Uma conversa com Isolde', kind: 'casamento', lasts: 1,
+    nodes: {
+      start: {
+        text: (s) => s.spouse === 'isolde'
+          ? '"Um convite do rei para a rainha." Isolde fecha o leque. "Meu irmão chamaria isso de diplomacia. Eu chamaria de talvez você sentir minha falta."'
+          : s.flags.isoldeSemMascara
+            ? '"Hoje trouxe o leque, mas deixei a máscara." Ela o deposita sobre a mesa. "O que quer saber sem uma plateia?"'
+            : '"Chamou? Uma dama de Véridian conta quantas vezes é chamada. Eu conto o que o anfitrião pergunta quando acha que não estou anotando."',
+        choices: [
+          { label: 'Jogar uma partida de xadrez', sub: 'Ela prefere riscos inteligentes', color: 'roxo', icon: 'coroa', goto: 'xadrez', tension: 5 },
+          { label: 'Perguntar do irmão', sub: 'Família e dever', color: 'azul', icon: 'balao', goto: 'irmao', tension: 7 },
+          { label: 'Pedir uma história de casa', sub: 'Véridian além dos tratados', color: 'verde', icon: 'coracao', goto: 'casa', tension: -7 },
+        ],
+      },
+      xadrez: {
+        text: '"Você tem dois movimentos para salvar a rainha." Isolde empurra o tabuleiro. "O rei está seguro, claro. Reis costumam estar." Ela observa sua mão mais que as peças.',
+        choices: [
+          { label: 'Sacrificar o rei para salvá-la', sub: 'Quebrar as regras', color: 'roxo', icon: 'mascara', effects: { rel: { isolde: 12 }, xp: 12 }, reply: '"É um movimento ilegal." Ela sorri. "Finalmente algo interessante." Ela o ensina a vencer sem pedir licença às peças.' },
+          { label: 'Salvar ambos com um blefe', sub: 'Ela reconhecerá o truque', color: 'azul', icon: 'olho', effects: { rel: { isolde: 9 }, res: { influencia: 2 }, xp: 10 }, reply: 'Ela percebe o blefe e deixa você jogar. "Quero ver até onde vai antes de admitir." A partida dura até as velas acabarem.' },
+          { label: 'Deixar a rainha cair', sub: 'Jogada fria', color: 'vermelho', icon: 'coroa', effects: { rel: { isolde: -9 }, res: { prestigio: 1 }, xp: 5 }, reply: '"Estratégico", ela concede. E não toca mais nas peças.' },
+        ],
+      },
+      irmao: {
+        text: '"Meu irmão me ensinou a negociar aos dez anos. Aos vinte, descobri que ele me ensinava porque pretendia negociar a mim." Ela ri sem humor. "Ele envia presentes quando quer desculpas. Esta semana enviou seis."',
+        choices: [
+          { label: 'Não precisa defendê-lo aqui', sub: 'Ela pode ser honesta', color: 'verde', icon: 'coracao', effects: { rel: { isolde: 12 }, flags: { isoldeIrmao: true }, xp: 12 }, reply: '"Não pretendo. Só não quero que use minha raiva como instrumento contra ele." É a primeira vez que ela pede algo sem oferecer nada em troca.' },
+          { label: 'Os presentes são uma mensagem', sub: 'Ler a política', color: 'azul', icon: 'olho', effects: { rel: { isolde: 6 }, res: { influencia: 2 }, xp: 10 }, reply: '"Seis presentes para seis conselheiros seus. Exatamente." Ela parece aliviada por não ter de explicar o óbvio a mais um homem.' },
+          { label: 'Posso usá-lo contra Norhelm', sub: 'Instrumentalizar a família', color: 'dourado', icon: 'espadas', effects: { rel: { isolde: -7 }, xp: 6 }, reply: '"Você ouviu a palavra irmão e pensou em frota. Meu irmão teria gostado de você."' },
+        ],
+      },
+      casa: {
+        text: '"Minha casa tem janelas para o mar. Minha mãe cantava enquanto desenhava mapas. O cheiro de laranja entra até no inverno." Ela hesita. "Quando sentirei falta de lá sem sentir culpa por gostar daqui?"',
+        choices: [
+          { label: 'Não precisa escolher só um lar', sub: 'Aceitar as duas terras', color: 'verde', icon: 'coracao', effects: { rel: { isolde: 13 }, xp: 11 }, reply: '"É uma frase perigosa para um rei." Isolde encosta a mão na sua. "Também é a primeira que me fez querer ficar."' },
+          { label: 'Mostre-me Véridian um dia', sub: 'Viagem imaginada', color: 'azul', icon: 'navio', effects: { rel: { isolde: 8 }, xp: 9 }, reply: '"Só se prometer não taxar as laranjas." Ela passa a próxima meia hora descrevendo a cidade, sem citar uma única tarifa.' },
+          { label: 'Castelmar deve bastar', sub: 'Cobrança disfarçada', color: 'vermelho', icon: 'coroa', effects: { rel: { isolde: -11 }, xp: 5 }, reply: '"Então talvez Castelmar precise aprender a caber mais gente." Ela recolhe o leque e a história.' },
+        ],
+      },
+    },
+  },
+  {
+    id: 'conv_sigrid', speaker: 'sigrid', topic: 'Uma conversa com Sigrid', kind: 'casamento', lasts: 1,
+    nodes: {
+      start: {
+        text: (s) => s.spouse === 'sigrid'
+          ? '"Você ainda me chama por mensageiro formal." Sigrid fecha a porta atrás de si. "Meu pai acharia ridículo. É uma das razões para continuar."'
+          : s.flags.sigridEscolha
+            ? '"Trouxe uma canção do norte. Não é sobre guerra. Você parece surpreso. Há outras coisas no mundo além do que nossos pais quebraram."'
+            : '"Em Norhelm, quando alguém me convoca ao salão, é para anunciar casamento ou execução. Em Castelmar você tem mais opções. Espero."',
+        choices: [
+          { label: 'Ensine-me a canção', sub: 'Conhecer o norte por ela', color: 'verde', icon: 'balao', goto: 'cancao', tension: -8 },
+          { label: 'Falar do inverno', sub: 'Povo antes de tratados', color: 'azul', icon: 'trigo', goto: 'inverno', tension: 5 },
+          { label: 'Perguntar sobre Ragnar', sub: 'O irmão que ameaça', color: 'roxo', icon: 'olho', goto: 'ragnar', tension: 10 },
+        ],
+      },
+      cancao: {
+        text: 'Sigrid canta uma melodia baixa, sem palavras que você entenda. "É sobre uma raposa que encontra abrigo na casa de um inimigo. Quando chega a primavera, ela não sabe qual floresta é sua." Ela espera que você diga alguma coisa.',
+        choices: [
+          { label: 'Talvez ela tenha duas florestas', sub: 'Pertencer sem escolher', color: 'verde', icon: 'coracao', effects: { rel: { sigrid: 13 }, flags: { sigridCancao: true }, xp: 12 }, reply: '"Minha mãe teria gostado dessa versão." Sigrid canta a última estrofe outra vez, desta vez com a cabeça perto da sua.' },
+          { label: 'Quero aprender as palavras', sub: 'Estudar por ela', color: 'azul', icon: 'livro', effects: { rel: { sigrid: 9 }, xp: 10 }, reply: 'Você pronuncia tudo errado. Ela ri de verdade e ensina até a melodia caber na sua voz.' },
+          { label: 'A raposa devia voltar', sub: 'Raízes importam', color: 'dourado', icon: 'arvore', effects: { rel: { sigrid: -6 }, xp: 6 }, reply: '"Talvez. Ou talvez a casa fosse o primeiro lugar que não pediu que ela mordesse alguém." A canção termina cedo.' },
+        ],
+      },
+      inverno: {
+        text: '"Meu povo guarda carne sob a neve e grão em cavernas. Este ano as cavernas estão quase vazias. Ragnar chama guerra de solução porque nunca passou uma noite contando crianças com fome."',
+        choices: [
+          { label: 'Planejar um comboio civil', sub: '−45 ouro, salvar aldeias', color: 'verde', icon: 'trigo', req: { ouro: 45 }, effects: { res: { ouro: -45, povo: 2 }, rel: { sigrid: 11 }, flags: { ajudaNorhelm: true }, xp: 12 }, reply: '"Não ponha meu nome na carta. Ponha o das aldeias." Sigrid marca rotas longe das patrulhas do irmão.' },
+          { label: 'Negociar com os jarls', sub: 'Influência +2', color: 'azul', icon: 'aperto', effects: { res: { influencia: 2 }, rel: { sigrid: 6 }, xp: 10 }, reply: 'Ela escreve três nomes de jarls que escutam antes de sacar a espada. É uma lista curta e valiosa.' },
+          { label: 'Preparar a muralha', sub: 'Moral +2, distância dela', color: 'vermelho', icon: 'espadas', effects: { res: { moral: 2 }, rel: { sigrid: -8 }, xp: 6 }, reply: '"Muralhas detêm soldados, não o inverno." Ela deixa o mapa aberto para você olhar de novo.' },
+        ],
+      },
+      ragnar: {
+        text: '"Ragnar me ensinou a atirar uma faca antes de ensinar a ler. Dizia que palavras não detêm uma invasão. Cresci para descobrir que facas também não." Ela vira uma pequena lâmina entre os dedos. "Você quer saber se ele me ama?"',
+        choices: [
+          { label: 'Quero saber se você sente falta dele', sub: 'Pessoa antes da ameaça', color: 'verde', icon: 'coracao', effects: { rel: { sigrid: 12 }, xp: 11 }, reply: '"Do irmão que me ensinou a mirar, sim. Do homem que mira para cá, ainda não sei." Ela guarda a faca.' },
+          { label: 'Ele ouviria um acordo seu?', sub: 'Diplomacia pela irmã', color: 'azul', icon: 'aperto', effects: { rel: { sigrid: 5 }, res: { influencia: 2 }, xp: 9 }, reply: '"Ouvir, sim. Aceitar, talvez se pudesse dizer que foi ideia dele. Orgulho também é uma língua."' },
+          { label: 'Prefiro saber onde ele guarda as facas', sub: 'Paranoia útil', color: 'roxo', icon: 'olho', effects: { rel: { sigrid: -5 }, res: { prestigio: 1 }, xp: 6 }, reply: '"Em todo lugar", ela diz. Depois percebe que sua resposta foi séria e fica triste com isso.' },
+        ],
+      },
+    },
+  },
+];
 
 export const SUMMON_EVENTS: GameEvent[] = [...Object.keys(LORDS).map(lordEvent), ...CHATS, ...SUITOR_CHATS];

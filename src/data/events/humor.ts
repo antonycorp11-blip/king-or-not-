@@ -346,6 +346,43 @@ export const HUMOR_EVENTS: GameEvent[] = [
     },
   },
   {
+    id: 'torneio_veneno', speaker: 'pimenta', topic: 'Torneio de língua afiada', kind: 'audiencia', minDay: 7, maxDay: 19, weight: 5,
+    nodes: {
+      start: {
+        text: 'Pimenta entra com uma coroa de papel e uma lousa: "A corte está morrendo de tédio, Majestade. Organizei um torneio de insultos. Sem espadas: só frases que os lordes vão fingir que não ouviram. Escolha o alvo. Se perder, fico com a coroa de papel. Se ganhar, também fico. As regras são excelentes."',
+        choices: [
+          { label: 'Gaspard e sua frota', sub: 'Rir do homem mais rico', color: 'roxo', icon: 'moedas', goto: 'gaspard', tension: 8 },
+          { label: 'Brandt e suas ameaças', sub: 'Provocar o urso', color: 'vermelho', icon: 'espadas', goto: 'brandt', tension: 16 },
+          { label: 'Eu mesmo', sub: 'Desarmar a corte', color: 'verde', icon: 'mascara', goto: 'rei', tension: -9 },
+        ],
+      },
+      gaspard: {
+        text: '"Lorde Gaspard", anuncia Pimenta, "um homem capaz de vender água ao mar e cobrar pela maré." O salão ri. Gaspard sorri com todos os dentes e nenhum afeto. "Agora é a vez do rei."',
+        choices: [
+          { label: 'Vende até a própria peruca', sub: 'Golpe baixo e eficaz', color: 'vermelho', icon: 'mascara', tension: 18, effects: { rel: { gaspard: -13, pimenta: 10 }, loyalty: { valmont: -5 }, res: { povo: 4 }, xp: 12 }, reply: 'Uma gargalhada atravessa o salão. Gaspard toca o cabelo por reflexo. Pimenta declara vitória do rei: "A peruca se rendeu antes do dono."' },
+          { label: 'Mas sempre paga a rodada', sub: 'Insulto com saída elegante', color: 'azul', icon: 'aperto', tension: -12, effects: { rel: { gaspard: 5, pimenta: 7 }, res: { influencia: 2 }, xp: 12 }, reply: 'Gaspard ri e manda vinho. "Finalmente um imposto que aceito pagar." Pimenta anota: vitória do rei por suborno involuntário.' },
+          { label: 'Deixar Pimenta vencer', sub: 'Dê o palco ao bobo', color: 'dourado', icon: 'balao', effects: { rel: { pimenta: 12 }, res: { prestigio: -1, povo: 3 }, xp: 8 }, reply: 'Pimenta faz uma reverência tão funda que bate a testa no chão. A corte o aplaude. A coroa de papel é promovida a relíquia.' },
+        ],
+      },
+      brandt: {
+        text: 'Pimenta engole seco. "Lorde Brandt tem uma espada tão grande que deve precisar de autorização da alfândega." Brandt cruza os braços. Os guardas não riem. Um deles ri por dentro, perigosamente alto.',
+        choices: [
+          { label: 'Ele perdeu para um pato', sub: 'Transformar rumor em lenda', color: 'roxo', icon: 'mascara', tension: 20, effects: { rel: { brandt: -10, pimenta: 10 }, res: { povo: 5, prestigio: -2 }, xp: 12 }, reply: 'Pimenta imita o pato. Brandt promete um duelo com a ave. Aldric marca na agenda como "incidente militar de baixa prioridade".' },
+          { label: 'Só ameaça quem quer proteger', sub: 'Ver o homem por trás do rugido', color: 'verde', icon: 'coracao', tension: -16, effects: { rel: { brandt: 10, pimenta: 4 }, loyalty: { drakon: 4 }, xp: 14 }, reply: 'Brandt resmunga que não precisa de poesia. Depois aperta seu ombro com força suficiente para confirmar que gostou.' },
+          { label: 'Ordenar que ele conte uma piada', sub: 'Risco calculado', color: 'vermelho', icon: 'coroa', tension: 10, effects: { rel: { brandt: 4 }, res: { moral: 3 }, xp: 10 }, reply: 'Brandt pensa por um minuto: "Um norhelmo entrou num bar. Saiu quando eu entrei." Os soldados gargalham. Pimenta aceita a derrota.' },
+        ],
+      },
+      rei: {
+        text: '"Excelente", diz Pimenta. "Minha Majestade é jovem, bonita e confunde as três qualidades com governar bem." O riso sai antes que os lordes consigam segurá-lo. A rainha-mãe ergue uma sobrancelha. "Agora responda, filho."',
+        choices: [
+          { label: 'Ao menos eu pago seus salários', sub: 'Zombar da própria coroa', color: 'roxo', icon: 'moedas', tension: -8, effects: { res: { povo: 5, prestigio: -2 }, rel: { pimenta: 12, isabelle: -3 }, xp: 14 }, reply: '"E mal!" Pimenta completa. Até Isabelle ri, contrariada. A corte descobre que o rei sabe ouvir uma verdade sem chamar a guarda.' },
+          { label: 'Bobo, assuma o reino por uma hora', sub: 'Experimento perigoso', color: 'dourado', icon: 'coroa', tension: 6, effects: { res: { povo: 6, prestigio: -3 }, rel: { pimenta: 15, aldric: -5 }, xp: 14 }, reply: 'Pimenta emite três decretos: mais folgas, menos discursos e impostos cobrados só de quem inventa impostos. Aldric veta os três. O povo guarda o terceiro.' },
+          { label: 'A crítica é justa. Continue.', sub: 'Confiança desarmante', color: 'azul', icon: 'aperto', tension: -15, effects: { rel: { pimenta: 16, aldric: 4 }, res: { influencia: 3 }, xp: 16 }, reply: 'Pimenta para de sorrir por um segundo. "Cuidado, Majestade. Um bobo ouvido vira conselheiro." A lousa passa a aparecer em todas as reuniões.' },
+        ],
+      },
+    },
+  },
+  {
     id: 'bobo_greve', speaker: 'pimenta', topic: 'O bobo entra em greve', kind: 'audiencia', minDay: 15, weight: 2,
     nodes: {
       start: {

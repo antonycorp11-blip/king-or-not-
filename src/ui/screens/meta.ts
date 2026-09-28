@@ -9,7 +9,7 @@ export function renderTitle(app: App): string {
     <div class="title-card parchment">
       ${iconImg('coroa', 'ico-xxl')}
       <h1>King or Not?</h1>
-      <p class="tagline">Aos dezesseis anos, a coroa caiu na sua cabeça.<br>Agora o reino inteiro quer algo de você.</p>
+      <p class="tagline">Aos vinte e um anos, a coroa caiu na sua cabeça.<br>Agora o reino inteiro quer algo de você.</p>
       <label>Nome do rei <input id="king-name" maxlength="16" value="Edric" autocomplete="off"></label>
       <div class="row">
         <button class="btn primary" data-act="newGame">Novo reinado</button>

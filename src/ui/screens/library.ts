@@ -84,30 +84,32 @@ export function render(app: App): string {
   ]);
   app.scene.setMode('full');
   const line = LINES[s.day % LINES.length];
+  const finished = BOOKS.filter((b) => knows(s, b.knowledge)).length;
+  const active = BOOKS.filter((b) => !knows(s, b.knowledge) && (s.bookProgress[b.id] ?? 0) > 0).length;
   return `
     <div class="panel dark library-panel">
-      <h2>${iconImg('livro', 'ico-lg')} Biblioteca Real</h2>
-      <p class="sub">Cada sessão gasta ${SESSION}h do dia e rende de 1h a 4h de leitura, conforme sua atenção. Livros concluídos abrem novas opções nos diálogos.</p>
+      <header class="library-head">
+        <div class="library-heading"><span class="library-kicker">O acervo da coroa</span><h2>${iconImg('livro', 'ico-lg')} Biblioteca Real</h2><p>Um segredo bem lido vale mais que um exército mal pago.</p></div>
+        <div class="library-stats"><span><b>${finished}</b> concluídos</span><span><b>${active}</b> em leitura</span><span><b>${BOOKS.length}</b> volumes</span></div>
+      </header>
+      <div class="library-guide">${portrait('theodric', 'library-portrait')}<p><b>Grão-Meistre Theodric</b><br>${esc(line)}</p><small>Cada sessão custa ${SESSION}h. Atenção aos trechos rende até 4h de progresso; livros concluídos abrem novas falas.</small></div>
+      <div class="shelf-title"><h3>Estantes do reino</h3><span>Escolha um volume para estudar</span></div>
       <div class="books">
-        ${BOOKS.map((b) => {
+        ${BOOKS.map((b, index) => {
           const done = knows(s, b.knowledge);
           const prog = s.bookProgress[b.id] ?? 0;
           return `<div class="book ${done ? 'done' : ''}">
-            <div class="spine" style="--bc:${b.color}"></div>
+            <div class="book-cover" style="--bc:${b.color}"><span>${String(index + 1).padStart(2, '0')}</span>${iconImg('livro', 'ico-lg')}<i></i></div>
             <div class="book-info">
-              <b>${esc(b.title)}</b><small>${esc(b.author)} · ${b.hours}h de leitura</small>
+              <small class="book-eyebrow">Volume ${String(index + 1).padStart(2, '0')} · ${esc(b.author)}</small><b>${esc(b.title)}</b>
               <p>${esc(b.blurb)}</p>
               <p class="unlock">${iconImg('seta')} ${esc(b.unlocks)}</p>
-              <div class="bar gold"><i style="width:${(Math.min(prog, b.hours) / b.hours) * 100}%"></i></div>
+              <div class="book-progress"><span>${done ? 'Concluído' : `${Math.min(prog, b.hours)}/${b.hours}h`}</span><div class="bar gold"><i style="width:${(Math.min(prog, b.hours) / b.hours) * 100}%"></i></div></div>
             </div>
-            ${done ? `<span class="stamp">Lido</span>` : `<button class="btn" data-act="read" data-arg="${b.id}">Ler (${SESSION}h)<small>${Math.min(prog, b.hours)}/${b.hours}h</small></button>`}
+            ${done ? `<span class="stamp">Lido</span>` : `<button class="btn book-read" data-act="read" data-arg="${b.id}">Abrir livro <small>${SESSION}h</small></button>`}
           </div>`;
         }).join('')}
       </div>
-    </div>
-    <div class="librarian">
-      ${portrait('theodric', 'mid-portrait')}
-      <div class="parchment speech-small"><h3>Grão-Meistre Theodric</h3><p>${esc(line)}</p></div>
     </div>
     ${readingModal(app)}`;
 }

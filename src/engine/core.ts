@@ -137,7 +137,7 @@ export function softenCost(s: GameState, e: Effect | undefined): number {
   return Math.max(1, Math.ceil(c));
 }
 
-export function applyEffect(s: GameState, e: Effect | undefined, opts: { soften?: boolean; ignoredMode?: boolean } = {}) {
+export function applyEffect(s: GameState, e: Effect | undefined, opts: { soften?: boolean; ignoredMode?: boolean; origin?: import('../types').DecisionOrigin } = {}) {
   if (!e) return;
   const posMul = (hasSkill(s, 'carisma') ? 1.25 : 1) * (hasSkill(s, 'sorriso') ? 1.1 : 1);
   const ignoredMul = opts.ignoredMode ? (hasSkill(s, 'arbitro') ? 0.5 : 1) * (hasSkill(s, 'clemencia') ? 0.75 : 1) : 1;
@@ -156,8 +156,14 @@ export function applyEffect(s: GameState, e: Effect | undefined, opts: { soften?
   }
   if (e.loyalty) for (const [h, v] of Object.entries(e.loyalty) as [HouseId, number][]) s.loyalty[h] = clamp(s.loyalty[h] + scale(v), -100, 100);
   if (e.rel) for (const [c, v] of Object.entries(e.rel)) s.rel[c] = clamp((s.rel[c] ?? 0) + relScale(c, v), -100, 100);
-  if (e.flags) Object.assign(s.flags, e.flags);
-  if (e.schedule) for (const sc of e.schedule) s.scheduled.push({ id: sc.id, day: s.day + sc.in });
+  if (e.flags) {
+    Object.assign(s.flags, e.flags);
+    if (opts.origin) {
+      s.flagOrigins ??= {};
+      for (const key of Object.keys(e.flags)) s.flagOrigins[key] = opts.origin;
+    }
+  }
+  if (e.schedule) for (const sc of e.schedule) s.scheduled.push({ id: sc.id, day: s.day + sc.in, origin: opts.origin });
   if (e.law && !s.laws.includes(e.law)) {
     s.laws.push(e.law);
     log(s, { icon: 'pergaminho', title: 'Lei aprovada', text: e.law, tone: 'lei' });

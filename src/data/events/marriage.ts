@@ -1,6 +1,6 @@
 import type { Choice, GameEvent, GameState } from '../../types';
 import { SUITORS, char } from '../characters';
-import { clamp } from '../../engine/core';
+import { MARRIAGE_DEADLINE, clamp } from '../../engine/core';
 
 type Suitor = (typeof SUITORS)[number];
 
@@ -27,6 +27,7 @@ export const MARRIAGE_TERMS: Record<Suitor, { bonus: string[]; onus: string[] }>
 };
 
 export function marry(s: GameState, id: Suitor, hasty = false) {
+  if (s.day < MARRIAGE_DEADLINE) throw new Error('O casamento real só pode acontecer a partir do Dia 20.');
   s.spouse = id;
   s.flags.casado = true;
   s.flags.noiva = id;
@@ -138,37 +139,39 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
       start: {
         text: (s) => `${s.flags.elenoraCondicoes ? 'Ainda penso nas suas condições, Majestade. ' : ''}Os jardins de Castelmar são lindos no outono. Na Costa Serena só temos o mar... e as ambições do meu pai. Posso ser franca? Temo que os Drakon nunca aceitem uma rainha Valmont.`,
         advice: {
-          isabelle: { text: 'Isabelle, que acompanha o passeio a certa distância, se aproxima: "Deixe os Drakon comigo, querida. Brandt me deve favores antigos."', choice: { label: 'Aceitar a ajuda da mãe', sub: 'Isabelle acalma os Drakon', color: 'azul', icon: 'coroa', effects: { loyalty: { drakon: 6 }, rel: { elenora: 10, isabelle: 8 }, flags: { maeInfluencia: 1 }, schedule: [{ id: 'pedido_elenora', in: 3 }], xp: 10 }, reply: 'Elenora olha para Isabelle com gratidão, e você percebe que sua mãe acabou de escolher uma nora.' } },
+          isabelle: { text: 'Isabelle, que acompanha o passeio a certa distância, se aproxima: "Deixe os Drakon comigo, querida. Brandt me deve favores antigos."', choice: { label: 'Aceitar a ajuda da mãe', sub: 'Isabelle acalma os Drakon', color: 'azul', icon: 'coroa', effects: { loyalty: { drakon: 6 }, rel: { elenora: 10, isabelle: 8 }, flags: { maeInfluencia: 1 }, schedule: [{ id: 'cortejo_elenora', in: 3 }], xp: 10 }, reply: 'Elenora olha para Isabelle com gratidão, e você percebe que sua mãe acabou de escolher uma nora.' } },
         },
         choices: [
           { label: 'Eu protegerei você', sub: 'Promessa pessoal', color: 'azul', icon: 'escudo', effects: { rel: { elenora: 8 } }, goto: 'protege' },
           { label: 'Drakon aprenderá', sub: 'A coroa decide', color: 'vermelho', icon: 'coroa', effects: { rel: { elenora: 4 }, loyalty: { drakon: -4 }, res: { prestigio: 2 } }, goto: 'firmeza' },
-          { label: 'Ofereça paz a Drakon', sub: '−150 ouro em presentes', color: 'dourado', icon: 'moedas', req: { ouro: 150 }, effects: { res: { ouro: -150 }, loyalty: { drakon: 6 }, rel: { elenora: 10 }, schedule: [{ id: 'pedido_elenora', in: 3 }], xp: 10 }, reply: '"O senhor pensa como um rei de verdade", ela diz, surpresa.' },
-          { label: 'Mudar de assunto', sub: 'Manter distância', color: 'roxo', icon: 'mascara', effects: { rel: { elenora: -5 }, xp: 5 }, reply: 'O resto do passeio é só sobre flores.' },
+          { label: 'Ofereça paz a Drakon', sub: '−150 ouro em presentes', color: 'dourado', icon: 'moedas', req: { ouro: 150 }, effects: { res: { ouro: -150 }, loyalty: { drakon: 6 }, rel: { elenora: 10 }, schedule: [{ id: 'cortejo_elenora', in: 3 }], xp: 10 }, reply: '"O senhor pensa como um rei de verdade", ela diz, surpresa.' },
+          { label: 'Mudar de assunto', sub: 'Manter distância', color: 'roxo', icon: 'mascara', effects: { rel: { elenora: -5 }, schedule: [{ id: 'cortejo_elenora', in: 4 }], xp: 5 }, reply: 'O resto do passeio é só sobre flores. Mais tarde, ela manda um convite escrito: "Podemos tentar falar de algo menos insuportável?"' },
         ],
       },
       protege: {
         text: 'Ela para diante de uma roseira. "E quem protege o senhor, Majestade? Vejo como os lordes olham para o trono. Como lobos olhando uma ovelha."',
         choices: [
-          { label: 'Talvez você', sub: 'Confiar nela', color: 'verde', icon: 'coracao', effects: { rel: { elenora: 12 }, schedule: [{ id: 'pedido_elenora', in: 3 }], xp: 12 }, reply: 'Ela segura sua mão por um instante a mais que o protocolo permite. "Talvez."' },
-          { label: 'Eu mesmo', sub: 'Orgulho', color: 'vermelho', icon: 'espadas', effects: { rel: { elenora: 3 }, res: { prestigio: 1 }, schedule: [{ id: 'pedido_elenora', in: 3 }], xp: 8 }, reply: '"Coragem não falta ao senhor", ela diz. "Espero que prudência também não."' },
+          { label: 'Talvez você', sub: 'Confiar nela', color: 'verde', icon: 'coracao', effects: { rel: { elenora: 12 }, schedule: [{ id: 'cortejo_elenora', in: 3 }], xp: 12 }, reply: 'Ela segura sua mão por um instante a mais que o protocolo permite. "Talvez."' },
+          { label: 'Eu mesmo', sub: 'Orgulho', color: 'vermelho', icon: 'espadas', effects: { rel: { elenora: 3 }, res: { prestigio: 1 }, schedule: [{ id: 'cortejo_elenora', in: 3 }], xp: 8 }, reply: '"Coragem não falta ao senhor", ela diz. "Espero que prudência também não."' },
         ],
       },
       firmeza: {
         text: '"Aprenderá?" Ela cruza os braços. "Brandt Drakon tem novecentas lanças e uma memória longa. O senhor tem certeza de que quer esse inimigo por minha causa?"',
         choices: [
-          { label: 'Por você, sim', sub: 'Galanteio perigoso', color: 'roxo', icon: 'coracao', effects: { rel: { elenora: 14 }, loyalty: { drakon: -4 }, schedule: [{ id: 'pedido_elenora', in: 3 }], xp: 10 }, reply: 'Ela enrubesce e não consegue esconder o sorriso. Um lorde Drakon que passava pelo jardim também ouviu.' },
-          { label: 'Vou negociar com ele', sub: 'Recuar com elegância', color: 'azul', icon: 'aperto', effects: { rel: { elenora: 6 }, loyalty: { drakon: 3 }, schedule: [{ id: 'pedido_elenora', in: 3 }], xp: 10 }, reply: '"Sábio", ela diz. E parece aliviada de verdade.' },
+          { label: 'Por você, sim', sub: 'Galanteio perigoso', color: 'roxo', icon: 'coracao', effects: { rel: { elenora: 14 }, loyalty: { drakon: -4 }, schedule: [{ id: 'cortejo_elenora', in: 3 }], xp: 10 }, reply: 'Ela enrubesce e não consegue esconder o sorriso. Um lorde Drakon que passava pelo jardim também ouviu.' },
+          { label: 'Vou negociar com ele', sub: 'Recuar com elegância', color: 'azul', icon: 'aperto', effects: { rel: { elenora: 6 }, loyalty: { drakon: 3 }, schedule: [{ id: 'cortejo_elenora', in: 3 }], xp: 10 }, reply: '"Sábio", ela diz. E parece aliviada de verdade.' },
         ],
       },
     },
-    ignored: { text: 'Elenora passeou sozinha pelos jardins.', rel: { elenora: -8 } },
+    ignored: { text: 'Elenora passeou sozinha pelos jardins.', rel: { elenora: -8 }, schedule: [{ id: 'cortejo_elenora', in: 4 }] },
   },
   {
     id: 'pedido_elenora', speaker: 'elenora', topic: 'O momento da decisão', kind: 'casamento', lasts: 3, cond: (s) => !s.flags.noiva,
     nodes: {
       start: {
-        text: 'Majestade, meu pai exige uma resposta. Eu... também gostaria de saber o que sente.',
+        text: (s) => s.flags.elenoraAutonomia
+          ? 'Meu pai exige uma resposta. Pela primeira vez, vou dar a minha antes da dele: quero ficar. Agora diga se está me oferecendo uma vida ao seu lado ou apenas um lugar na mesa dos Valmont.'
+          : 'Majestade, meu pai exige uma resposta. Eu também. Depois da nossa conversa, não aceito que esconda sua vontade atrás de um tratado.',
         choices: [
           { label: 'Pedir sua mão', sub: 'Noivado com Elenora', color: 'azul', icon: 'coracao', goto: 'sim' },
           { label: 'Pedir mais tempo', sub: 'Ainda não decidi', color: 'dourado', icon: 'ampulheta', effects: { rel: { elenora: -6 } }, reply: '"O tempo, Majestade, é a única coisa que nenhum de nós tem."' },
@@ -176,7 +179,9 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
         ],
       },
       sim: {
-        text: 'Lágrimas nos olhos azuis. "Sim, Majestade. Sim." Ela respira fundo. "Mas meu pai vai querer anunciar do jeito dele: com um banquete em Costa Serena, sua presença e muitas promessas."',
+        text: (s) => s.flags.elenoraBeijo
+          ? '"Sim", ela diz, lembrando a cozinha. "Mas desta vez vou avisar meu pai depois de provar a sobremesa. Ele já estragou jantares suficientes." Ela beija sua mão e pergunta onde anunciarão.'
+          : '"Sim, se a escolha também for minha." Ela respira fundo. "Meu pai vai querer um banquete em Costa Serena, sua presença e promessas que eu não fiz. Onde anunciaremos?"',
         choices: [
           { label: 'Faremos do jeito dele', sub: 'Agradar os Valmont', color: 'azul', icon: 'aperto', effects: { flags: { noiva: 'elenora' }, rel: { elenora: 15, gaspard: 15 }, loyalty: { valmont: 14 }, res: { ouro: -100 }, xp: 20 }, reply: 'Gaspard Valmont organiza o banquete mais caro da década. Metade do reino fala disso.' },
           { label: 'Anunciaremos aqui, na capital', sub: 'O rei decide', color: 'vermelho', icon: 'coroa', effects: { flags: { noiva: 'elenora' }, rel: { elenora: 20, gaspard: -5 }, loyalty: { valmont: 6 }, res: { prestigio: 4 }, xp: 20 }, reply: 'Elenora sorri: "Eu esperava que o senhor dissesse isso."' },
@@ -241,33 +246,35 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
         text: 'Trouxe notícias do Vale Rubro. Batedores de Norhelm rondam o Passo Cinzento. Meu pai quer levar mil homens para a fronteira, mas precisa de ouro. Eu digo: dê-me cem cavaleiros e eu vigio o passo.',
         choices: [
           { label: 'Dar os cavaleiros a ela', sub: 'Confiança', color: 'vermelho', icon: 'espadas', effects: { rel: { rhoswen: 8 }, res: { exercito: -100 }, flags: { rhoswenPasso: true } }, goto: 'cavaleiros' },
-          { label: 'Financiar Lorde Brandt', sub: '300 de ouro', color: 'dourado', icon: 'moedas', req: { ouro: 300 }, effects: { res: { ouro: -300 }, loyalty: { drakon: 12 }, rel: { brandt: 10, rhoswen: 5 }, schedule: [{ id: 'pedido_rhoswen', in: 3 }], xp: 10 }, reply: '"Meu pai vai ficar feliz." Ela não parece tão feliz quanto ele ficará.' },
-          { label: 'Estudar o passo com ela', sub: 'Exige A Arte da Muralha', color: 'roxo', icon: 'livro', req: { knowledge: 'tatica' }, effects: { rel: { rhoswen: 20 }, flags: { passoFortificado: true }, schedule: [{ id: 'pedido_rhoswen', in: 3 }], xp: 20 }, reply: 'Vocês passam horas sobre o mapa. "Seu bisavô escreveu isso? Então o sangue dele ainda corre."' },
+          { label: 'Financiar Lorde Brandt', sub: '300 de ouro', color: 'dourado', icon: 'moedas', req: { ouro: 300 }, effects: { res: { ouro: -300 }, loyalty: { drakon: 12 }, rel: { brandt: 10, rhoswen: 5 }, schedule: [{ id: 'cortejo_rhoswen', in: 3 }], xp: 10 }, reply: '"Meu pai vai ficar feliz." Ela não parece tão feliz quanto ele ficará.' },
+          { label: 'Estudar o passo com ela', sub: 'Exige A Arte da Muralha', color: 'roxo', icon: 'livro', req: { knowledge: 'tatica' }, effects: { rel: { rhoswen: 20 }, flags: { passoFortificado: true }, schedule: [{ id: 'cortejo_rhoswen', in: 3 }], xp: 20 }, reply: 'Vocês passam horas sobre o mapa. "Seu bisavô escreveu isso? Então o sangue dele ainda corre."' },
           { label: 'A fronteira pode esperar', sub: 'Poupar recursos', color: 'azul', icon: 'escudo', effects: { rel: { rhoswen: -6 }, loyalty: { drakon: -3 } }, goto: 'espera' },
         ],
       },
       cavaleiros: {
         text: '"Não vou decepcioná-lo." Ela para na porta. "Uma coisa, Majestade: se eu cair lá, não deixe meu pai usar minha morte como desculpa para nada."',
         choices: [
-          { label: 'Você não vai cair', sub: 'Confiança', color: 'verde', icon: 'coracao', effects: { rel: { rhoswen: 10 }, schedule: [{ id: 'pedido_rhoswen', in: 3 }], xp: 12 }, reply: 'Ela sorri de verdade pela primeira vez. "Não pretendo."' },
-          { label: 'Eu prometo', sub: 'Juramento', color: 'azul', icon: 'escudo', effects: { rel: { rhoswen: 8 }, res: { prestigio: 2 }, schedule: [{ id: 'pedido_rhoswen', in: 3 }], xp: 12 }, reply: '"Palavra de rei." Ela bate o punho no peito, como um soldado.' },
+          { label: 'Você não vai cair', sub: 'Confiança', color: 'verde', icon: 'coracao', effects: { rel: { rhoswen: 10 }, schedule: [{ id: 'cortejo_rhoswen', in: 3 }], xp: 12 }, reply: 'Ela sorri de verdade pela primeira vez. "Não pretendo."' },
+          { label: 'Eu prometo', sub: 'Juramento', color: 'azul', icon: 'escudo', effects: { rel: { rhoswen: 8 }, res: { prestigio: 2 }, schedule: [{ id: 'cortejo_rhoswen', in: 3 }], xp: 12 }, reply: '"Palavra de rei." Ela bate o punho no peito, como um soldado.' },
         ],
       },
       espera: {
         text: '"Esperar?" Ela bate a lança no chão. "Norhelm não espera. Quando eles descerem, vão perguntar onde estava o rei."',
         choices: [
-          { label: 'Então vá com vinte homens', sub: 'Meio-termo', color: 'dourado', icon: 'aperto', effects: { rel: { rhoswen: 6 }, res: { exercito: -20 }, schedule: [{ id: 'pedido_rhoswen', in: 4 }], xp: 8 }, reply: '"Vinte. Serão os vinte melhores do reino."' },
-          { label: 'Não questione o rei', sub: 'Autoridade', color: 'vermelho', icon: 'coroa', effects: { rel: { rhoswen: -10, brandt: -6 }, res: { prestigio: 2 }, xp: 5 }, reply: 'Ela faz uma reverência rígida e sai. As botas ecoam no corredor inteiro.' },
+          { label: 'Então vá com vinte homens', sub: 'Meio-termo', color: 'dourado', icon: 'aperto', effects: { rel: { rhoswen: 6 }, res: { exercito: -20 }, schedule: [{ id: 'cortejo_rhoswen', in: 4 }], xp: 8 }, reply: '"Vinte. Serão os vinte melhores do reino."' },
+          { label: 'Não questione o rei', sub: 'Autoridade', color: 'vermelho', icon: 'coroa', effects: { rel: { rhoswen: -10, brandt: -6 }, res: { prestigio: 2 }, schedule: [{ id: 'cortejo_rhoswen', in: 4 }], xp: 5 }, reply: 'Ela faz uma reverência rígida e sai. No dia seguinte, duas espadas de madeira aparecem à sua porta.' },
         ],
       },
     },
-    ignored: { text: 'Rhoswen partiu para a fronteira sem sua resposta.', rel: { rhoswen: -8 }, loyalty: { drakon: -4 } },
+    ignored: { text: 'Rhoswen partiu para a fronteira sem sua resposta.', rel: { rhoswen: -8 }, loyalty: { drakon: -4 }, schedule: [{ id: 'cortejo_rhoswen', in: 4 }] },
   },
   {
     id: 'pedido_rhoswen', speaker: 'rhoswen', topic: 'Uma pergunta direta', kind: 'casamento', lasts: 3, cond: (s) => !s.flags.noiva,
     nodes: {
       start: {
-        text: 'Não sou boa com rodeios, Majestade. Vai se casar comigo ou devo dizer ao meu pai que procure outro rei para servir?',
+        text: (s) => s.flags.rhoswenIgual
+          ? '"Você não me deixou no chão do pátio. Não me tratou como prêmio." Rhoswen aperta a própria luva. "Então vou perguntar sem armadura: quer construir este reino comigo?"'
+          : '"Sou ruim com rodeios, Majestade. Você já sabe que posso vencer você num duelo. Agora quero saber se conseguiríamos ficar do mesmo lado quando a guerra acabar."',
         choices: [
           { label: 'Pedir sua mão', sub: 'Noivado com Rhoswen', color: 'vermelho', icon: 'coracao', goto: 'sim' },
           { label: 'Isso é uma ameaça?', sub: 'Testá-la', color: 'dourado', icon: 'olho', goto: 'ameaca' },
@@ -282,7 +289,9 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
         ],
       },
       sim: {
-        text: 'Ela ajoelha como um cavaleiro e depois ri do próprio gesto. "Força do hábito." Levanta-se. "Uma condição, Majestade: no casamento, eu entro de armadura."',
+        text: (s) => s.flags.rhoswenBeijo
+          ? '"Sim." Ela o puxa pelo colarinho e sorri perto do seu rosto. "Uma condição: no casamento entro de armadura. E se alguém protestar, você explica por que nunca conseguiu me desarmar de verdade."'
+          : 'Ela ajoelha como um cavaleiro e depois ri do próprio gesto. "Força do hábito." Levanta-se. "Uma condição, Majestade: no casamento, eu entro de armadura."',
         choices: [
           { label: 'De armadura, então', sub: 'Escândalo na corte', color: 'vermelho', icon: 'espadas', effects: { flags: { noiva: 'rhoswen' }, rel: { rhoswen: 22, brandt: 20, isabelle: -10 }, loyalty: { drakon: 14 }, res: { moral: 6 }, xp: 20 }, reply: 'Os soldados comemoram nos quartéis. Na corte, as damas desmaiam de indignação.' },
           { label: 'De vestido, por favor', sub: 'Tradição', color: 'azul', icon: 'coroa', effects: { flags: { noiva: 'rhoswen' }, rel: { rhoswen: 10, brandt: 18, isabelle: 5 }, loyalty: { drakon: 12 }, xp: 20 }, reply: '"Por você", ela diz, fazendo careta. "Só por você."' },
@@ -348,27 +357,29 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
         text: 'Meu irmão, o rei de Véridian, não quer apenas um casamento. Ele quer que Norhelm sangre. Se nos casarmos, nossa frota ataca o norte pelo mar. Mas já espalham na corte que sou herege.',
         choices: [
           { label: 'Quem espalha isso?', sub: 'Investigar', color: 'dourado', icon: 'olho', goto: 'quem' },
-          { label: 'Defendê-la publicamente', sub: 'Irrita os Seren', color: 'verde', icon: 'escudo', effects: { rel: { isolde: 18, aveline: -10 }, loyalty: { seren: -8 }, schedule: [{ id: 'pedido_isolde', in: 3 }], xp: 10 }, reply: '"Ninguém nunca me defendeu em terra estrangeira", ela diz, e parece ter menos armadura.' },
-          { label: 'Pedir que respeite a fé local', sub: 'Meio-termo', color: 'azul', icon: 'aperto', effects: { rel: { isolde: 5, aveline: 5 }, loyalty: { seren: 4 }, schedule: [{ id: 'pedido_isolde', in: 3 }], xp: 10 }, reply: 'Ela assente com um sorriso de diplomata. Nunca se sabe o que há por trás.' },
-          { label: 'Duvidar da frota', sub: 'Promessas são baratas', color: 'vermelho', icon: 'olho', effects: { rel: { isolde: -8 }, xp: 5 }, reply: '"Promessas são baratas", ela concorda. "Navios, não."' },
+          { label: 'Defendê-la publicamente', sub: 'Irrita os Seren', color: 'verde', icon: 'escudo', effects: { rel: { isolde: 18, aveline: -10 }, loyalty: { seren: -8 }, schedule: [{ id: 'cortejo_isolde', in: 3 }], xp: 10 }, reply: '"Ninguém nunca me defendeu em terra estrangeira", ela diz, e parece ter menos armadura.' },
+          { label: 'Pedir que respeite a fé local', sub: 'Meio-termo', color: 'azul', icon: 'aperto', effects: { rel: { isolde: 5, aveline: 5 }, loyalty: { seren: 4 }, schedule: [{ id: 'cortejo_isolde', in: 3 }], xp: 10 }, reply: 'Ela assente com um sorriso de diplomata. Nunca se sabe o que há por trás.' },
+          { label: 'Duvidar da frota', sub: 'Promessas são baratas', color: 'vermelho', icon: 'olho', effects: { rel: { isolde: -8 }, schedule: [{ id: 'cortejo_isolde', in: 4 }], xp: 5 }, reply: '"Promessas são baratas", ela concorda. "Navios, não. Apareça no baile e me diga isso sem uma mesa entre nós."' },
         ],
       },
       quem: {
         text: '"A Senhora Aveline, dizem. Mas eu não acredito em tudo que dizem." Ela sorri. "Nem o senhor deveria."',
         choices: [
-          { label: 'Descobrir a verdade', sub: 'Exige Sussurros da Corte', color: 'roxo', icon: 'livro', req: { knowledge: 'intriga' }, effects: { rel: { isolde: 15 }, flags: { difamadorOtho: true }, loyalty: { montclair: -5 }, schedule: [{ id: 'pedido_isolde', in: 3 }], xp: 20 }, reply: 'Seus informantes revelam: foi Lorde Otho Montclair quem inventou os boatos, não Aveline.' },
-          { label: 'Confrontar Aveline', sub: 'Irrita os Seren', color: 'vermelho', icon: 'espadas', effects: { rel: { isolde: 8, aveline: -12 }, loyalty: { seren: -10 }, schedule: [{ id: 'pedido_isolde', in: 3 }], xp: 8 }, reply: 'Aveline nega, ofendida. Talvez fosse inocente. Agora não importa.' },
-          { label: 'Deixar para lá', sub: 'Prudência', color: 'azul', icon: 'escudo', effects: { rel: { isolde: 2 }, schedule: [{ id: 'pedido_isolde', in: 3 }], xp: 6 }, reply: 'Ela observa você com atenção. "Prudente. Ou indiferente."' },
+          { label: 'Descobrir a verdade', sub: 'Exige Sussurros da Corte', color: 'roxo', icon: 'livro', req: { knowledge: 'intriga' }, effects: { rel: { isolde: 15 }, flags: { difamadorOtho: true }, loyalty: { montclair: -5 }, schedule: [{ id: 'cortejo_isolde', in: 3 }], xp: 20 }, reply: 'Seus informantes revelam: foi Lorde Otho Montclair quem inventou os boatos, não Aveline.' },
+          { label: 'Confrontar Aveline', sub: 'Irrita os Seren', color: 'vermelho', icon: 'espadas', effects: { rel: { isolde: 8, aveline: -12 }, loyalty: { seren: -10 }, schedule: [{ id: 'cortejo_isolde', in: 3 }], xp: 8 }, reply: 'Aveline nega, ofendida. Talvez fosse inocente. Agora não importa.' },
+          { label: 'Deixar para lá', sub: 'Prudência', color: 'azul', icon: 'escudo', effects: { rel: { isolde: 2 }, schedule: [{ id: 'cortejo_isolde', in: 3 }], xp: 6 }, reply: 'Ela observa você com atenção. "Prudente. Ou indiferente."' },
         ],
       },
     },
-    ignored: { text: 'Isolde escreveu ao irmão que o rei de Castelmar é indeciso.', rel: { isolde: -10 } },
+    ignored: { text: 'Isolde escreveu ao irmão que o rei de Castelmar é indeciso.', rel: { isolde: -10 }, schedule: [{ id: 'cortejo_isolde', in: 4 }] },
   },
   {
     id: 'pedido_isolde', speaker: 'isolde', topic: 'O jogo final', kind: 'casamento', lasts: 3, cond: (s) => !s.flags.noiva,
     nodes: {
       start: {
-        text: 'Meus navios partem em três dias, Majestade. Comigo a bordo, ou comigo no seu trono.',
+        text: (s) => s.flags.isoldeSemMascara
+          ? '"Meus navios partem em três dias." Isolde deixa o leque fechado. "Não vou falar por meu irmão. Falo por mim: ainda quero dançar com você quando ninguém estiver contando os passos. O que quer?"'
+          : '"Meus navios partem em três dias, Majestade. Comigo a bordo, ou comigo no seu trono. Desta vez, quero uma resposta sua, não do seu chanceler."',
         choices: [
           { label: 'Pedir sua mão', sub: 'Noivado com Isolde', color: 'verde', icon: 'coracao', goto: 'sim' },
           { label: 'Pedir tempo', sub: 'Arriscado', color: 'dourado', icon: 'ampulheta', effects: { rel: { isolde: -10 } }, reply: '"Tempo é a única coisa que eu não vendo", ela diz, e sai.' },
@@ -376,7 +387,9 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
         ],
       },
       sim: {
-        text: 'Ela abre o leque, escondendo um sorriso verdadeiro. "Xeque-mate. Para nós dois." Depois, mais baixo: "Meu irmão mandará o contrato de casamento. Leia cada linha. Eu leria."',
+        text: (s) => s.flags.isoldeBeijo
+          ? '"Xeque-mate", ela diz, mas fecha o leque e o põe de lado. "Meu irmão mandará o contrato. Leia cada linha. Depois me encontre sem máscara, como naquela noite."'
+          : 'Ela abre o leque, escondendo um sorriso verdadeiro. "Xeque-mate. Para nós dois." Depois, mais baixo: "Meu irmão mandará o contrato de casamento. Leia cada linha. Eu leria."',
         choices: [
           { label: 'Ler cada linha', sub: 'Desconfiança sábia', color: 'azul', icon: 'pergaminho', effects: { flags: { noiva: 'isolde', contratoLido: true }, rel: { isolde: 18 }, res: { influencia: 3 }, xp: 20 }, reply: 'Você encontra três cláusulas escondidas sobre o porto. Isolde parece orgulhosa de você.' },
           { label: 'Confio em você', sub: 'Aposta', color: 'verde', icon: 'coracao', effects: { flags: { noiva: 'isolde', portoVeridian: true }, rel: { isolde: 25 }, loyalty: { valmont: -6 }, xp: 20 }, reply: '"Não deveria", ela diz, tocando seu rosto. "Mas gosto que confie."' },
@@ -425,37 +438,39 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
       start: {
         text: 'Não vim por amor, rei de Castelmar. Vim porque meu pai tem cinco filhos homens e só uma filha para trocar por paz. Se você me recusar, meus irmãos marcharão. Se me aceitar, seus lordes me odiarão. Escolha o seu inimigo.',
         advice: {
-          isabelle: { text: 'Isabelle, sem esconder o desprezo: "A filha do assassino do seu pai. Nem um sorriso, meu filho."', choice: { label: 'Tratá-la com frieza', sub: 'A mãe exige', color: 'vermelho', icon: 'escudo', effects: { rel: { sigrid: -14, isabelle: 8 }, loyalty: { drakon: 3 }, flags: { met_sigrid: true }, schedule: [{ id: 'pedido_sigrid', in: 5 }], xp: 6 }, reply: 'Sigrid encara Isabelle por um longo instante. "Entendo agora de onde vem o frio deste castelo."' } },
+          isabelle: { text: 'Isabelle, sem esconder o desprezo: "A filha do assassino do seu pai. Nem um sorriso, meu filho."', choice: { label: 'Tratá-la com frieza', sub: 'A mãe exige', color: 'vermelho', icon: 'escudo', effects: { rel: { sigrid: -14, isabelle: 8 }, loyalty: { drakon: 3 }, flags: { met_sigrid: true }, schedule: [{ id: 'cortejo_sigrid', in: 5 }], xp: 6 }, reply: 'Sigrid encara Isabelle por um longo instante. "Entendo agora de onde vem o frio deste castelo."' } },
         },
         choices: [
           { label: 'Tratá-la como convidada', sub: 'Gentileza', color: 'azul', icon: 'aperto', effects: { rel: { sigrid: 8 }, flags: { met_sigrid: true } }, goto: 'gentil' },
           { label: 'Perguntar sobre os irmãos', sub: 'Informação', color: 'dourado', icon: 'olho', effects: { flags: { met_sigrid: true } }, goto: 'irmaos' },
-          { label: 'Deixar claro quem manda', sub: 'Autoridade', color: 'vermelho', icon: 'coroa', effects: { rel: { sigrid: -10 }, res: { prestigio: 2 }, loyalty: { drakon: 3 }, flags: { met_sigrid: true }, schedule: [{ id: 'pedido_sigrid', in: 4 }], xp: 8 }, reply: '"Claro, Majestade." Ela diz isso como quem guarda uma faca.' },
-          { label: 'Falar em nórdico antigo', sub: 'Exige Crônicas de Norhelm', color: 'roxo', icon: 'livro', req: { knowledge: 'norhelm' }, effects: { rel: { sigrid: 28 }, flags: { met_sigrid: true }, schedule: [{ id: 'pedido_sigrid', in: 4 }], xp: 20 }, reply: 'Os olhos dela se arregalam. Ela responde na mesma língua e, pela primeira vez, sorri.' },
+          { label: 'Deixar claro quem manda', sub: 'Autoridade', color: 'vermelho', icon: 'coroa', effects: { rel: { sigrid: -10 }, res: { prestigio: 2 }, loyalty: { drakon: 3 }, flags: { met_sigrid: true }, schedule: [{ id: 'cortejo_sigrid', in: 4 }], xp: 8 }, reply: '"Claro, Majestade." Ela diz isso como quem guarda uma faca.' },
+          { label: 'Falar em nórdico antigo', sub: 'Exige Crônicas de Norhelm', color: 'roxo', icon: 'livro', req: { knowledge: 'norhelm' }, effects: { rel: { sigrid: 28 }, flags: { met_sigrid: true }, schedule: [{ id: 'cortejo_sigrid', in: 4 }], xp: 20 }, reply: 'Os olhos dela se arregalam. Ela responde na mesma língua e, pela primeira vez, sorri.' },
         ],
       },
       gentil: {
         text: 'Ela parece desarmada pela cortesia. "Em Norhelm, reféns dormem em masmorras." Uma pausa. "Por que é gentil? Você deveria me odiar."',
         choices: [
-          { label: 'Você não escolheu a guerra', sub: 'Empatia', color: 'verde', icon: 'coracao', effects: { rel: { sigrid: 16 }, schedule: [{ id: 'pedido_sigrid', in: 4 }], xp: 12 }, reply: '"Nem você a coroa", ela responde. Algo muda no olhar dela.' },
-          { label: 'Porque preciso dessa paz', sub: 'Franqueza', color: 'azul', icon: 'aperto', effects: { rel: { sigrid: 10 }, res: { influencia: 2 }, schedule: [{ id: 'pedido_sigrid', in: 4 }], xp: 10 }, reply: '"Honesto." Ela quase sorri. "Meu pai também precisa. Não conte a ele que eu disse."' },
+          { label: 'Você não escolheu a guerra', sub: 'Empatia', color: 'verde', icon: 'coracao', effects: { rel: { sigrid: 16 }, schedule: [{ id: 'cortejo_sigrid', in: 4 }], xp: 12 }, reply: '"Nem você a coroa", ela responde. Algo muda no olhar dela.' },
+          { label: 'Porque preciso dessa paz', sub: 'Franqueza', color: 'azul', icon: 'aperto', effects: { rel: { sigrid: 10 }, res: { influencia: 2 }, schedule: [{ id: 'cortejo_sigrid', in: 4 }], xp: 10 }, reply: '"Honesto." Ela quase sorri. "Meu pai também precisa. Não conte a ele que eu disse."' },
         ],
       },
       irmaos: {
         text: '"Ragnar, o mais velho, quer a guerra. Os outros o seguem por medo." Ela hesita. "Se eu casar com você, Ragnar perde a desculpa. Mas não a vontade."',
         choices: [
-          { label: 'E o que você quer?', sub: 'Conhecê-la', color: 'verde', icon: 'coracao', effects: { rel: { sigrid: 14 }, flags: { infoNorhelm: true }, schedule: [{ id: 'pedido_sigrid', in: 4 }], xp: 12 }, reply: '"Que as crianças do norte comam neste inverno." Ela diz isso sem hesitar. É a primeira coisa que ela diz sem medir.' },
-          { label: 'Então Ragnar é o inimigo', sub: 'Estratégia', color: 'vermelho', icon: 'espadas', effects: { rel: { sigrid: 4 }, flags: { infoNorhelm: true }, schedule: [{ id: 'pedido_sigrid', in: 4 }], xp: 12 }, reply: '"Ele é meu irmão", ela diz, fria. "Mas sim."' },
+          { label: 'E o que você quer?', sub: 'Conhecê-la', color: 'verde', icon: 'coracao', effects: { rel: { sigrid: 14 }, flags: { infoNorhelm: true }, schedule: [{ id: 'cortejo_sigrid', in: 4 }], xp: 12 }, reply: '"Que as crianças do norte comam neste inverno." Ela diz isso sem hesitar. É a primeira coisa que ela diz sem medir.' },
+          { label: 'Então Ragnar é o inimigo', sub: 'Estratégia', color: 'vermelho', icon: 'espadas', effects: { rel: { sigrid: 4 }, flags: { infoNorhelm: true }, schedule: [{ id: 'cortejo_sigrid', in: 4 }], xp: 12 }, reply: '"Ele é meu irmão", ela diz, fria. "Mas sim."' },
         ],
       },
     },
-    ignored: { text: 'A princesa Sigrid passou o dia trancada nos aposentos de hóspedes.', rel: { sigrid: -10 }, flags: { met_sigrid: true }, schedule: [{ id: 'pedido_sigrid', in: 4 }] },
+    ignored: { text: 'A princesa Sigrid passou o dia trancada nos aposentos de hóspedes.', rel: { sigrid: -10 }, flags: { met_sigrid: true }, schedule: [{ id: 'cortejo_sigrid', in: 4 }] },
   },
   {
     id: 'pedido_sigrid', speaker: 'sigrid', topic: 'Paz ou guerra', kind: 'casamento', lasts: 3, cond: (s) => !s.flags.noiva,
     nodes: {
       start: {
-        text: 'Um corvo chegou de Hjalmgard. Meu pai quer uma resposta. Eu também, embora não admita isso a ninguém.',
+        text: (s) => s.flags.sigridEscolha
+          ? '"Meu pai quer uma resposta. Ragnar quer uma guerra." Sigrid pousa a carta queimada no parapeito. "Eu quero escolher meu próprio futuro. Você ainda aceita essa escolha, diante dos seus lordes?"'
+          : '"Um corvo chegou de Hjalmgard. Meu pai quer uma resposta. Eu também, embora não admita isso a ninguém. Não use a fome do meu povo para fingir que não ouviu a pergunta."',
         choices: [
           { label: 'Pedir sua mão', sub: 'Paz com Norhelm', color: 'roxo', icon: 'coracao', goto: 'sim' },
           { label: 'Pedir tempo', sub: 'Norhelm não espera', color: 'dourado', icon: 'ampulheta', effects: { rel: { sigrid: -8, haakon: -10 } }, reply: '"O inverno não espera, rei de Castelmar."' },
@@ -463,13 +478,141 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
         ],
       },
       sim: {
-        text: '"Então o inverno esperará." Ela toca sua mão com dedos frios. "Seus lordes vão cuspir no meu nome. Os Drakon vão afiar espadas. Você vai me defender quando isso acontecer?"',
+        text: (s) => s.flags.sigridBeijo
+          ? '"Então o inverno esperará." Ela toca sua mão, lembrando o observatório. "Lá em cima estávamos sozinhos. Aqui estão todos os seus lordes. Você ainda vai ficar ao meu lado quando eles pronunciarem meu nome como insulto?"'
+          : '"Então o inverno esperará." Ela toca sua mão com dedos frios. "Seus lordes vão cuspir no meu nome. Os Drakon vão afiar espadas. Você vai me defender quando isso acontecer?"',
         choices: [
           { label: 'Sempre', sub: 'Promessa', color: 'azul', icon: 'escudo', effects: { flags: { noiva: 'sigrid' }, rel: { sigrid: 22, haakon: 20 }, loyalty: { drakon: -10 }, xp: 20 }, reply: 'Ela não sorri, mas aperta sua mão com força. Em Norhelm, isso vale mais que um sorriso.' },
           { label: 'Você vai se defender sozinha', sub: 'Respeito pela força dela', color: 'roxo', icon: 'espadas', effects: { flags: { noiva: 'sigrid' }, rel: { sigrid: 16, haakon: 20 }, loyalty: { drakon: -8 }, xp: 20 }, reply: 'Pela primeira vez ela ri. "Finalmente, um sulista que entende."' },
         ],
       },
     },
+  },
+
+  // ================= CORTEJOS PRIVADOS =================
+  {
+    id: 'cortejo_elenora', speaker: 'elenora', topic: 'Um jantar sem etiqueta', kind: 'casamento', lasts: 3,
+    cond: (s) => !s.flags.noiva,
+    nodes: {
+      start: {
+        text: (s) => `Elenora o espera na cozinha, sem joias e com farinha na manga. "Roubei a última torta de pera. Meu pai compraria a cozinha inteira para impedir que alguém me visse aqui. ${s.flags.monopolioSal ? 'Depois do monopólio do sal, talvez ele compre mesmo.' : 'Esta é a única sala onde ninguém me oferece em troca de um porto.'} Quer uma fatia ou uma negociação?"`,
+        choices: [
+          { label: 'A torta. E a verdade.', sub: 'Ouvir Elenora', color: 'verde', icon: 'coracao', goto: 'verdade', tension: -8 },
+          { label: 'Depende do dote da torta', sub: 'Provocação', color: 'roxo', icon: 'mascara', goto: 'provocacao', tension: 4 },
+          { label: 'Seu pai não manda aqui', sub: 'Promessa arriscada', color: 'vermelho', icon: 'coroa', effects: { rel: { elenora: 4, gaspard: -5 }, loyalty: { valmont: -3 }, flags: { elenoraAutonomia: true }, schedule: [{ id: 'pedido_elenora', in: 2 }] }, reply: '"Nem você", ela responde, erguendo uma sobrancelha. Depois lhe entrega a fatia maior. É a primeira discussão entre vocês que parece uma parceria.' },
+        ],
+      },
+      provocacao: {
+        text: '"Duas peras e a dívida de um cozinheiro." Ela corta a torta com precisão militar. "Meu pai calculou meu valor em navios. Qual seria a sua conta, Majestade?" O sorriso desaparece antes que você responda.',
+        choices: [
+          { label: 'Não há preço para você', sub: 'Falar como pessoa, não rei', color: 'verde', icon: 'coracao', effects: { rel: { elenora: 18 }, flags: { elenoraAutonomia: true }, schedule: [{ id: 'pedido_elenora', in: 2 }], xp: 12 }, reply: 'Ela pousa a faca. "Era a única resposta que eu queria ouvir." A torta esfria enquanto a conversa, enfim, começa.' },
+          { label: 'Metade do reino. Sem troco.', sub: 'Humor ácido', color: 'roxo', icon: 'mascara', effects: { rel: { elenora: 9 }, res: { influencia: 2 }, schedule: [{ id: 'pedido_elenora', in: 2 }], xp: 10 }, reply: 'Elenora ri alto. "Guarde o troco para subornar meu pai. Ele se ofende quando é de graça."' },
+          { label: 'Uma frota seria útil', sub: 'Negócio acima do afeto', color: 'dourado', icon: 'moedas', effects: { rel: { elenora: -10, gaspard: 8 }, loyalty: { valmont: 5 }, schedule: [{ id: 'pedido_elenora', in: 3 }] }, reply: 'Ela lhe entrega a torta inteira. "Leve. Vejo que gosta de possuir coisas."' },
+        ],
+      },
+      verdade: {
+        text: '"A verdade é feia. Se eu disser sim ao casamento, meu pai dirá que me convenceu. Se eu disser não, dirá que o desobedeci. Tenho vinte e três anos e ainda sou uma cláusula no contrato dele." Ela encosta no balcão, perto o bastante para falar sem título.',
+        choices: [
+          { label: 'Você decide por si', sub: 'Dar espaço e escolha', color: 'azul', icon: 'aperto', effects: { rel: { elenora: 20 }, flags: { elenoraAutonomia: true }, schedule: [{ id: 'pedido_elenora', in: 2 }], xp: 15 }, reply: '"Então talvez eu decida ficar." Ela encosta a testa na sua por um instante, sem pressa. O cozinheiro finge não ver.' },
+          { label: 'Posso beijar você?', sub: 'Intimidade consentida', color: 'verde', icon: 'coracao', effects: { rel: { elenora: 22 }, flags: { elenoraBeijo: true, elenoraAutonomia: true }, schedule: [{ id: 'pedido_elenora', in: 2 }], xp: 15 }, reply: '"Pode." O beijo tem gosto de pera e da liberdade rara de uma escolha sua. Quando se afastam, ela ri: "Agora meu pai pode negociar com a torta."' },
+          { label: 'A coroa precisa da frota', sub: 'Sinceridade cruel', color: 'vermelho', icon: 'moedas', effects: { rel: { elenora: -12 }, loyalty: { valmont: 6 }, schedule: [{ id: 'pedido_elenora', in: 3 }] }, reply: '"Ao menos não mentiu." Ela volta a chamar você de Majestade. A distância cabe inteira nessa palavra.' },
+        ],
+      },
+    },
+    ignored: { text: 'Elenora comeu a torta sozinha e concluiu que o rei tem mais reuniões do que apetite.', rel: { elenora: -6 }, schedule: [{ id: 'pedido_elenora', in: 3 }] },
+  },
+  {
+    id: 'cortejo_rhoswen', speaker: 'rhoswen', topic: 'Treino ao amanhecer', kind: 'casamento', lasts: 3,
+    cond: (s) => !s.flags.noiva,
+    nodes: {
+      start: {
+        text: (s) => `Rhoswen o espera no pátio antes do nascer do sol. "Trouxe duas espadas de madeira. Uma para você e outra para o seu ego. ${s.flags.rhoswenPasso ? 'Depois do Passo Cinzento, confio na sua palavra. Agora quero saber se confio nas suas mãos.' : 'Não quero saber quantos homens seu exército tem. Quero saber o que faz quando alguém o derruba.'}"`,
+        choices: [
+          { label: 'Aceitar o duelo', sub: 'Entrar no jogo dela', color: 'vermelho', icon: 'espadas', goto: 'duelo', tension: 10 },
+          { label: 'Confessar que estou exausto', sub: 'Baixar a guarda', color: 'verde', icon: 'coracao', goto: 'exausto', tension: -10 },
+          { label: 'Mandar chamar um mestre', sub: 'Esconder-se no protocolo', color: 'azul', icon: 'escudo', effects: { rel: { rhoswen: -8 }, schedule: [{ id: 'pedido_rhoswen', in: 3 }] }, reply: '"Claro. Não seria a primeira vez que um homem manda outro lutar por ele." Ela escolhe o mestre. Ele perde em três golpes.' },
+        ],
+      },
+      duelo: {
+        text: 'Ela o desarma em quatro movimentos. No quinto, tropeça de propósito. "Pode declarar vitória", diz, no chão. "A corte adora ver o rei triunfar sobre mulheres inconvenientes." A provocação esconde uma pergunta séria.',
+        choices: [
+          { label: 'Ajudá-la a levantar', sub: 'Recusar a vitória encenada', color: 'azul', icon: 'aperto', effects: { rel: { rhoswen: 19 }, flags: { rhoswenIgual: true }, schedule: [{ id: 'pedido_rhoswen', in: 2 }], xp: 14 }, reply: '"Ótimo. Odeio teatro." Ela segura sua mão um segundo a mais e puxa você para perto. "Talvez suporte um rei honesto."' },
+          { label: 'Beijá-la após pedir licença', sub: 'Coragem fora do combate', color: 'verde', icon: 'coracao', effects: { rel: { rhoswen: 22 }, flags: { rhoswenBeijo: true, rhoswenIgual: true }, schedule: [{ id: 'pedido_rhoswen', in: 2 }], xp: 15 }, reply: 'Ela diz "sim" antes de você terminar a pergunta. O beijo é impetuoso; ao se afastar, ela devolve sua espada. "A revanche, depois."' },
+          { label: 'Anunciar que venci', sub: 'A corte vai gostar', color: 'dourado', icon: 'coroa', effects: { res: { prestigio: 3 }, rel: { rhoswen: -14 }, schedule: [{ id: 'pedido_rhoswen', in: 3 }] }, reply: '"Então foi isso que aprendeu." Ela se levanta sem sua ajuda. O pátio inteiro ouve o silêncio.' },
+        ],
+      },
+      exausto: {
+        text: '"Também estou." Rhoswen baixa as duas espadas. "Toda noite conto quantos soldados posso perder antes de meu pai me chamar de fraca. Às vezes penso que, se eu parasse de lutar, ninguém saberia quem sou." A voz dela não tem armadura.',
+        choices: [
+          { label: 'Eu saberia', sub: 'Enxergar além da guerreira', color: 'verde', icon: 'coracao', effects: { rel: { rhoswen: 20 }, flags: { rhoswenIgual: true }, schedule: [{ id: 'pedido_rhoswen', in: 2 }], xp: 15 }, reply: 'Ela apoia a cabeça no seu ombro. "Não conte a ninguém que fiz isso." Pela primeira vez, ficar parado parece vitória.' },
+          { label: 'Treinamos outro dia', sub: 'Respeitar o limite dela', color: 'azul', icon: 'ampulheta', effects: { rel: { rhoswen: 11 }, res: { moral: 2 }, schedule: [{ id: 'pedido_rhoswen', in: 2 }] }, reply: '"Amanhã." Ela sorri. "E da próxima vez traga o ego menor. Dá trabalho derrubar os dois."' },
+          { label: 'Seu pai não pode vê-la assim', sub: 'Repetir a cobrança', color: 'vermelho', icon: 'escudo', effects: { rel: { rhoswen: -16 }, schedule: [{ id: 'pedido_rhoswen', in: 3 }] }, reply: 'Ela recolhe as espadas. "Então você é mais parecido com ele do que eu pensava."' },
+        ],
+      },
+    },
+    ignored: { text: 'Rhoswen treinou sozinha. Os soldados aprenderam que o rei não apareceu.', rel: { rhoswen: -6 }, schedule: [{ id: 'pedido_rhoswen', in: 3 }] },
+  },
+  {
+    id: 'cortejo_isolde', speaker: 'isolde', topic: 'Baile de máscaras', kind: 'casamento', lasts: 3,
+    cond: (s) => !s.flags.noiva,
+    nodes: {
+      start: {
+        text: (s) => `No baile, Isolde usa uma máscara de raposa e rouba a sua taça. "Vamos brincar: por uma dança, você não é rei e eu não sou tratado." ${s.flags.difamadorOtho ? '"E Otho ainda não sabe que descobrimos a língua venenosa dele."' : '"Se alguém descobrir quem somos, diga que fui contratada para melhorar sua conversa."'}`,
+        choices: [
+          { label: 'Aceitar a dança', sub: 'Jogar sem o trono', color: 'roxo', icon: 'mascara', goto: 'danca', tension: 6 },
+          { label: 'Perguntar por que ela mente', sub: 'Ir além do charme', color: 'azul', icon: 'olho', goto: 'verdade', tension: 8 },
+          { label: 'Recusar a brincadeira', sub: 'Só negócios', color: 'dourado', icon: 'pergaminho', effects: { rel: { isolde: -9 }, res: { influencia: 2 }, schedule: [{ id: 'pedido_isolde', in: 3 }] }, reply: '"Como quiser. Sua Majestade pode ficar com a taça." Ela a devolve vazia. "Sua Majestade tinha vinho melhor antes."' },
+        ],
+      },
+      danca: {
+        text: '"Um segredo", ela sussurra ao seu ouvido enquanto giram. "Tenho pavor de voltar para casa tendo falhado. Meu irmão chama isso de fraqueza. Eu chamo de não querer ser descartada." A mão dela permanece firme na sua, embora a voz tenha vacilado.',
+        choices: [
+          { label: 'Não precisa vencer comigo', sub: 'Desarmar a competição', color: 'verde', icon: 'coracao', effects: { rel: { isolde: 20 }, flags: { isoldeSemMascara: true }, schedule: [{ id: 'pedido_isolde', in: 2 }], xp: 15 }, reply: 'Ela tira a máscara. "Isso é perigosamente gentil." Dançam mais uma música sem falar de frotas.' },
+          { label: 'Pedir um beijo', sub: 'Os dois escolhem o risco', color: 'roxo', icon: 'coracao', effects: { rel: { isolde: 22 }, flags: { isoldeBeijo: true, isoldeSemMascara: true }, schedule: [{ id: 'pedido_isolde', in: 2 }], xp: 15 }, reply: '"Só se parar de calcular." Ela o beija atrás da coluna, longe da corte. Quando voltam, a máscara está torta e o sorriso, verdadeiro.' },
+          { label: 'Usar o segredo contra o irmão', sub: 'Vantagem diplomática', color: 'vermelho', icon: 'mascara', effects: { rel: { isolde: -17 }, res: { influencia: 4 }, schedule: [{ id: 'pedido_isolde', in: 3 }] }, reply: 'Ela solta sua mão. "Pronto. O rei voltou." A raposa nunca mais tira a máscara naquela noite.' },
+        ],
+      },
+      verdade: {
+        text: '"Porque a verdade custa caro." Isolde prende o leque ao cinto. "Eu não temo os seus lordes. Temo me tornar a assinatura do meu irmão num contrato que eu não escrevi. Se ficarmos juntos, quem terá a última palavra: ele, você ou eu?"',
+        choices: [
+          { label: 'Você terá voz igual', sub: 'Parceria real', color: 'azul', icon: 'aperto', effects: { rel: { isolde: 19 }, flags: { isoldeSemMascara: true }, schedule: [{ id: 'pedido_isolde', in: 2 }], xp: 15 }, reply: '"Boa resposta. Vou cobrá-la." Ela toma seu braço e o leva de volta à dança, agora sem máscara.' },
+          { label: 'Nós dois, e sem plateia', sub: 'Intimidade e política', color: 'verde', icon: 'coracao', effects: { rel: { isolde: 16 }, flags: { isoldeSemMascara: true }, schedule: [{ id: 'pedido_isolde', in: 2 }] }, reply: '"Melhor ainda." Ela encosta a testa na sua. A corte pensa que continuam negociando; pela primeira vez, não estão.' },
+          { label: 'A coroa sempre decide', sub: 'Poder acima da confiança', color: 'vermelho', icon: 'coroa', effects: { rel: { isolde: -12 }, res: { prestigio: 2 }, schedule: [{ id: 'pedido_isolde', in: 3 }] }, reply: '"Então meu irmão e você têm a mesma resposta. Que decepção."' },
+        ],
+      },
+    },
+    ignored: { text: 'Isolde dançou com o embaixador de Véridian e chamou o rei de audiência vazia.', rel: { isolde: -7 }, schedule: [{ id: 'pedido_isolde', in: 3 }] },
+  },
+  {
+    id: 'cortejo_sigrid', speaker: 'sigrid', topic: 'Neve no observatório', kind: 'casamento', lasts: 3,
+    cond: (s) => !s.flags.noiva,
+    nodes: {
+      start: {
+        text: (s) => `Sigrid o encontra no observatório com um mapa aberto e uma carta molhada de neve. "Meu irmão Ragnar escreveu. Diz que Castelmar me amoleceu." ${s.flags.infoNorhelm ? 'Você sabe que a colheita do norte falhou; ela sabe que você sabe.' : 'Ela fecha a carta antes que você leia.'} "O que é pior: ele ter razão ou eu desejar que tenha?"`,
+        choices: [
+          { label: 'O que você deseja?', sub: 'Perguntar sem negociar', color: 'verde', icon: 'coracao', goto: 'desejo', tension: -8 },
+          { label: 'Mostrar o mapa da fome', sub: 'Paz exige verdade', color: 'azul', icon: 'livro', goto: 'mapa', tension: 8 },
+          { label: 'Que Ragnar tema sua força', sub: 'Aço contra aço', color: 'vermelho', icon: 'espadas', effects: { rel: { sigrid: 2 }, loyalty: { drakon: 3 }, schedule: [{ id: 'pedido_sigrid', in: 3 }] }, reply: '"Ele já teme." Ela dobra a carta. "É por isso que escreve ameaças em vez de vir pessoalmente."' },
+        ],
+      },
+      desejo: {
+        text: '"Quero que meu povo sobreviva. E quero um lugar em que não precise pedir desculpas por ser filha do inimigo." Ela encara a neve que derrete no parapeito. "Também quero descobrir como é ser desejada por mim, não como preço da paz."',
+        choices: [
+          { label: 'Escolho você, se me escolher', sub: 'Sem reféns nem promessas falsas', color: 'verde', icon: 'coracao', effects: { rel: { sigrid: 22 }, flags: { sigridEscolha: true }, schedule: [{ id: 'pedido_sigrid', in: 2 }], xp: 15 }, reply: '"Então fico esta noite." Ela se aproxima e segura sua mão sob a mesa, onde ninguém verá. O silêncio entre vocês deixa de ser hostil.' },
+          { label: 'Posso beijar você?', sub: 'Primeira escolha sem tratados', color: 'roxo', icon: 'coracao', effects: { rel: { sigrid: 24 }, flags: { sigridBeijo: true, sigridEscolha: true }, schedule: [{ id: 'pedido_sigrid', in: 2 }], xp: 15 }, reply: '"Pode." Ela beija você devagar, como quem confere se há gelo sob os pés. Depois sorri, breve e sem testemunhas.' },
+          { label: 'A paz vem primeiro', sub: 'Dever acima dela', color: 'dourado', icon: 'aperto', effects: { rel: { sigrid: -8 }, flags: { infoNorhelm: true }, schedule: [{ id: 'pedido_sigrid', in: 3 }] }, reply: '"Sempre vem." Ela parece ter ouvido essa frase a vida inteira.' },
+        ],
+      },
+      mapa: {
+        text: '"As aldeias de Norhelm não têm grão para o inverno." Sigrid aponta os lugares, um por um. "Meu pai chama isso de estratégia. Ragnar chama de motivo para invadir. Eu chamo pelos nomes das pessoas que vão morrer."',
+        choices: [
+          { label: 'Enviar grão em segredo', sub: '−150 ouro, evita a fome', color: 'verde', icon: 'moedas', req: { ouro: 150 }, effects: { res: { ouro: -150, povo: 3 }, rel: { sigrid: 18 }, flags: { sigridGrao: true, infoNorhelm: true }, schedule: [{ id: 'pedido_sigrid', in: 2 }], xp: 16 }, reply: 'Ela demora a falar. "Ragnar vai odiar que tenha feito isso." Um sorriso pequeno. "Então foi uma boa ideia."' },
+          { label: 'Abrir uma negociação', sub: 'Influência +2', color: 'azul', icon: 'aperto', effects: { res: { influencia: 2 }, rel: { sigrid: 10 }, flags: { infoNorhelm: true }, schedule: [{ id: 'pedido_sigrid', in: 2 }] }, reply: '"Vou escrever aos chefes das aldeias, não ao meu pai." Ela confia a você o nome de cada um.' },
+          { label: 'Deixar Ragnar vir buscar', sub: 'Ameaça pública', color: 'vermelho', icon: 'espadas', effects: { res: { prestigio: 3 }, rel: { sigrid: -15 }, loyalty: { drakon: 5 }, schedule: [{ id: 'pedido_sigrid', in: 3 }] }, reply: '"É uma resposta fácil daqui, atrás da muralha." Ela fecha o mapa. "Para eles não será."' },
+        ],
+      },
+    },
+    ignored: { text: 'Sigrid queimou a carta de Ragnar sozinha e não disse a ninguém o que havia nela.', rel: { sigrid: -6 }, schedule: [{ id: 'pedido_sigrid', in: 3 }] },
   },
 
   // ================= PRESSÕES DA CORTE =================
@@ -592,7 +735,7 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
     },
   },
   {
-    id: 'casamento', speaker: 'aldric', topic: 'O casamento real', kind: 'casamento', day: 20, lasts: 1,
+    id: 'casamento', speaker: 'aldric', topic: 'O casamento real', kind: 'casamento', day: 20, lasts: 1, cause: 'noiva',
     nodes: {
       start: {
         text: (s) => (s.flags.noiva ? `Chegou o dia, Majestade. A catedral dos carvalhos está pronta, e ${char(String(s.flags.noiva)).name} o aguarda no altar. Todo o reino assiste.` : 'Chegou o último dia, Majestade, e não há noiva. Os lordes estão reunidos. Escolha agora... ou o conselho escolherá.'),

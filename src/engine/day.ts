@@ -1,4 +1,4 @@
-import type { Audience, GameEvent, GameState, LogEntry, Resources } from '../types';
+import type { Audience, DecisionOrigin, GameEvent, GameState, LogEntry, Resources } from '../types';
 import { EVENTS, EVENT_MAP } from '../data/events';
 import { HOUSE_IDS, HOUSES, PROVINCES, GOODS } from '../data/realm';
 import { char } from '../data/characters';
@@ -23,8 +23,8 @@ function eligible(s: GameState, ev: GameEvent): boolean {
   return ev.cond ? ev.cond(s) : true;
 }
 
-function addAudience(s: GameState, ev: GameEvent, arrive = DAY_START) {
-  s.audiences.push({ uid: s.nextUid++, eventId: ev.id, expires: s.day + (ev.lasts ?? 1) - 1, done: false, arrive });
+function addAudience(s: GameState, ev: GameEvent, arrive = DAY_START, origin?: DecisionOrigin) {
+  s.audiences.push({ uid: s.nextUid++, eventId: ev.id, expires: s.day + (ev.lasts ?? 1) - 1, done: false, arrive, origin: origin ?? (ev.cause ? s.flagOrigins?.[ev.cause] : undefined) });
   s.seen[ev.id] = s.day;
 }
 
@@ -57,18 +57,23 @@ export function startDay(s: GameState) {
   s.scheduled = s.scheduled.filter((x) => x.day > s.day);
   for (const d of due) {
     const ev = EVENT_MAP[d.id];
-    if (ev && (!ev.cond || ev.cond(s)) && !s.audiences.some((a) => a.eventId === ev.id)) addAudience(s, ev);
+    if (ev && (!ev.cond || ev.cond(s)) && !s.audiences.some((a) => a.eventId === ev.id)) addAudience(s, ev, DAY_START, d.origin);
   }
   // roteiro do dia
   for (const ev of EVENTS) if (ev.day === s.day && eligible(s, ev)) addAudience(s, ev);
 
   deliverLetters(s);
 
-  // demandas aleatórias até preencher a agenda
-  const target = s.day === 1 ? 4 : s.day <= 3 ? 6 : 7;
+  // Desdobramentos vêm primeiro, para decisões antigas não se perderem no sorteio.
+  const followups = EVENTS.filter((e) => e.followup && eligible(s, e))
+    .sort((a, b) => (s.flagOrigins?.[a.cause ?? '']?.day ?? 0) - (s.flagOrigins?.[b.cause ?? '']?.day ?? 0));
+  for (const ev of followups.slice(0, 2)) addAudience(s, ev, DAY_START);
+
+  // Depois do primeiro dia, a corte traz mais pedidos do que cabem em doze horas.
+  const target = s.day === 1 ? 8 : s.day <= 3 ? 13 : 15;
   let guard = 0;
-  while (s.audiences.length < target && guard++ < 20) {
-    const pool = EVENTS.filter((e) => e.weight && e.kind !== 'noite' && eligible(s, e));
+  while (s.audiences.length < target && guard++ < 40) {
+    const pool = EVENTS.filter((e) => e.weight && !e.followup && e.kind !== 'noite' && eligible(s, e));
     if (!pool.length) break;
     const total = pool.reduce((a, e) => a + e.weight!, 0);
     let r = rand(s) * total;
@@ -130,14 +135,17 @@ export function endDay(s: GameState): LogEntry[] {
       continue;
     }
     a.done = true;
+    const origin = { day: s.day, event: ev.topic, decision: 'Audiência ignorada' };
+    s.flags[`ignored_${ev.id}`] = true;
+    (s.flagOrigins ??= {})[`ignored_${ev.id}`] = origin;
     if (ev.ignored) {
-      applyEffect(s, ev.ignored, { ignoredMode: true });
+      applyEffect(s, ev.ignored, { ignoredMode: true, origin });
       entries.push({ icon: 'selo', title: `Ignorado: ${ev.topic}`, text: ev.ignored.text, tone: 'ruim' });
     } else {
       // toda demanda ignorada tem algum custo, mesmo que pequeno
       const who = char(ev.speaker);
-      applyEffect(s, { rel: { [ev.speaker]: -4 } }, { ignoredMode: true });
-      entries.push({ icon: 'selo', title: `Ignorado: ${ev.topic}`, text: `${who.name} esperou em vão pela sua atenção.`, delta: '−4', tone: 'ruim' });
+      applyEffect(s, { rel: { [ev.speaker]: -6 } }, { ignoredMode: true, origin });
+      entries.push({ icon: 'selo', title: `Ignorado: ${ev.topic}`, text: `${who.name} esperou em vão pela sua atenção.`, delta: '−6', tone: 'ruim' });
     }
   }
 

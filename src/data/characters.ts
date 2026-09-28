@@ -4,7 +4,7 @@ const SKIN = { claro: '#f3c9a8', rosado: '#eab89a', medio: '#d49a72', moreno: '#
 
 export const CHARACTERS: Record<string, Character> = {
   rei: {
-    id: 'rei', name: 'Rei', title: 'Soberano de Castelmar', realm: 'coroa',
+    id: 'rei', name: 'Rei', title: 'Soberano de Castelmar', realm: 'coroa', ageYears: 21,
     look: { female: false, skin: SKIN.claro, hair: '#6b4226', hairStyle: 'desgrenhado', eyes: '#3d6fb6', outfit: '#23346e', trim: '#e2b64c', head: 'coroa', fur: true, age: 'jovem' },
   },
   isabelle: {
@@ -60,22 +60,22 @@ export const CHARACTERS: Record<string, Character> = {
   },
   // --- Pretendentes ---
   elenora: {
-    id: 'elenora', name: 'Lady Elenora Valmont', title: 'Filha de Lorde Gaspard', realm: 'valmont',
+    id: 'elenora', name: 'Lady Elenora Valmont', title: 'Filha de Lorde Gaspard', realm: 'valmont', ageYears: 23,
     look: { female: true, skin: SKIN.claro, hair: '#e8c46a', hairStyle: 'ondulado', eyes: '#3d7fd6', outfit: '#1f3f9a', trim: '#e8c45a', head: 'tiara', age: 'jovem' },
     traits: ['Alianças', 'Comércio', 'Influência'],
   },
   rhoswen: {
-    id: 'rhoswen', name: 'Lady Rhoswen Drakon', title: 'Filha de Lorde Brandt', realm: 'drakon',
+    id: 'rhoswen', name: 'Lady Rhoswen Drakon', title: 'Filha de Lorde Brandt', realm: 'drakon', ageYears: 25,
     look: { female: true, skin: SKIN.medio, hair: '#5a1a14', hairStyle: 'tranca', eyes: '#8a5a2a', outfit: '#8a1c24', trim: '#c8c8d0', armor: true, age: 'jovem', accessory: 'lanca' },
     traits: ['Exército', 'Honra', 'Fronteira'],
   },
   isolde: {
-    id: 'isolde', name: 'Lady Isolde Véridian', title: 'Princesa de Véridian', realm: 'veridian',
+    id: 'isolde', name: 'Lady Isolde Véridian', title: 'Princesa de Véridian', realm: 'veridian', ageYears: 24,
     look: { female: true, skin: SKIN.claro, hair: '#1c1418', hairStyle: 'ondulado', eyes: '#3a9a5a', outfit: '#1c5a3a', trim: '#e2c05a', head: 'diadema', age: 'jovem', accessory: 'leque' },
     traits: ['Diplomacia', 'Riqueza', 'Ambição'],
   },
   sigrid: {
-    id: 'sigrid', name: 'Princesa Sigrid', title: 'Filha do Rei de Norhelm', realm: 'norhelm',
+    id: 'sigrid', name: 'Princesa Sigrid', title: 'Filha do Rei de Norhelm', realm: 'norhelm', ageYears: 26,
     look: { female: true, skin: SKIN.claro, hair: '#f0e6c8', hairStyle: 'tranca', eyes: '#8ac4e6', outfit: '#3a4a6a', trim: '#c8d8e8', fur: true, head: 'diadema', age: 'jovem' },
     traits: ['Paz', 'Norte', 'Mistério'],
   },
@@ -171,6 +171,7 @@ export const ASSET_FILES: Record<string, string> = {
   otho: '11_otho', elenora: '12_elenora', rhoswen: '13_rhoswen', isolde: '14_isolde', sigrid: '15_sigrid',
   haakon: '16_haakon', tobias: '17_tobias', marta: '18_marta', guarda: '19_guarda', campones: '20_campones',
   camponesa: '21_camponesa', mensageiro: '22_mensageiro', cavaleiro: '23_cavaleiro', dama: '24_dama', irma: '25_irma',
+  clara: '26_clara', bianca: '27_bianca', pimenta: '28_pimenta', cedric: '29_cedric',
 };
 
 export const SUITORS = ['elenora', 'rhoswen', 'isolde', 'sigrid'] as const;
