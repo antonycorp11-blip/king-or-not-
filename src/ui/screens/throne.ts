@@ -91,7 +91,7 @@ export function render(app: App): string {
 
   // fila: só o rosto de quem espera, sem nome nem assunto
   const queue = `<div class="queue">
-    <div class="queue-title">${iconImg('ampulheta')} Aguardando audiência</div>
+    <div class="queue-title">${iconImg('ampulheta')} Aguardando audiência <a class="hall-preview-link" href="?cenario=trono" target="_blank" rel="noopener">Ver cenário ↗</a></div>
     <div class="queue-cards">
       ${vis.length ? '' : '<p class="empty">Ninguém espera no momento.</p>'}
       ${vis

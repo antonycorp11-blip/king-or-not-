@@ -1,5 +1,6 @@
 import { CELL_H, CELL_W, FOOT, frameCount, getFrame, hasSheet, type Anim } from '../render/actors';
 import { SH, SW, cityscape, library, throneRoom, type Room } from '../render/scenes';
+import { createThroneHall, drawHallLights, HALL_H, HALL_W, loadHallAtlas, type ThroneHall } from '../render/throneHall';
 
 // Camadas: céu (CSS) → cidade (dia/noite) → sala (janelas vazadas) → personagens animados → chamas → luz.
 export type RoomKind = 'trono' | 'biblioteca';
@@ -43,6 +44,8 @@ export class SceneView {
   private lastDraw = 0;
   private bubbles = new Map<string, { el: HTMLElement; until: number }>();
   private bubbleLayer!: HTMLElement;
+  private hall: ThroneHall | null = null;
+  private staticHallDrawn = false;
 
   constructor(host: HTMLElement) {
     this.el = document.createElement('div');
@@ -80,13 +83,25 @@ export class SceneView {
       c.height = SH;
     }
     requestAnimationFrame(this.loop);
+    void loadHallAtlas().then((atlas) => {
+      this.hall = createThroneHall(atlas);
+      this.refreshRoom();
+      this.el.dataset.art = 'ready';
+    }).catch(() => { this.el.dataset.art = 'error'; });
   }
 
   setRoom(kind: RoomKind) {
     if (this.kind === kind) return;
     this.kind = kind;
-    this.room = kind === 'trono' ? throneRoom(!hasSheet('rei')) : library();
+    this.staticHallDrawn = false;
+    this.room = kind === 'trono' ? this.hall ? { canvas: this.hall.canvas, flames: [] } : throneRoom(!hasSheet('rei')) : library();
     copyInto(this.roomCanvas, this.room.canvas);
+    const topDown = kind === 'trono' && !!this.hall;
+    this.el.classList.toggle('top-down', topDown);
+    for (const c of [this.actorsCanvas, this.flamesCanvas]) {
+      c.width = topDown ? HALL_W : SW;
+      c.height = topDown ? HALL_H : SH;
+    }
     this.el.dataset.room = kind;
     this.actors.clear();
     for (const b of this.bubbles.values()) b.el.remove();
@@ -166,10 +181,12 @@ export class SceneView {
         this.bubbles.delete(key);
         continue;
       }
-      const k = a.scale ?? 1;
+      const p = this.hallPosition(a);
+      const k = p.scale;
       // mantém o balão dentro da tela (longe da barra do topo e das bordas)
-      b.el.style.left = `${(Math.min(SW - 44, Math.max(44, a.x)) / SW) * 100}%`;
-      b.el.style.top = `${Math.max(27, ((a.foot - 118 * k) / SH) * 100)}%`;
+      const width = this.isHall ? HALL_W : SW, height = this.isHall ? HALL_H : SH;
+      b.el.style.left = `${(Math.min(width - 44, Math.max(44, p.x)) / width) * 100}%`;
+      b.el.style.top = `${Math.max(16, ((p.foot - 118 * k) / height) * 100)}%`;
     }
   }
 
@@ -256,36 +273,67 @@ export class SceneView {
   };
 
   private drawActors() {
+    if (this.isHall && this.actors.size === 0 && this.staticHallDrawn) return;
     const ctx = this.actorsCanvas.getContext('2d')!;
-    ctx.clearRect(0, 0, SW, SH);
-    ctx.imageSmoothingEnabled = false;
-    const list = [...this.actors.values()].sort((a, b) => a.foot - b.foot);
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.imageSmoothingEnabled = this.isHall;
+    const list = [...this.actors.values()].sort((a, b) => this.hallPosition(a).foot - this.hallPosition(b).foot);
+    let objectIndex = 0;
+    const objects = this.isHall ? this.hall!.objects : [];
     for (const a of list) {
-      const fr = getFrame(a.id, a.anim, a.frame);
-      const k = a.scale ?? 1;
+      const p = this.hallPosition(a);
+      while (objectIndex < objects.length && objects[objectIndex].depth <= p.foot)
+        this.hall!.drawObject(ctx, objects[objectIndex++]);
+      // As folhas laterais são reaproveitadas em escala menor durante a etapa de cenário.
+      const fr = getFrame(a.id, this.isHall && a.key === 'rei' ? 'idle' : a.anim, a.frame);
+      // Aceita tanto as folhas atuais quanto as variantes de maior resolução.
+      const sourceW = 'sw' in fr ? Number(fr.sw) : CELL_W;
+      const sourceH = 'sh' in fr ? Number(fr.sh) : CELL_H;
+      const k = p.scale;
       const w = Math.round(CELL_W * k), h = Math.round(CELL_H * k);
       const axis = (a.facing > 0 ? 31 : CELL_W - 31) * k;
-      const dx = Math.round(a.x - axis);
-      const dy = Math.round(a.foot - FOOT * k);
+      const dx = Math.round(p.x - axis);
+      const dy = Math.round(p.foot - FOOT * k);
       ctx.fillStyle = `rgba(10,6,16,${0.35 * k})`;
       ctx.beginPath();
-      ctx.ellipse(Math.round(a.x), a.foot, 13 * k, 3 * k, 0, 0, Math.PI * 2);
+      ctx.ellipse(Math.round(p.x), p.foot, 13 * k, 3 * k, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.save();
       if (a.dim) ctx.filter = `brightness(${1 - a.dim}) saturate(${1 - a.dim * 0.6})`;
       if (a.facing < 0) {
         ctx.translate(dx + w, dy);
         ctx.scale(-1, 1);
-        ctx.drawImage(fr.src, fr.sx, fr.sy, CELL_W, CELL_H, 0, 0, w, h);
-      } else ctx.drawImage(fr.src, fr.sx, fr.sy, CELL_W, CELL_H, dx, dy, w, h);
+        ctx.drawImage(fr.src, fr.sx, fr.sy, sourceW, sourceH, 0, 0, w, h);
+      } else ctx.drawImage(fr.src, fr.sx, fr.sy, sourceW, sourceH, dx, dy, w, h);
       ctx.restore();
     }
+    while (objectIndex < objects.length) this.hall!.drawObject(ctx, objects[objectIndex++]);
+    this.staticHallDrawn = this.isHall && this.actors.size === 0;
+  }
+
+  private get isHall() { return this.kind === 'trono' && !!this.hall; }
+
+  // Adaptador exclusivamente visual: preserva o fluxo atual das audiências.
+  private hallPosition(a: ActorSpec) {
+    if (!this.isHall) return { x: a.x, foot: a.foot, scale: a.scale ?? 1 };
+    const scale = .62 * (a.scale ?? 1);
+    if (a.key === 'rei') return { x: 640, foot: 330, scale: .62 };
+    if (a.key.startsWith('comp-')) return { x: 760, foot: 347, scale };
+    if (a.key === 'guard1') return { x: 342 + (a.x - 150) * .5, foot: 359, scale };
+    if (a.key === 'guard2') return { x: 896 + (a.x - 168) * .5, foot: 359, scale };
+    if (a.key === 'guard3') return { x: 857 + (a.x - 330) * .5, foot: 566, scale };
+    if (a.key.startsWith('wait-')) return { x: 331 + a.x * .9, foot: 560, scale };
+    return { x: 640, foot: 643 - Math.max(0, Math.min(1, (a.x + 40) / 322)) * 225, scale };
   }
 
   private drawFlames(now: number) {
     if (!this.room) return;
     const ctx = this.flamesCanvas.getContext('2d')!;
-    ctx.clearRect(0, 0, SW, SH);
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    if (this.isHall) {
+      drawHallLights(ctx, this.hall!.lights, now, this.night);
+      return;
+    }
     const glow = 0.12 + this.night * 0.35;
     for (const f of this.room.flames) {
       const k = Math.sin(now / 90 + f.x * 1.7) + Math.sin(now / 53 + f.y);

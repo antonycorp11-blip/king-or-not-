@@ -17,5 +17,6 @@ await mkdir('dist', { recursive: true });
 await writeFile('dist/index.html', await readFile('index.html', 'utf8'));
 // só a arte pronta para o jogo; os originais (assets/raw) ficam fora do site
 await cp('assets/personagens', 'dist/assets/personagens', { recursive: true });
+await cp('assets/cenarios', 'dist/assets/cenarios', { recursive: true });
 await cp('assets/manifest.json', 'dist/assets/manifest.json');
 console.log('Build pronto em dist/');

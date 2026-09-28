@@ -15,6 +15,7 @@ export function renderTitle(app: App): string {
         <button class="btn primary" data-act="newGame">Novo reinado</button>
         ${saved ? '<button class="btn" data-act="continue">Continuar</button>' : ''}
       </div>
+      <a class="hall-preview-link" href="?cenario=trono">Conhecer o novo salão do trono ↗</a>
       <details>
         <summary>Como jogar</summary>
         <ul>

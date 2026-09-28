@@ -1044,3 +1044,31 @@ span.wm-label { pointer-events: none; }
 .m .book-info p { font-size: 17px; }
 .m .book-info .book-eyebrow { font-size: 13px; }
 .m .book-read { font-size: 17px; }
+
+/* Salão do trono em camadas de alta resolução. */
+.scene.top-down .layer { image-rendering: auto; }
+.scene.top-down .sky, .scene.top-down .city-day, .scene.top-down .city-night,
+.scene.top-down .light-beams { display: none; }
+.scene.top-down .vignette { background: radial-gradient(ellipse at 50% 46%, transparent 42%, #080d1b66 100%); }
+.scene.top-down .tint::after { background: #24335b; opacity: calc(var(--night) * .44); }
+.hall-preview-link { display: inline-block; color: #765016; font-size: 20px; text-underline-offset: 4px; margin: 12px 0 2px; }
+.queue-title .hall-preview-link { margin: 0 0 0 18px; color: #f1d191; font-size: 18px; }
+.scenery-preview { position: fixed; inset: 0; background: #10151d; color: #f2e2c4; }
+.scenery-stage { position: absolute; width: min(100vw, 177.7778vh); aspect-ratio: 16 / 9; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.scenery-heading { position: absolute; left: 26px; top: 22px; padding: 12px 19px; background: #10151de0; border-left: 2px solid #c7a368; pointer-events: none; }
+.scenery-heading span { font: 10px system-ui, sans-serif; letter-spacing: .23em; color: #c2a77a; }
+.scenery-heading h1 { font: 24px var(--font); margin: 5px 0 0; }
+.scenery-controls { position: absolute; bottom: 19px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; padding: 6px; background: #10151ded; border: 1px solid #716047; border-radius: 5px; white-space: nowrap; }
+.scenery-controls button, .scenery-controls a { font: 13px system-ui, sans-serif; padding: 9px 13px; color: #d9ccb6; background: transparent; border: 1px solid transparent; border-radius: 3px; text-decoration: none; }
+.scenery-controls button:hover, .scenery-controls a:hover, .scenery-controls button[aria-pressed="true"] { background: #423728; color: #ffe3a7; border-color: #7c6542; }
+.scenery-controls button:focus-visible, .scenery-controls a:focus-visible { outline: 2px solid #f3d397; outline-offset: 2px; }
+.scenery-preview.clean .scenery-heading { display: none; }
+.scenery-preview.clean .scenery-controls { opacity: 0; transition: opacity .2s; }
+.scenery-preview.clean .scenery-controls:hover, .scenery-preview.clean .scenery-controls:focus-within { opacity: 1; }
+.scenery-loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 20px; background: #10151df0; }
+@media (max-width: 600px) {
+  .scenery-heading { top: 12px; left: 12px; padding: 8px 12px; }
+  .scenery-heading h1 { font-size: 18px; }
+  .scenery-controls { bottom: 12px; gap: 0; }
+  .scenery-controls button, .scenery-controls a { font-size: 11px; padding: 9px 8px; }
+}
