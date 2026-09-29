@@ -1261,3 +1261,9 @@ body.character-gallery-page { overflow: auto; height: auto; min-height: 100vh; b
 .m .where-list, .m .cand-list { grid-template-columns: 1fr; }
 .m .nb-cols { grid-template-columns: 1fr; }
 .m .agenda-list .ap { grid-template-columns: 70px 1fr auto; }
+
+/* O cenário recebe o clique: a camada da interface só captura nos próprios painéis */
+#ui { pointer-events: none; }
+#ui > * { pointer-events: auto; }
+#ui > .screen-trono { pointer-events: none; }
+#ui > .screen-trono > * { pointer-events: auto; }
