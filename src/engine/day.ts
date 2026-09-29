@@ -8,7 +8,8 @@ import { armyDaily } from './army';
 import { deliverLetters } from './letters';
 import { checkRebellions } from '../data/events/crisis';
 import { companion } from '../data/companions';
-import { computeEconomy, taxKey } from './economy';
+import { computeEconomy, marketDaily, taxKey, tradeDaily, treasurerRoutes } from './economy';
+import { holder } from './council';
 import { buildAgenda, tickAgenda } from './agenda';
 import { captures, delegate } from './council';
 import { conspiracyDaily, trackOf } from './conspiracy';
@@ -209,7 +210,14 @@ export function endDay(s: GameState): LogEntry[] {
   // 3. Economia
   const eco = computeEconomy(s);
   s.res.ouro += eco.net;
-  entries.push({ icon: 'moedas', title: 'Renda Provincial', text: `Impostos ${eco.taxTotal}, tarifas ${eco.tradeTotal}, soldo do exército −${eco.upkeep}.`, delta: signed(eco.net), tone: eco.net >= 0 ? 'bom' : 'ruim' });
+  entries.push({ icon: 'moedas', title: 'Renda Provincial', text: `Impostos ${eco.taxTotal}, tarifas ${eco.tradeTotal}${eco.cuts ? `, parte de ${eco.cutWho.join(' e ')} −${eco.cuts}` : ''}, caravanas −${eco.caravans}, soldo do exército −${eco.upkeep}.`, delta: signed(eco.net), tone: eco.net >= 0 ? 'bom' : 'ruim' });
+  // celeiro real
+  s.granary = Math.max(0, (s.granary ?? 0) + eco.stored - eco.granaryDraw);
+  if (eco.granaryDraw) entries.push({ icon: 'trigo', title: 'Celeiro real', text: `${eco.granaryDraw} sacas saíram do celeiro para matar a fome. Restam ${s.granary}.`, tone: 'neutro' });
+  if (s.day === 32 && (s.granary ?? 0) >= 20) s.flags.invernoPrevisto = true;
+  marketDaily(s, eco, () => rand(s), entries);
+  tradeDaily(s, () => rand(s), entries);
+  treasurerRoutes(s, holder(s, 'tesoureiro'), entries);
 
   if (s.res.ouro < 0) {
     const loss = hasSkill(s, 'comandante') ? 5 : 10;

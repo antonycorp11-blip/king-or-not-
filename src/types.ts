@@ -283,9 +283,12 @@ export interface Audience {
 export interface TradeRoute {
   id: number;
   from: ProvinceId;
-  to: ProvinceId | 'veridian';
+  to: ProvinceId | 'veridian' | 'celeiro';
   good: Good;
+  escort?: boolean; // escolta contra bandidos
 }
+
+export interface Work { province: ProvinceId; name: string; ready: number } // obra em andamento
 
 export interface WarTerritory {
   id: ProvinceId;
@@ -324,6 +327,11 @@ export interface GameState {
   activitiesToday: string[];
   readUsed?: Record<string, number[]>; // trechos já lidos de cada livro
   readScore?: Record<string, [number, number]>; // acertos e tentativas de leitura por livro
+  market?: Partial<Record<Good, number>>; // multiplicador de preço de cada mercadoria
+  marketHist?: Partial<Record<Good, number[]>>;
+  granary?: number; // sacas de grão no celeiro real
+  routeBlock?: Record<number, { until: number; why: string }>;
+  works?: Work[];
   seed: number;
   kingName: string;
   day: number;

@@ -127,7 +127,9 @@ export class WorldMap {
       const eco = computeEconomy(s);
       eco.routes.forEach((r, k) => {
         if (r.amount <= 0) return;
-        const path = routePath(r.route.from, r.route.to);
+        const to = r.route.to === 'celeiro' ? 'castelmar' : r.route.to;
+        if (to === r.route.from) return; // grão guardado no próprio celeiro da capital
+        const path = routePath(r.route.from, to);
         this.caravans.push({ path, color: GOODS_COLOR[r.route.good], sea: r.route.to === 'veridian', offset: k * 0.37 });
       });
     }

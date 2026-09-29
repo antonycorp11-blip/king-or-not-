@@ -1360,3 +1360,19 @@ body.character-gallery-page { overflow: auto; height: auto; min-height: 100vh; b
 .m .read-claim p { font-size: 18px; }
 .m .link-left { font-size: 16px; padding: 8px 10px; }
 .m .link-grid { grid-template-columns: 1.4fr 1fr; }
+
+/* Comércio v2 */
+.prices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.prices span { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: rgba(255,255,255,.35); font-size: 19px; }
+.prices b { font-family: var(--pix); margin-left: auto; }
+.prices em { font-style: normal; color: #6a5236; }
+.prices em.up { color: #a8281f; } .prices em.down { color: #2a7a3a; }
+.route.blocked { opacity: .7; }
+.route.blocked small { color: #a8281f; }
+.route .x.esc { right: 34px; }
+.route .x.esc.on { background: #3a6ad0; }
+.route .x.esc .ico { width: 16px; height: 16px; }
+.work { font-size: 17px; color: #6a4a1a; margin: 6px 0; }
+.eco-card .btn.sm { padding: 4px 10px; }
+.ledger-modal .estado-list li { grid-template-columns: 1fr auto; }
+.ledger-modal .estado-list li em { font-size: 24px; }

@@ -4,7 +4,9 @@ import type { Lens } from '../worldMap';
 import { GOODS, HOUSES, KINGDOM_PROVINCES, PROVINCES } from '../../data/realm';
 import { clamp, save } from '../../engine/core';
 import { canSpend, spendHours } from '../../engine/day';
-import { computeEconomy, nextRouteId, production, taxKey } from '../../engine/economy';
+import { WORK_DAYS, WORK_NAMES, computeEconomy, nextRouteId, price, production, needs, taxKey } from '../../engine/economy';
+import { holder } from '../../engine/council';
+import { char } from '../../data/characters';
 import { levyUnits } from '../../engine/war';
 import { iconImg } from '../../render/pixel';
 import { esc, shield } from '../common';
@@ -46,6 +48,10 @@ export function render(app: App): string {
     <span>${iconImg('moedas')} Impostos <b>+${eco.taxTotal}</b></span>
     <span>Rotas <b>+${eco.tradeTotal}</b></span>
     <span>Soldo <b class="neg">−${eco.upkeep}</b></span>
+    <span>Caravanas <b class="neg">−${eco.caravans}</b></span>
+    ${eco.cuts ? `<span title="${esc(eco.cutWho.join(', '))}">Parte de outros <b class="neg">−${eco.cuts}</b></span>` : ''}
+    <span>${iconImg('trigo')} Celeiro <b>${s.granary ?? 0}</b></span>
+    <button class="btn sm" data-act="ledger">${iconImg('livro')} Livro de Contas</button>
     <span class="net ${eco.net >= 0 ? 'pos' : 'neg'}">Saldo diário <b>${eco.net >= 0 ? '+' : ''}${eco.net}</b></span>
     ${eco.shortages.length ? `<span class="warn">${iconImg('selo')} ${new Set(eco.shortages.map((x) => x.province)).size} província(s) com escassez</span>` : ''}
   </div>`;
@@ -56,7 +62,48 @@ export function render(app: App): string {
     ${lensBar}
     ${ecoCard}
   </div>
-  ${ui.cardOpen ? detailCard(app) : `<button class="card-tab" data-act="openCard">${iconImg('castelo')} ${PROVINCES[ui.province as ProvinceId].name}</button>`}`;
+  ${ui.cardOpen ? detailCard(app) : `<button class="card-tab" data-act="openCard">${iconImg('castelo')} ${PROVINCES[ui.province as ProvinceId].name}</button>`}
+  ${ledgerOpen ? ledger(app) : ''}`;
+}
+
+let ledgerOpen = false;
+
+// Livro de Contas: preços, celeiro, rotas paradas, obras e quem leva uma parte
+function ledger(app: App) {
+  const s = app.s;
+  const eco = computeEconomy(s);
+  const who = holder(s, 'tesoureiro');
+  const trend = (g: Good) => {
+    const h = s.marketHist?.[g] ?? [];
+    if (h.length < 2) return '';
+    const d = h[h.length - 1] - h[0];
+    return d > 0.08 ? '<em class="up">▲</em>' : d < -0.08 ? '<em class="down">▼</em>' : '<em>•</em>';
+  };
+  const blocked = eco.routes.filter((r) => r.blocked);
+  return `<div class="modal-back"><div class="parchment modal castle-modal ledger-modal">
+    <button class="modal-x" data-act="ledger" aria-label="Fechar">×</button>
+    <h2>Livro de Contas</h2>
+    <p class="sub">${who ? `Escrito com a letra de ${esc(char(who).name)}.` : 'Ninguém cuida do tesouro: a cadeira do Tesoureiro está vazia.'}</p>
+    <h3>Preços de hoje</h3>
+    <div class="prices">${(Object.keys(GOODS) as Good[]).map((g) => `<span>${iconImg(GOODS[g].icon)} ${GOODS[g].name} <b>${price(s, g).toFixed(1)}</b> ${trend(g)}</span>`).join('')}</div>
+    <p class="hint">O inverno encarece grão e lenha; a guerra encarece ferro; a falta de qualquer coisa a encarece. Exportar e vender caro rende mais tarifa.</p>
+    <h3>Celeiro real</h3>
+    <p>${s.granary ?? 0} sacas guardadas. ${eco.granaryDraw ? `Hoje saem ${eco.granaryDraw} para matar a fome.` : ''} ${eco.stored ? `Hoje entram ${eco.stored}.` : 'Crie uma rota de grão para o "Celeiro real" para guardar para o inverno.'}</p>
+    <h3>Saldo do dia</h3>
+    <ul class="estado-list">
+      <li><span><b>Impostos</b></span><em>+${eco.taxTotal}</em></li>
+      <li><span><b>Tarifas das rotas</b></span><em>+${eco.tradeTotal}</em></li>
+      ${eco.cuts ? `<li class="bad"><span><b>Parte de outros</b><small>${esc(eco.cutWho.join(', '))}</small></span><em>−${eco.cuts}</em></li>` : ''}
+      <li class="bad"><span><b>Caravanas e escoltas</b></span><em>−${eco.caravans}</em></li>
+      <li class="bad"><span><b>Soldo do exército</b></span><em>−${eco.upkeep}</em></li>
+      <li><span><b>Saldo</b></span><em>${eco.net >= 0 ? '+' : ''}${eco.net}</em></li>
+    </ul>
+    ${blocked.length ? `<h3>Rotas paradas</h3><ul>${blocked.map((r) => `<li>${GOODS[r.route.good].name} de ${PROVINCES[r.route.from].name}: ${esc(r.blocked!)}</li>`).join('')}</ul>` : ''}
+    ${(s.works ?? []).length ? `<h3>Obras</h3><ul>${s.works!.map((w) => `<li>${esc(w.name)} em ${PROVINCES[w.province].name}: pronta no Dia ${w.ready}</li>`).join('')}</ul>` : ''}
+    <h3>Delegar</h3>
+    <button class="btn ${s.flags.tesoureiroRotas ? 'primary' : ''}" data-act="delegateRoutes" ${who ? '' : 'disabled'}>${s.flags.tesoureiroRotas ? 'O Tesoureiro cuida das rotas (tocar para retomar)' : 'Deixar o Tesoureiro abrir rotas contra a escassez'}</button>
+    <p class="hint">Delegar resolve a falta sem gastar suas horas, mas o Tesoureiro decide sozinho e ganha poder.</p>
+  </div></div>`;
 }
 
 function detailCard(app: App) {
@@ -73,7 +120,7 @@ function detailCard(app: App) {
   const levy = key === 'coroa' ? Math.floor(s.res.exercito / 100) * 100 : levyUnits(s, key as HouseId) * 100;
   const loyal = key === 'coroa' ? `Povo ${s.res.povo}` : `Lealdade ${s.loyalty[key]}`;
   const goodsSel = (Object.keys(P.produces) as Good[]).map((g) => `<option value="${g}">${GOODS[g].name}</option>`).join('');
-  const dests = [...KINGDOM_PROVINCES.filter((x) => x !== sel).map((x) => `<option value="${x}">${PROVINCES[x].name}</option>`), `<option value="veridian">Véridian (exportação)</option>`].join('');
+  const dests = [...KINGDOM_PROVINCES.filter((x) => x !== sel).map((x) => `<option value="${x}">${PROVINCES[x].name}</option>`), `<option value="veridian">Véridian (exportação)</option>`, ...(P.produces.graos ? ['<option value="celeiro">Celeiro real (guardar grão)</option>'] : [])].join('');
 
   return `<div class="prov-card parchment">
     <button class="x-close" data-act="closeCard" title="Fechar">×</button>
@@ -83,7 +130,7 @@ function detailCard(app: App) {
     <h3>Produção</h3>
     ${(Object.entries(prod) as [Good, number][]).map(([g, n]) => `<div class="prod">${iconImg(GOODS[g].icon)}<span>${GOODS[g].name}</span><div class="bar gold"><i style="width:${(n / 6) * 100}%"></i></div><b>+${n}</b></div>`).join('')}
     <h3>Necessidades</h3>
-    <div class="needs">${(Object.entries(P.needs) as [Good, number][]).map(([g, n]) => {
+    <div class="needs">${(Object.entries(needs(s, sel)) as [Good, number][]).map(([g, n]) => {
       const miss = shortages.find((x) => x.good === g);
       return `<span class="need ${miss ? 'miss' : 'ok'}">${iconImg(GOODS[g].icon)} ${GOODS[g].name} ${n}${miss ? ` · faltam ${miss.missing}` : ' ✓'}</span>`;
     }).join('') || '<small>Autossuficiente.</small>'}</div>
@@ -97,11 +144,12 @@ function detailCard(app: App) {
     <h3>Impostos ${key === 'coroa' ? '(afeta o Povo)' : '(afeta a lealdade)'} · ${DECREE_HOURS}h</h3>
     <div class="seg">${(['baixo', 'normal', 'alto'] as TaxLevel[]).map((t) => `<button class="${s.taxes[key] === t ? 'on' : ''}" data-act="tax" data-arg="${t}">${t}</button>`).join('')}</div>
     <h3>Rotas comerciais</h3>
-    ${outRoutes.map((r) => `<div class="route">${iconImg(GOODS[r.route.good].icon)} ${GOODS[r.route.good].name} → ${r.route.to === 'veridian' ? 'Véridian' : PROVINCES[r.route.to].name} <small>${r.amount} un · +${r.tariff} ouro</small><button class="x" data-act="delRoute" data-arg="${r.route.id}" title="Cancelar rota (1h)">×</button></div>`).join('')}
+    ${outRoutes.map((r) => `<div class="route ${r.blocked ? 'blocked' : ''}">${iconImg(GOODS[r.route.good].icon)} ${GOODS[r.route.good].name} → ${r.route.to === 'veridian' ? 'Véridian' : r.route.to === 'celeiro' ? 'Celeiro real' : PROVINCES[r.route.to].name} <small>${r.blocked ? `parada: ${esc(r.blocked)}` : `${r.amount} un${r.tariff ? ` · +${r.tariff} ouro` : ''}`}</small><button class="x esc ${r.route.escort ? 'on' : ''}" data-act="escort" data-arg="${r.route.id}" title="${r.route.escort ? 'Tirar a escolta' : 'Pôr escolta (−3 ouro/dia, sem bandidos)'}">${iconImg('escudo')}</button><button class="x" data-act="delRoute" data-arg="${r.route.id}" title="Cancelar rota (1h)">×</button></div>`).join('')}
     ${inRoutes.map((r) => `<div class="route in">${iconImg(GOODS[r.route.good].icon)} ${GOODS[r.route.good].name} ← ${PROVINCES[r.route.from].name} <small>${r.amount} un</small></div>`).join('')}
     ${!outRoutes.length && !inRoutes.length ? '<small>Nenhuma rota passa por aqui.</small>' : ''}
     ${goodsSel ? `<div class="new-route"><select id="rg">${goodsSel}</select><span>→</span><select id="rd">${dests}</select><button class="btn sm" data-act="addRoute">Decretar (${DECREE_HOURS}h)</button></div>` : ''}
-    <button class="act-btn a-verde" data-act="invest" ${(s.investments[sel] ?? 0) >= 3 ? 'disabled' : ''}>${iconImg('martelo', 'ico-lg')}<span><b>Investir</b><small>−${INVEST_COST} ouro · +25% produção (${s.investments[sel] ?? 0}/3)</small></span></button>
+    ${(s.works ?? []).filter((w) => w.province === sel).map((w) => `<p class="work">${iconImg('martelo')} ${esc(w.name)} em obras · pronta no Dia ${w.ready}</p>`).join('')}
+    <button class="act-btn a-verde" data-act="invest" ${(s.investments[sel] ?? 0) + (s.works ?? []).filter((w) => w.province === sel).length >= 3 ? 'disabled' : ''}>${iconImg('martelo', 'ico-lg')}<span><b>Construir: ${WORK_NAMES[(Object.keys(P.produces)[0] as Good) ?? 'graos']}</b><small>−${INVEST_COST} ouro · ${WORK_DAYS} dias de obra · +25% produção (${s.investments[sel] ?? 0}/3)</small></span></button>
   </div>`;
 }
 
@@ -154,13 +202,28 @@ export function handle(app: App, act: string, arg: string) {
       app.toast(`Impostos de ${PROVINCES[sel].name}: ${arg}.`);
       break;
     }
+    case 'ledger':
+      ledgerOpen = !ledgerOpen;
+      return app.render();
+    case 'delegateRoutes':
+      s.flags.tesoureiroRotas = !s.flags.tesoureiroRotas;
+      app.toast(s.flags.tesoureiroRotas ? 'O Tesoureiro vai abrir rotas por conta própria.' : 'As rotas voltam a ser decisão sua.');
+      break;
+    case 'escort': {
+      const r = s.routes.find((x) => x.id === Number(arg));
+      if (!r) return;
+      r.escort = !r.escort;
+      app.toast(r.escort ? 'Escolta designada. Custa 3 ouro por dia.' : 'Escolta dispensada.');
+      break;
+    }
     case 'delRoute':
       if (!decree(app)) return;
       s.routes = s.routes.filter((r) => r.id !== Number(arg));
       break;
     case 'addRoute': {
       const g = app.stage.querySelector<HTMLSelectElement>('#rg')!.value as Good;
-      const to = app.stage.querySelector<HTMLSelectElement>('#rd')!.value as ProvinceId | 'veridian';
+      const to = app.stage.querySelector<HTMLSelectElement>('#rd')!.value as ProvinceId | 'veridian' | 'celeiro';
+      if (to === 'celeiro' && g !== 'graos') return app.toast('O celeiro só guarda grão.');
       if (s.routes.some((r) => r.from === sel && r.to === to && r.good === g)) return app.toast('Essa rota já existe.');
       if (!decree(app)) return;
       s.routes.push({ id: nextRouteId(s), from: sel, to, good: g });
@@ -184,11 +247,12 @@ export function handle(app: App, act: string, arg: string) {
       if (s.res.ouro < INVEST_COST) return app.toast('Ouro insuficiente.');
       if (!decree(app)) return;
       s.res.ouro -= INVEST_COST;
-      s.investments[sel] = (s.investments[sel] ?? 0) + 1;
+      const good = (Object.keys(PROVINCES[sel].produces)[0] as Good) ?? 'graos';
+      (s.works ??= []).push({ province: sel, name: WORK_NAMES[good], ready: s.day + WORK_DAYS });
       const k = taxKey(sel);
       if (k !== 'coroa') s.loyalty[k] = clamp(s.loyalty[k] + 4, -100, 100);
       else s.res.povo = clamp(s.res.povo + 3, 0, 100);
-      app.toast(`Investimento em ${PROVINCES[sel].name}.`);
+      app.toast(`Obra iniciada em ${PROVINCES[sel].name}. Fica pronta em ${WORK_DAYS} dias.`);
       break;
     }
     default:
