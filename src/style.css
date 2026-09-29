@@ -148,7 +148,10 @@ small { font-size: .78em; }
 /* ---------- Sala do trono ---------- */
 .queue { position: absolute; left: 14px; top: 106px; max-width: 1100px; }
 .queue-title { display: inline-flex; gap: 6px; align-items: center; font-family: var(--sc); font-size: 20px; color: #f8ecd0; background: #1a1428e8; border: 2px solid var(--gold); padding: 2px 12px; margin-bottom: 6px; }
+.queue-toggle { color: #f1d191; background: transparent; border: 0; font: inherit; font-size: .78em; padding: 2px 8px; text-decoration: underline; text-underline-offset: 3px; }
+.queue-toggle:hover { color: #fff2c0; }
 .queue-cards { display: flex; gap: 8px; }
+.queue.collapsed .queue-cards { display: none; }
 .queue .empty { font-size: 19px; color: #f8ecd0; background: #1a1428c0; padding: 6px 12px; margin: 0; font-style: italic; }
 .q-card { position: relative; width: 96px; padding: 4px; background: var(--parch); border: 3px solid #2a1808; box-shadow: inset 0 0 0 2px var(--gold), 0 4px 0 rgba(0,0,0,.35); display: flex; flex-direction: column; align-items: center; }
 .q-card:hover:not([disabled]) { transform: translateY(-3px); filter: brightness(1.1); }
@@ -183,6 +186,7 @@ small { font-size: .78em; }
 .d-house b { font-family: var(--sc); font-size: 22px; }
 .d-house small { font-size: 16px; opacity: .85; }
 .speech { position: absolute; left: 360px; right: 14px; bottom: 192px; min-height: 146px; padding: 14px 230px 14px 30px; }
+.dialog-toggle { position: absolute; right: 10px; top: 9px; z-index: 2; width: 30px; height: 28px; color: #5a421d; background: #f3dfb5; border: 2px solid #97733c; font: 700 22px/20px Georgia, serif; }
 .speech h3 { font-family: var(--sc); font-size: 28px; color: #1c2c6a; border-bottom: 2px solid #b8903a; padding-bottom: 2px; display: inline-block; margin-bottom: 4px; }
 .speech h3 small { font-family: var(--font); font-size: 18px; color: #6a4a2a; font-weight: 400; margin-left: 10px; }
 .speech p { font-size: 27px; line-height: 1.32; margin: 4px 0 0; font-weight: 500; }
@@ -215,6 +219,10 @@ small { font-size: .78em; }
 .infl-toggle.on { background: #7a5a18; box-shadow: inset 0 0 0 2px #fff0a0; }
 
 .idle-bar { position: absolute; left: 360px; right: 14px; bottom: 14px; display: flex; gap: 16px; align-items: stretch; }
+.dialog-mini { position: absolute; left: 14px; right: 14px; bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 16px; color: #f8ecd0; background: #171326ed; border: 2px solid var(--gold); box-shadow: 0 5px 0 #08060b; z-index: 6; }
+.dialog-mini span { display: flex; flex-direction: column; }
+.dialog-mini b { font-family: var(--sc); font-size: 22px; color: var(--gold-l); }
+.dialog-mini small { opacity: .8; font-size: 16px; }
 .idle-hint { flex: 1; padding: 16px 28px; font-size: 25px; display: flex; align-items: center; }
 .idle-hint p { margin: 0; }
 .end-day { display: flex; align-items: center; gap: 14px; padding: 16px 30px; background: linear-gradient(#2e4aa8, #14226a); color: #fff2d0; border: 4px solid #0a0610; box-shadow: inset 0 0 0 3px var(--gold), 0 6px 0 rgba(0,0,0,.4); text-align: left; }
@@ -387,7 +395,13 @@ small { font-size: .78em; }
 /* ================= Mesa de guerra (mapa-diorama) ================= */
 .map-stage { position: absolute; left: 14px; right: 14px; top: 104px; bottom: 14px; }
 .map-slot { position: absolute; inset: 0; container-type: size; transition: right .45s ease; }
-.map-stage.with-card .map-slot { right: 560px; }
+.map-stage.with-card .map-slot { right: 460px; }
+.map-caption { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 18px; color: #fff2d0; background: rgba(20, 14, 30, .86); border: 2px solid #b8903a; box-shadow: 0 5px 14px rgba(0,0,0,.35); text-align: center; pointer-events: none; }
+.map-caption b { font-family: var(--title); font-size: 24px; font-weight: 400; color: var(--gold-l); }
+.map-caption small { font-size: 14px; white-space: nowrap; }
+.war-stage .map-caption { border-color: #b94b43; }
+.war-stage .wm-army .stand { width: 66px; height: 78px; }
+.war-stage .wm-label { font-size: 16px; }
 .wm { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; perspective: 2200px; --px: 0; --py: 0; }
 .wm-table {
   position: relative; padding: 22px;
@@ -487,7 +501,7 @@ span.wm-label { pointer-events: none; }
 .eco-card b { font-family: var(--pix); }
 .eco-card .pos b { color: #8af0a0; } .eco-card .neg, .eco-card b.neg { color: #ff8a7a; }
 .eco-card .warn { color: #ffb08a; }
-.prov-card { position: absolute; right: 14px; top: 104px; bottom: 14px; width: 540px; overflow: auto; padding: 22px 24px; font-size: 20px; animation: slideIn .35s ease-out; z-index: 4; }
+.prov-card { position: absolute; right: 14px; top: 104px; bottom: 14px; width: 460px; overflow: auto; padding: 22px 24px; font-size: 20px; animation: slideIn .35s ease-out; z-index: 4; }
 @keyframes slideIn { from { transform: translateX(40px); opacity: 0; } }
 .prov-card h2 { font-family: var(--title); font-weight: 400; font-size: 44px; margin: 0; }
 .prov-card h3 { font-family: var(--sc); color: #2a3a7a; margin: 14px 0 6px; font-size: 21px; }
@@ -674,8 +688,11 @@ span.wm-label { pointer-events: none; }
 
 /* mapa e guerra */
 .m .map-stage { left: 8px; right: 8px; top: 66px; bottom: 8px; }
-.m .map-stage.with-card .map-slot { right: 400px; }
-.m .prov-card { right: 8px; top: 66px; bottom: 8px; width: 392px; padding: 14px 16px; font-size: 15px; }
+.m .map-caption { top: 6px; padding: 4px 10px; }
+.m .map-caption b { font-size: 18px; }
+.m .map-caption small { font-size: 11px; }
+.m .map-stage.with-card .map-slot { right: 380px; }
+.m .prov-card { right: 8px; top: 66px; bottom: 8px; width: 372px; padding: 14px 16px; font-size: 15px; }
 .m .prov-card h2 { font-size: 30px; }
 .m .prov-card h3 { font-size: 16px; margin: 8px 0 4px; }
 .m .pd-head .shield.lg { width: 48px; height: 58px; }
@@ -797,8 +814,8 @@ span.wm-label { pointer-events: none; }
 .m .person b { font-size: 18px; }
 .m .person small { font-size: 15px; }
 .m .pill { font-size: 16px; }
-.m .map-stage.with-card .map-slot { right: 450px; }
-.m .prov-card { width: 440px; font-size: 18px; }
+.m .map-stage.with-card .map-slot { right: 400px; }
+.m .prov-card { width: 390px; font-size: 18px; }
 .m .prov-card h2 { font-size: 34px; }
 .m .prov-card h3 { font-size: 20px; }
 .m .desc, .m .pd-row { font-size: 17px; }
@@ -1072,3 +1089,39 @@ span.wm-label { pointer-events: none; }
   .scenery-controls { bottom: 12px; gap: 0; }
   .scenery-controls button, .scenery-controls a { font-size: 11px; padding: 9px 8px; }
 }
+
+/* Ajustes específicos da sala top-down: o cenário continua legível durante a audiência. */
+.hall-view .scene { cursor: crosshair; }
+.hall-view .scene.move-enabled { cursor: pointer; }
+.hall-view .queue { max-width: min(760px, calc(100% - 28px)); }
+.hall-view .queue-cards { max-width: min(760px, calc(100vw - 28px)); overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.hall-view .q-card { width: 78px; padding: 3px; }
+.hall-view .q-portrait { width: 66px; height: 66px; }
+.hall-view .dialog { height: 264px; }
+.hall-view .d-portrait { width: 224px; height: 246px; }
+.hall-view .big-portrait.art, .hall-view .big-portrait { width: 184px; height: 184px; left: 20px; top: 10px; }
+.hall-view .d-house { height: 58px; }
+.hall-view .speech { left: 246px; bottom: 122px; min-height: 114px; padding: 12px 190px 10px 22px; }
+.hall-view .speech p { font-size: 23px; line-height: 1.22; }
+.hall-view .speech h3 { font-size: 24px; }
+.hall-view .choices { left: 246px; height: 104px; gap: 8px; }
+.hall-view .choice { padding: 7px 10px; gap: 8px; }
+.hall-view .choice-text b { font-size: 20px; }
+.hall-view .choice-text small { font-size: 15px; }
+.hall-view .tension-meter { height: 22px; font-size: 14px; }
+.hall-view .infl-toggle { top: 9px; right: 10px; width: 164px; font-size: 14px; }
+.hall-view .consult { top: 46px; right: 10px; width: 164px; font-size: 14px; }
+.m .hall-view .queue { max-width: calc(100% - 16px); }
+.m .hall-view .queue-cards { max-width: calc(100vw - 16px); }
+.m .hall-view .dialog { height: 238px; }
+.m .hall-view .d-portrait { width: 156px; height: 218px; }
+.m .hall-view .big-portrait.art, .m .hall-view .big-portrait { width: 142px; height: 142px; left: 7px; top: 8px; }
+.m .hall-view .d-house { height: 50px; }
+.m .hall-view .speech { left: 174px; bottom: 106px; min-height: 104px; padding: 9px 138px 8px 12px; }
+.m .hall-view .speech p { font-size: 18px; }
+.m .hall-view .speech h3 { font-size: 19px; }
+.m .hall-view .choices { left: 174px; height: 90px; gap: 6px; }
+.m .hall-view .choice-text b { font-size: 15px; }
+.m .hall-view .choice-text small { font-size: 11px; }
+.m .hall-view .infl-toggle, .m .hall-view .consult { width: 122px; font-size: 11px; }
+.m .hall-view .dialog-mini { left: 8px; right: 8px; bottom: 8px; }

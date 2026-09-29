@@ -1,6 +1,6 @@
-import { CELL_H, CELL_W, FOOT, frameCount, getFrame, hasSheet, type Anim } from '../render/actors';
+import { CELL_H, CELL_W, FOOT, frameCount, getFrame, getTopDownFrame, hasSheet, loadTopDownAssets, type Anim, type TopDownDir } from '../render/actors';
 import { SH, SW, cityscape, library, throneRoom, type Room } from '../render/scenes';
-import { createThroneHall, drawHallLights, HALL_H, HALL_W, loadHallAtlas, type ThroneHall } from '../render/throneHall';
+import { createThroneHall, drawHallLights, HALL_H, HALL_W, loadHallAtlas, type HallObject, type ThroneHall } from '../render/throneHall';
 
 // Camadas: céu (CSS) → cidade (dia/noite) → sala (janelas vazadas) → personagens animados → chamas → luz.
 export type RoomKind = 'trono' | 'biblioteca';
@@ -15,15 +15,21 @@ export interface ActorSpec {
   scale?: number; // < 1 = mais ao fundo
   dim?: number; // escurecimento pela distância (0..1)
   roam?: [number, number]; // patrulha: anda sozinho entre esses dois pontos
+  free?: boolean; // personagem controlado pelo jogador no salão top-down
+  dir?: TopDownDir;
 }
 
 interface ActorState extends ActorSpec {
   frame: number;
   acc: number;
   tx?: number; // destino quando andando
+  ty?: number;
+  path?: Array<{ x: number; y: number }>;
   after?: Anim;
   onArrive?: () => void;
   leaving?: boolean;
+  free?: boolean;
+  dir?: TopDownDir;
   speed?: number;
   wait?: number; // patrulha: segundos parado antes de andar de novo
 }
@@ -46,6 +52,7 @@ export class SceneView {
   private bubbleLayer!: HTMLElement;
   private hall: ThroneHall | null = null;
   private staticHallDrawn = false;
+  private movementEnabled = false;
 
   constructor(host: HTMLElement) {
     this.el = document.createElement('div');
@@ -88,6 +95,16 @@ export class SceneView {
       this.refreshRoom();
       this.el.dataset.art = 'ready';
     }).catch(() => { this.el.dataset.art = 'error'; });
+    void loadTopDownAssets(() => this.drawActors());
+    this.el.addEventListener('pointerdown', (event) => {
+      if (!this.movementEnabled || !this.isHall) return;
+      const target = event.target as HTMLElement;
+      if (!target.matches('canvas.room, canvas.actors, canvas.flames, .scene')) return;
+      const rect = this.el.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * HALL_W;
+      const y = ((event.clientY - rect.top) / rect.height) * HALL_H;
+      this.moveTo('rei', x, y);
+    });
   }
 
   setRoom(kind: RoomKind) {
@@ -98,6 +115,7 @@ export class SceneView {
     copyInto(this.roomCanvas, this.room.canvas);
     const topDown = kind === 'trono' && !!this.hall;
     this.el.classList.toggle('top-down', topDown);
+    this.el.closest<HTMLElement>('#stage')?.classList.toggle('hall-view', topDown);
     for (const c of [this.actorsCanvas, this.flamesCanvas]) {
       c.width = topDown ? HALL_W : SW;
       c.height = topDown ? HALL_H : SH;
@@ -138,6 +156,11 @@ export class SceneView {
     this.el.classList.toggle('dim', mode === 'dim');
   }
 
+  setMovementEnabled(enabled: boolean) {
+    this.movementEnabled = enabled;
+    this.el.classList.toggle('move-enabled', enabled);
+  }
+
   // Sincroniza os personagens parados. Quem está andando não é interrompido.
   sync(specs: ActorSpec[]) {
     const keep = new Set(specs.map((s) => s.key));
@@ -146,7 +169,8 @@ export class SceneView {
       const cur = this.actors.get(s.key);
       if (cur && cur.id === s.id) {
         if (cur.roam) Object.assign(cur, { foot: s.foot, scale: s.scale, dim: s.dim, roam: s.roam });
-        else if (cur.tx === undefined && !cur.leaving) Object.assign(cur, { x: s.x, foot: s.foot, facing: s.facing, anim: s.anim, scale: s.scale, dim: s.dim });
+        else if (cur.tx === undefined && !cur.leaving && !cur.free) Object.assign(cur, { x: s.x, foot: s.foot, facing: s.facing, anim: s.anim, scale: s.scale, dim: s.dim, dir: s.dir });
+        else if (cur.tx === undefined && !cur.leaving) Object.assign(cur, { anim: s.anim, scale: s.scale, dim: s.dim });
       } else this.actors.set(s.key, { ...s, frame: 0, acc: 0, wait: s.roam ? 1 + Math.random() * 4 : undefined });
     }
   }
@@ -194,6 +218,28 @@ export class SceneView {
     this.actors.set(key, { key, id, x: from, foot, facing: to >= from ? 1 : -1, anim: 'walk', frame: 0, acc: 0, tx: to, after, onArrive });
     this.bubbles.get(key)?.el.remove();
     this.bubbles.delete(key);
+  }
+
+  // Caminho em grade simples para o salão. Funciona para mouse, caneta e toque.
+  moveTo(key: string, x: number, y: number) {
+    if (!this.isHall) return;
+    const actor = this.actors.get(key);
+    if (!actor || actor.leaving) return;
+    const start = this.hallPosition(actor);
+    const goal = { x: clamp(x, 112, 1168), y: clamp(y, 215, 610) };
+    const path = hallPath(start.x, start.foot, goal.x, goal.y, this.hall!.objects);
+    if (!path.length) return;
+    actor.free = true;
+    actor.x = start.x;
+    actor.foot = start.foot;
+    actor.path = path.slice(1);
+    const first = actor.path.shift() ?? goal;
+    actor.tx = first.x;
+    actor.ty = first.y;
+    actor.anim = 'walk'; actor.after = 'idle'; actor.speed = 125;
+    actor.dir = directionFor(actor.x, actor.foot, actor.tx, actor.ty);
+    actor.onArrive = undefined;
+    this.staticHallDrawn = false;
   }
 
   setAnim(key: string, anim: Anim) {
@@ -252,12 +298,24 @@ export class SceneView {
         }
       }
       if (a.tx !== undefined) {
-        const d = a.tx - a.x;
+        const dx = a.tx - a.x;
+        const dy = a.ty === undefined ? 0 : a.ty - a.foot;
+        const d = Math.hypot(dx, dy);
         const step = (a.speed ?? SPEED) * dt;
-        if (Math.abs(d) <= step) {
+        if (d <= step) {
           a.x = a.tx;
-          this.arrive(a);
-        } else a.x += Math.sign(d) * step;
+          if (a.ty !== undefined) a.foot = a.ty;
+          if (a.path?.length) {
+            const next = a.path.shift()!;
+            a.tx = next.x; a.ty = next.y;
+            a.dir = directionFor(a.x, a.foot, a.tx, a.ty);
+          } else this.arrive(a);
+        } else {
+          const k = step / d;
+          a.x += dx * k;
+          if (a.ty !== undefined) a.foot += dy * k;
+          a.dir = directionFor(a.x, a.foot, a.tx, a.ty ?? a.foot);
+        }
       }
       a.acc += dt * (FPS[a.anim] ?? 1);
       if (a.acc >= 1) {
@@ -285,15 +343,20 @@ export class SceneView {
       while (objectIndex < objects.length && objects[objectIndex].depth <= p.foot)
         this.hall!.drawObject(ctx, objects[objectIndex++]);
       // As folhas laterais são reaproveitadas em escala menor durante a etapa de cenário.
-      const fr = getFrame(a.id, this.isHall && a.key === 'rei' ? 'idle' : a.anim, a.frame);
+      const topDownId = this.isHall && (a.id === 'rei' || a.key === 'speaker' || a.key.startsWith('wait-')) ? (a.id === 'rei' ? 'rei' : 'courtier') : '';
+      const topDown = !!topDownId;
+      const fr = topDown ? getTopDownFrame(topDownId, a.dir ?? 'south', a.frame) : null;
+      const fallback = getFrame(a.id, this.isHall && a.key === 'rei' ? 'idle' : a.anim, a.frame);
       // Aceita tanto as folhas atuais quanto as variantes de maior resolução.
-      const sourceW = 'sw' in fr ? Number(fr.sw) : CELL_W;
-      const sourceH = 'sh' in fr ? Number(fr.sh) : CELL_H;
+      const sourceW = fr ? fr.sw : fallback.sw;
+      const sourceH = fr ? fr.sh : fallback.sh;
+      const source = fr ?? fallback;
       const k = p.scale;
-      const w = Math.round(CELL_W * k), h = Math.round(CELL_H * k);
+      const drawScale = topDown ? (a.scale ?? 1) : k;
+      const w = Math.round((topDown ? 72 : CELL_W) * drawScale), h = Math.round((topDown ? 108 : CELL_H) * drawScale);
       const axis = (a.facing > 0 ? 31 : CELL_W - 31) * k;
-      const dx = Math.round(p.x - axis);
-      const dy = Math.round(p.foot - FOOT * k);
+      const dx = Math.round(p.x - (topDown ? w / 2 : axis));
+      const dy = Math.round(p.foot - (topDown ? h * .86 : FOOT * k));
       ctx.fillStyle = `rgba(10,6,16,${0.35 * k})`;
       ctx.beginPath();
       ctx.ellipse(Math.round(p.x), p.foot, 13 * k, 3 * k, 0, 0, Math.PI * 2);
@@ -303,8 +366,8 @@ export class SceneView {
       if (a.facing < 0) {
         ctx.translate(dx + w, dy);
         ctx.scale(-1, 1);
-        ctx.drawImage(fr.src, fr.sx, fr.sy, sourceW, sourceH, 0, 0, w, h);
-      } else ctx.drawImage(fr.src, fr.sx, fr.sy, sourceW, sourceH, dx, dy, w, h);
+        ctx.drawImage(source.src, source.sx, source.sy, sourceW, sourceH, 0, 0, w, h);
+      } else ctx.drawImage(source.src, source.sx, source.sy, sourceW, sourceH, dx, dy, w, h);
       ctx.restore();
     }
     while (objectIndex < objects.length) this.hall!.drawObject(ctx, objects[objectIndex++]);
@@ -317,7 +380,8 @@ export class SceneView {
   private hallPosition(a: ActorSpec) {
     if (!this.isHall) return { x: a.x, foot: a.foot, scale: a.scale ?? 1 };
     const scale = .62 * (a.scale ?? 1);
-    if (a.key === 'rei') return { x: 640, foot: 330, scale: .62 };
+    if (a.key === 'rei' && !a.free) return { x: 640, foot: 330, scale: .62 };
+    if (a.key === 'rei' && a.free) return { x: a.x, foot: a.foot, scale: .62 };
     if (a.key.startsWith('comp-')) return { x: 760, foot: 347, scale };
     if (a.key === 'guard1') return { x: 342 + (a.x - 150) * .5, foot: 359, scale };
     if (a.key === 'guard2') return { x: 896 + (a.x - 168) * .5, foot: 359, scale };
@@ -359,6 +423,68 @@ function copyInto(dst: HTMLCanvasElement, src: HTMLCanvasElement) {
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, dst.width, dst.height);
   ctx.drawImage(src, 0, 0);
+}
+
+function clamp(n: number, lo: number, hi: number) {
+  return Math.max(lo, Math.min(hi, n));
+}
+
+function directionFor(x: number, y: number, tx: number, ty: number): TopDownDir {
+  const dx = tx - x, dy = ty - y;
+  if (Math.abs(dy) > Math.abs(dx)) return dy < 0 ? 'north' : 'south';
+  return dx < 0 ? 'west' : 'east';
+}
+
+interface GridNode { x: number; y: number; f: number; g: number; }
+
+function hallPath(x: number, y: number, tx: number, ty: number, objects: HallObject[]) {
+  const cell = 32;
+  const cols = Math.ceil(HALL_W / cell), rows = Math.ceil(HALL_H / cell);
+  const center = (gx: number, gy: number) => ({ x: gx * cell + cell / 2, y: gy * cell + cell / 2 });
+  const blocked = (gx: number, gy: number) => {
+    const p = center(gx, gy);
+    if (p.x < 100 || p.x > 1180 || p.y < 214 || p.y > 616) return true;
+    return objects.some((o) => o.solid && p.x > o.x - 18 && p.x < o.x + o.w + 18 && p.y > o.y - 12 && p.y < o.y + o.h + 10);
+  };
+  const toGrid = (px: number, py: number) => ({ x: clamp(Math.floor(px / cell), 0, cols - 1), y: clamp(Math.floor(py / cell), 0, rows - 1) });
+  const start = toGrid(x, y), end = toGrid(tx, ty);
+  if (blocked(start.x, start.y)) return [];
+  let target = end;
+  if (blocked(target.x, target.y)) {
+    const nearby: Array<{ x: number; y: number; d: number }> = [];
+    for (let gy = Math.max(0, end.y - 3); gy <= Math.min(rows - 1, end.y + 3); gy++)
+      for (let gx = Math.max(0, end.x - 3); gx <= Math.min(cols - 1, end.x + 3); gx++)
+        if (!blocked(gx, gy)) nearby.push({ x: gx, y: gy, d: Math.hypot(gx - end.x, gy - end.y) });
+    nearby.sort((a, b) => a.d - b.d); if (!nearby.length) return []; target = nearby[0];
+  }
+  const key = (gx: number, gy: number) => `${gx},${gy}`;
+  const open: GridNode[] = [{ ...start, g: 0, f: Math.hypot(target.x - start.x, target.y - start.y) }];
+  const came = new Map<string, string>();
+  const best = new Map<string, number>([[key(start.x, start.y), 0]]);
+  while (open.length) {
+    open.sort((a, b) => a.f - b.f);
+    const cur = open.shift()!;
+    if (cur.x === target.x && cur.y === target.y) {
+      const cells: Array<{ x: number; y: number }> = [];
+      let k = key(cur.x, cur.y);
+      while (k) {
+        const [gx, gy] = k.split(',').map(Number); cells.push(center(gx, gy));
+        const prev = came.get(k); if (!prev) break; k = prev;
+      }
+      cells.reverse();
+      // Remove collinear points so walking looks deliberate rather than grid-like.
+      return cells.filter((p, i) => i === 0 || i === cells.length - 1 || Math.abs(p.x - cells[i - 1].x) !== Math.abs(cells[i + 1].x - p.x) || Math.abs(p.y - cells[i - 1].y) !== Math.abs(cells[i + 1].y - p.y));
+    }
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+      const nx = cur.x + dx, ny = cur.y + dy;
+      if (nx < 0 || ny < 0 || nx >= cols || ny >= rows || blocked(nx, ny)) continue;
+      const nk = key(nx, ny), ng = cur.g + 1;
+      if (ng >= (best.get(nk) ?? Infinity)) continue;
+      best.set(nk, ng); came.set(nk, key(cur.x, cur.y));
+      open.push({ x: nx, y: ny, g: ng, f: ng + Math.hypot(target.x - nx, target.y - ny) });
+    }
+  }
+  return [];
 }
 
 export function skyWeights(h: number) {

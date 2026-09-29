@@ -4,6 +4,8 @@ Gerada com a ferramenta integrada `image_gen`, em uma única chamada. O arquivo 
 
 O atlas contém 16 regiões. Piso, paredes, tapete e degraus são montados separadamente. Colunas, trono, velas, armaduras, plantas e estátuas têm instâncias com posição e profundidade em `src/render/throneHall.ts`. Os limites sólidos são metadados para a futura etapa de navegação; ainda não são um sistema de colisão.
 
+`king-topdown.png` e `courtier-topdown.png` são folhas 3×4 geradas depois para a nova câmera. Cada linha representa sul, oeste, leste e norte; as três colunas são passos alternados. O rei usa sua própria folha. Visitantes de audiência usam a folha de cortesã até receberem folhas individuais; guardas e personagens decorativos mantêm a arte anterior como fallback.
+
 ## Prompt utilizado
 
 Use case: stylized-concept. Asset type: production 2D game TILESET / sprite atlas, NOT a finished room illustration.

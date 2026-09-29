@@ -42,6 +42,7 @@ export function openAudience(app: App, uid: number) {
   const relation = s.rel[ev.speaker] ?? 0;
   const initialTension = Math.max(8, Math.min(88, 28 + (ev.kind === 'urgente' ? 25 : ev.kind === 'casamento' ? 14 : 0) - Math.round(relation / 4)));
   app.ui.dialog = { uid, node: 'start', phase: 'entering', tension: initialTension, expr: ev.kind === 'urgente' ? 'preocupado' : 'neutro' };
+  app.ui.dialogCollapsed = false;
   app.ui.useInfluence = false;
   app.scene.setRoom('trono');
   app.scene.walk('speaker', ev.speaker, from, LAYOUT.speakerX, LAYOUT.floorY, 'bow', () => {
@@ -90,9 +91,9 @@ export function render(app: App): string {
   if (ev?.kind === 'noite') app.scene.setHour(20.6);
 
   // fila: só o rosto de quem espera, sem nome nem assunto
-  const queue = `<div class="queue">
-    <div class="queue-title">${iconImg('ampulheta')} Aguardando audiência <a class="hall-preview-link" href="?cenario=trono" target="_blank" rel="noopener">Ver cenário ↗</a></div>
-    <div class="queue-cards">
+  const queue = `<div class="queue ${app.ui.queueCollapsed ? 'collapsed' : ''}">
+    <div class="queue-title">${iconImg('ampulheta')} Aguardando audiência <button class="queue-toggle" data-act="toggleQueue" aria-expanded="${!app.ui.queueCollapsed}">${app.ui.queueCollapsed ? 'Mostrar fila' : 'Ocultar fila'}</button><a class="hall-preview-link" href="?cenario=trono" target="_blank" rel="noopener">Ver cenário ↗</a></div>
+    <div class="queue-cards" aria-hidden="${app.ui.queueCollapsed}">
       ${vis.length ? '' : '<p class="empty">Ninguém espera no momento.</p>'}
       ${vis
         .map((a) => {
@@ -111,7 +112,7 @@ export function render(app: App): string {
     return `${queue}
       <div class="idle-bar">
         <div class="parchment idle-hint">
-          <p>${s.hour >= DAY_END ? 'O sol se pôs. Não há mais tempo para audiências hoje.' : vis.length ? 'Clique em um rosto na fila para mandar a pessoa entrar. Você só saberá o que ela quer quando estiver diante do trono.' : 'O salão está vazio por enquanto. Visite a biblioteca ou as províncias: novas pessoas podem chegar ao longo do dia.'}</p>
+          <p>${s.hour >= DAY_END ? 'O sol se pôs. Não há mais tempo para audiências hoje.' : vis.length ? 'Clique em um rosto na fila para mandar a pessoa entrar. Toque ou clique no piso para mover o rei pelo salão.' : 'O salão está vazio por enquanto. Toque ou clique no piso para mover o rei; visite a biblioteca ou as províncias para encontrar novas demandas.'}</p>
         </div>
         ${!vis.length && s.hour < DAY_END ? `<button class="wait-hour" data-act="waitHour">${iconImg('ampulheta', 'ico-lg')}<span><b>Esperar 1 hora</b><small>Talvez alguém apareça</small></span></button>` : ''}
         <button class="end-day" data-act="endDay">${iconImg('selo', 'ico-lg')}<span><b>Encerrar o Dia</b><small>Ver o resumo e avançar</small></span></button>
@@ -121,6 +122,11 @@ export function render(app: App): string {
   if (d.phase === 'entering') {
     return `${queue}
       <div class="entering parchment"><p>Os guardas abrem as portas. Alguém entra no salão...</p><button class="btn sm" data-act="skipWalk">Pular</button></div>`;
+  }
+
+  if (app.ui.dialogCollapsed) {
+    const speaker = char(ev.speaker);
+    return `${queue}<div class="dialog-mini"><span><b>${esc(speaker.name)}</b><small> Audiência em andamento</small></span><button class="btn sm" data-act="toggleDialog">Abrir diálogo</button></div>`;
   }
 
   const c = char(ev.speaker);
@@ -158,6 +164,7 @@ export function render(app: App): string {
         <div class="d-house">${iconImg(H.sigil, 'ico-lg', '#f2c14e')}<span><b>${esc(H.name)}</b><small>${(c.traits ?? []).map(esc).join(' · ')}</small></span></div>
       </div>
       <div class="speech parchment">
+        <button class="dialog-toggle" data-act="toggleDialog" aria-label="Minimizar diálogo">−</button>
         ${origin ? `<div class="consequence-origin">Consequência do Dia ${origin.day}: ${esc(origin.decision)} · ${esc(origin.event)}</div>` : ''}
         <div class="tension-meter" role="meter" aria-label="Tensão da conversa" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${d.tension}">
           <span>Tensão <b>${d.tension}%</b></span><div class="tension-track"><i style="width:${d.tension}%"></i></div><em>${tensionLabel}</em>

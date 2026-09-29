@@ -9,13 +9,19 @@ import { ellipse, hexToRgb, makeCanvas, mix, outline, px, shade } from './pixel'
 export const CELL_W = 64;
 export const CELL_H = 128;
 export const FOOT = 123;
+const SHEET_CELL_W = CELL_W * 2;
+const SHEET_CELL_H = CELL_H * 2;
+const PORTRAIT_TILE = 256;
 
 export type Anim = 'walk' | 'idle' | 'talk' | 'bow' | 'kneel' | 'seated' | 'seatedTalk' | 'seatedThink';
+export type TopDownDir = 'south' | 'west' | 'east' | 'north';
 
 export interface Frame {
   src: CanvasImageSource;
   sx: number;
   sy: number;
+  sw: number;
+  sh: number;
 }
 
 export function frameCount(a: Anim) {
@@ -25,6 +31,7 @@ export function frameCount(a: Anim) {
 // ---------- folhas geradas ----------
 const sheets = new Map<string, HTMLCanvasElement>();
 const portraitSheets = new Map<string, HTMLCanvasElement>();
+const topDownSheets = new Map<string, HTMLImageElement>();
 
 function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((res, rej) => {
@@ -66,9 +73,9 @@ export async function loadCharacterAssets(onUpdate: () => void) {
   const jobs: Promise<void>[] = [];
   for (const [id, base] of Object.entries(ASSET_FILES)) {
     if (files.includes(`${base}_corpo.png`))
-      jobs.push(loadImage(`assets/personagens/${base}_corpo.png`).then((img) => void sheets.set(id, downscale(img, CELL_W * 6, CELL_H * 2))).catch(() => {}));
+      jobs.push(loadImage(`assets/personagens/${base}_corpo.png`).then((img) => void sheets.set(id, downscale(img, SHEET_CELL_W * 6, SHEET_CELL_H * 2))).catch(() => {}));
     if (files.includes(`${base}_retrato.png`))
-      jobs.push(loadImage(`assets/personagens/${base}_retrato.png`).then((img) => void portraitSheets.set(id, downscale(img, 256, 256))).catch(() => {}));
+      jobs.push(loadImage(`assets/personagens/${base}_retrato.png`).then((img) => void portraitSheets.set(id, downscale(img, PORTRAIT_TILE * 2, PORTRAIT_TILE * 2))).catch(() => {}));
   }
   await Promise.all(jobs);
   if (jobs.length) {
@@ -76,6 +83,32 @@ export async function loadCharacterAssets(onUpdate: () => void) {
     tinted.clear();
     onUpdate();
   }
+}
+
+// Folhas da nova câmera top-down. Cada uma é uma grade 3×4:
+// sul, oeste, leste e norte; três poses de caminhada por direção.
+export async function loadTopDownAssets(onUpdate: () => void) {
+  try {
+    const entries = await Promise.all([
+      loadImage('assets/cenarios/trono/king-topdown.png').then((img) => topDownSheets.set('rei', img)),
+      loadImage('assets/cenarios/trono/courtier-topdown.png').then((img) => topDownSheets.set('courtier', img)),
+    ]);
+    void entries;
+    onUpdate();
+  } catch {
+    // A cena continua usando o sprite lateral até a arte top-down existir.
+  }
+}
+
+export function hasTopDown(id: string) {
+  return topDownSheets.has(id);
+}
+
+export function getTopDownFrame(id: string, dir: TopDownDir, frame: number): Frame | null {
+  const img = topDownSheets.get(id) ?? (id !== 'rei' ? topDownSheets.get('courtier') : undefined);
+  if (!img) return null;
+  const row = ({ south: 0, west: 1, east: 2, north: 3 } as const)[dir];
+  return { src: img, sx: (frame % 3) * (img.naturalWidth / 3), sy: row * (img.naturalHeight / 4), sw: img.naturalWidth / 3, sh: img.naturalHeight / 4 };
 }
 
 export function hasSheet(id: string) {
@@ -173,7 +206,7 @@ export function portraitFromSheet(id: string, expr: Expr): HTMLCanvasElement | n
   if (!sh) return null;
   const [cx, cy] = EXPR_POS[expr];
   const { c, ctx } = makeCanvas(128, 128);
-  ctx.drawImage(sh, cx * 128, cy * 128, 128, 128, 0, 0, 128, 128);
+  ctx.drawImage(sh, cx * PORTRAIT_TILE, cy * PORTRAIT_TILE, PORTRAIT_TILE, PORTRAIT_TILE, 0, 0, 128, 128);
   if (crowned.has(id)) drawCrown(ctx, 0, 0, 128, 128, 2);
   return c;
 }
@@ -207,16 +240,16 @@ export function getFrame(id: string, anim: Anim, f: number): Frame {
   const sh = sheetFor(id);
   if (sh) {
     const [cx, cy] = sheetCell(sheets.has(id) ? id : CHARACTERS[id]?.base ?? id, anim, f);
-    if (!crowned.has(id)) return { src: sh, sx: cx * CELL_W, sy: cy * CELL_H };
+    if (!crowned.has(id)) return { src: sh, sx: cx * SHEET_CELL_W, sy: cy * SHEET_CELL_H, sw: SHEET_CELL_W, sh: SHEET_CELL_H };
     const key = `${id}|${cx}|${cy}`;
     let c = crownCache.get(key);
     if (!c) {
-      const m = makeCanvas(CELL_W, CELL_H);
-      m.ctx.drawImage(sh, cx * CELL_W, cy * CELL_H, CELL_W, CELL_H, 0, 0, CELL_W, CELL_H);
-      drawCrown(m.ctx, 0, 0, CELL_W, CELL_H, 1);
+      const m = makeCanvas(SHEET_CELL_W, SHEET_CELL_H);
+      m.ctx.drawImage(sh, cx * SHEET_CELL_W, cy * SHEET_CELL_H, SHEET_CELL_W, SHEET_CELL_H, 0, 0, SHEET_CELL_W, SHEET_CELL_H);
+      drawCrown(m.ctx, 0, 0, SHEET_CELL_W, SHEET_CELL_H, 2);
       crownCache.set(key, (c = m.c));
     }
-    return { src: c, sx: 0, sy: 0 };
+    return { src: c, sx: 0, sy: 0, sw: SHEET_CELL_W, sh: SHEET_CELL_H };
   }
   const n = frameCount(anim);
   const key = `${id}|${anim}|${f % n}`;
@@ -225,7 +258,7 @@ export function getFrame(id: string, anim: Anim, f: number): Frame {
     c = drawProfile(CHARACTERS[id]?.look ?? CHARACTERS.guarda.look, anim, f % n);
     frameCache.set(key, c);
   }
-  return { src: c, sx: 0, sy: 0 };
+  return { src: c, sx: 0, sy: 0, sw: CELL_W, sh: CELL_H };
 }
 
 function limb(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, w: number, color: string) {

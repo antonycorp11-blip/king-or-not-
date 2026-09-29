@@ -50,6 +50,8 @@ export interface UIState {
   armyOpen: boolean;
   warClash: string | null;
   courtTab?: 'pessoas' | 'correio';
+  queueCollapsed: boolean;
+  dialogCollapsed: boolean;
 }
 
 export interface ScreenModule {
@@ -86,7 +88,7 @@ export class App {
     this.root.id = 'ui';
     this.stage.appendChild(this.root);
     this.s = load() ?? newGame();
-    this.ui = { screen: 'titulo', dialog: null, useInfluence: false, province: 'castelmar', warSel: null, warMode: 'reforcar', warResult: null, summary: null, summaryDay: 0, confirmEnd: false, help: false, lens: 'casas', good: 'graos', cardOpen: true, armyOpen: false, warClash: null };
+    this.ui = { screen: 'titulo', dialog: null, useInfluence: false, province: 'castelmar', warSel: null, warMode: 'reforcar', warResult: null, summary: null, summaryDay: 0, confirmEnd: false, help: false, lens: 'casas', good: 'graos', cardOpen: true, armyOpen: false, warClash: null, queueCollapsed: false, dialogCollapsed: false };
     this.stage.addEventListener('click', (e) => this.onClick(e));
     window.addEventListener('resize', () => this.fit());
     window.addEventListener('orientationchange', () => window.setTimeout(() => this.fit(), 250));
@@ -302,6 +304,7 @@ export class App {
     const s = this.s;
     const ui = this.ui;
     if (ui.screen === 'titulo') {
+      this.scene.setMovementEnabled(false);
       this.scene.setRoom('trono');
       this.scene.setHour(17.5);
       this.scene.sync(this.throneActors());
@@ -311,12 +314,14 @@ export class App {
     }
     this.stage.classList.remove('talking');
     if (ui.summary) {
+      this.scene.setMovementEnabled(false);
       this.scene.setHour(20.5);
       this.scene.setMode('full');
       this.root.innerHTML = renderSummary(this) + this.tipHtml();
       return;
     }
     if (s.ended) {
+      this.scene.setMovementEnabled(false);
       this.scene.setHour(20);
       this.scene.setMode('dim');
       this.root.innerHTML = renderEnd(this);
@@ -329,6 +334,7 @@ export class App {
     this.scene.setHour(s.flags.nightPending ? 20.6 : s.hour);
     const mod = SCREENS[screen];
     if (screen !== 'biblioteca') this.scene.setRoom('trono');
+    this.scene.setMovementEnabled(screen === 'trono' && !ui.dialog && !ui.summary && !s.ended && !this.needsCompanion());
     if (screen !== 'trono' && screen !== 'biblioteca') this.scene.sync(this.throneActors());
     this.root.innerHTML = this.topbar() + `<div class="screen screen-${screen}">${mod.render(this)}</div>` + this.confirmModal() + (this.needsCompanion() ? this.companionModal() : this.tipHtml());
     mod.after?.(this);
@@ -491,6 +497,8 @@ export class App {
         this.render();
         return this.autoOpenUrgent();
       case 'closeHelp': this.ui.help = false; return this.render();
+      case 'toggleQueue': this.ui.queueCollapsed = !this.ui.queueCollapsed; return this.render();
+      case 'toggleDialog': this.ui.dialogCollapsed = !this.ui.dialogCollapsed; return this.render();
     }
     if (this.ui.screen !== 'titulo') {
       const mod = SCREENS[this.ui.screen as ScreenId];

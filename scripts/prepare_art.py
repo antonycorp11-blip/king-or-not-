@@ -2,8 +2,8 @@
 
 Lê as folhas originais em assets/raw/ (NN_id_corpo.png, NN_id_retrato.png) e grava em
 assets/personagens/ as versões prontas:
-  - corpo:   384x256 (grade 6x2 de 64x128), cada quadro separado, com pés e cabeça alinhados
-  - retrato: 256x256 (grade 2x2 de 128x128)
+  - corpo:   768x512 (grade 6x2 de 128x256), cada quadro separado, com pés e cabeça alinhados
+  - retrato: 512x512 (grade 2x2 de 256x256)
 
 Uso:  python3 scripts/prepare_art.py            (processa tudo)
       python3 scripts/prepare_art.py 01_rei    (só um personagem)
@@ -17,9 +17,12 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / 'assets' / 'raw'
 OUT = ROOT / 'assets' / 'personagens'
-CW, CH = 64, 128  # célula no jogo
-AXIS = 31  # eixo do corpo dentro da célula (virado para a direita)
-BOTTOM = 124  # linha dos pés (FOOT = 123)
+# A arte é preparada em 2x e desenhada no palco em 1x. Isso mantém a
+# composição original, mas evita que cada personagem vire um borrão ao ser
+# ampliado na sala do trono.
+CW, CH = 128, 256
+AXIS = 62
+BOTTOM = 248
 ALPHA_MIN = 110
 
 # escala por personagem (jovens e damas são menores que os guardas e lordes)
@@ -140,7 +143,7 @@ def process_body(src: Path, dst: Path, seated_first_row: bool, f: float = 1.0):
 
 
 def process_portrait(src: Path, dst: Path):
-    im = Image.open(src).convert('RGBA').resize((256, 256), Image.BOX)
+    im = Image.open(src).convert('RGBA').resize((512, 512), Image.BOX)
     binarize(im).save(dst)
 
 
