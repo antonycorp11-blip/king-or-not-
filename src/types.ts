@@ -322,6 +322,8 @@ export interface GameState {
   dynasty: DynastyMember[];
   tracks: Record<string, number>;
   activitiesToday: string[];
+  readUsed?: Record<string, number[]>; // trechos já lidos de cada livro
+  readScore?: Record<string, [number, number]>; // acertos e tentativas de leitura por livro
   seed: number;
   kingName: string;
   day: number;

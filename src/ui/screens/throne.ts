@@ -16,6 +16,8 @@ import { LAYOUT } from '../../render/scenes';
 import { iconImg } from '../../render/pixel';
 import { effectTags, esc, portrait, reqCheck, shortName, txt } from '../common';
 import { genericAdvice } from '../../data/companions';
+import { BOOKS } from '../../data/progression';
+import { readQuality } from './library';
 
 const KIND_LABEL: Record<string, string> = {
   audiencia: 'Audiência', urgente: 'Urgente', familia: 'Família', conselho: 'Conselho', casamento: 'Casamento', noite: 'Noite',
@@ -380,8 +382,16 @@ export function handle(app: App, act: string, arg: string) {
       return app.render();
     }
     moodAfterAudience(s, d.tension, ch);
+    // Citar um livro: quem leu bem impressiona; quem leu por cima tropeça
+    let cite = '';
+    const book = ch.req?.knowledge ? BOOKS.find((b) => b.knowledge === ch.req!.knowledge) : undefined;
+    if (book) {
+      const q = readQuality(s, book.id) ?? 0.6;
+      if (q >= 0.8) { applyEffect(s, { res: { prestigio: 2 }, xp: 5 }); cite = ` (Você cita "${book.title}" palavra por palavra. A corte nota.)`; }
+      else if (q < 0.45 && Math.random() < 0.35) { applyEffect(s, { res: { prestigio: -1 } }); cite = ` (Você erra um detalhe de "${book.title}", e alguém corrige em voz alta.)`; }
+    }
     save(s);
-    d.reply = txt(ch.reply, s) || defaultReply(ch);
+    d.reply = (txt(ch.reply, s) || defaultReply(ch)) + cite;
     return app.render();
   }
   if (act === 'finish') {

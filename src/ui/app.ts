@@ -65,6 +65,7 @@ export interface UIState {
   panel: 'estado' | 'feed' | null; // pergaminhos do HUD
   navOpen: boolean;
   ring: boolean; // anel de ações em volta do rei
+  readWith: string | null; // quem lê junto com o rei
 }
 
 export interface ScreenModule {
@@ -104,7 +105,7 @@ export class App {
     this.root.id = 'ui';
     this.stage.appendChild(this.root);
     this.s = load() ?? newGame();
-    this.ui = { screen: 'titulo', dialog: null, useInfluence: false, province: 'castelmar', warSel: null, warMode: 'reforcar', warResult: null, summary: null, summaryDay: 0, confirmEnd: false, help: false, lens: 'casas', good: 'graos', cardOpen: true, armyOpen: false, warClash: null, queueCollapsed: false, dialogCollapsed: false, castleModal: null, seatPick: null, panel: null, navOpen: true, ring: false };
+    this.ui = { screen: 'titulo', dialog: null, useInfluence: false, province: 'castelmar', warSel: null, warMode: 'reforcar', warResult: null, summary: null, summaryDay: 0, confirmEnd: false, help: false, lens: 'casas', good: 'graos', cardOpen: true, armyOpen: false, warClash: null, queueCollapsed: false, dialogCollapsed: false, castleModal: null, seatPick: null, panel: null, navOpen: true, ring: false, readWith: null };
     this.stage.addEventListener('click', (e) => this.onClick(e));
     // tocar numa pessoa pelo castelo abre uma conversa
     this.scene.onTap = (key) => {
@@ -551,6 +552,7 @@ export class App {
       case 'sentar': s.castle.seated = true; save(s); this.render(); return this.autoOpenUrgent();
       case 'cadeiras': this.ui.castleModal = 'cadeiras'; return this.render();
       case 'caderno': this.ui.castleModal = 'caderno'; return this.render();
+      case 'lerJuntos': this.ui.readWith = s.spouse ?? null; s.activitiesToday.push(a.id); return this.go('biblioteca');
       case 'conselhoExtra': {
         const m = pickMatter(s, Math.random);
         if (!m) return this.toast('Não há nada na mesa do conselho hoje.');

@@ -1,3 +1,4 @@
+import { EXTRA_FACTS } from './bookFacts';
 import type { Attr } from '../types';
 
 // Livros: lidos na biblioteca em sessões de 2h. Destravam linhas de diálogo (conhecimento).
@@ -12,6 +13,7 @@ export interface Book {
   blurb: string;
   unlocks: string;
   facts: [string, string, string[]][]; // trecho com lacuna (___), resposta, opções
+  hidden?: { flag: string; hint: string }; // livro que não está nas estantes: precisa ser encontrado
 }
 
 export const BOOKS: Book[] = [
@@ -34,6 +36,15 @@ export const BOOKS: Book[] = [
   { id: 'estrelas', title: "Mapas das Estrelas", author: "Frei Aske", hours: 5, knowledge: 'astronomia', attr: 'diplomacia', color: '#23346e', blurb: "Constelações, presságios e a arte de prever o inverno.", unlocks: "Interpretar presságios e acalmar o povo supersticioso.", facts: [["A estrela do norte guia os ___.", "navegantes", ["navegantes", "ladrões", "reis"]], ["Um cometa anuncia ___, dizem os velhos.", "mudança", ["mudança", "chuva", "casamento"]], ["O inverno chega quando a constelação do ___ some.", "Cervo", ["Cervo", "Leão", "Barco"]], ["Eclipses assustam o povo e ___ os padres.", "enriquecem", ["enriquecem", "calam", "cegam"]], ["Frei Aske diz que o céu não mente, só é mal ___.", "interpretado", ["interpretado", "pintado", "vendido"]]] },
   { id: 'diario', title: "Diário de um Rei Menino", author: "Rei Aldren I (aos 16)", hours: 5, knowledge: 'diario', attr: 'carisma', color: '#5a3a2a', blurb: "O diário do seu tataravô, coroado aos dezesseis e ainda assim vivo aos oitenta.", unlocks: "Conselhos de um rei que já esteve no seu lugar.", facts: [["Na primeira página ele escreveu que ser rei era muito ___.", "chato", ["chato", "fácil", "bonito"]], ["Ele sobreviveu a três ___ de envenenamento.", "tentativas", ["tentativas", "banquetes", "casamentos"]], ["Seu segredo: nunca dormir no mesmo ___ duas noites.", "quarto", ["quarto", "castelo", "reino"]], ["Ele dizia que a melhor arma do rei é o ___.", "tempo", ["tempo", "ouro", "exército"]], ["Casou-se com a filha do seu maior ___.", "inimigo", ["inimigo", "amigo", "credor"]]] },
 ];
+
+// Mais trechos por livro (a leitura não repete passagens na mesma partida)
+for (const b of BOOKS) b.facts.push(...(EXTRA_FACTS[b.id] ?? []));
+// Livros que não estão nas estantes abertas
+const HIDDEN: Record<string, Book['hidden']> = {
+  venenos: { flag: 'livroVenenos', hint: 'Está na seção proibida. Theodric só abre para quem pergunta com jeito.' },
+  sangue: { flag: 'livroSangue', hint: 'É o exemplar pessoal do Chanceler Aldric. Peça emprestado a ele.' },
+};
+for (const b of BOOKS) if (HIDDEN[b.id]) b.hidden = HIDDEN[b.id];
 
 // Árvore de habilidades: o rei cresce como pessoa. Pontos vêm da experiência (decisões tomadas).
 export interface Skill {

@@ -16,6 +16,8 @@ import { moodLabel, MOOD_LOOK } from '../engine/mood';
 import { save } from '../engine/core';
 import { iconImg } from '../render/pixel';
 import { esc, portrait } from './common';
+import { BOOKS } from '../data/progression';
+import { qualityLabel, readQuality } from './screens/library';
 
 export type CastleModal = 'agenda' | 'mapa' | 'cadeiras' | 'caderno' | null;
 
@@ -132,11 +134,13 @@ function notebook(app: App) {
   const memo = s.mood.memo.slice(-5).reverse().map((m) => `<li><time>Dia ${m.day}</time> ${esc(m.text)}</li>`).join('');
   const clues = s.conspiracy.clues.map((c) => CLUES[c]).filter(Boolean).map((c) => `<li><b>${esc(c.title)}</b><p>${esc(c.text)}</p></li>`).join('');
   const knowsLaw = s.conspiracy.clues.includes('lei_chaves');
+  const args = BOOKS.filter((b) => s.knowledge.includes(b.knowledge)).map((b) => `<li><b>${esc(b.title)}</b>: ${esc(b.unlocks)} <i>(${qualityLabel(readQuality(s, b.id)) || 'lido'})</i></li>`).join('');
   const prep = Object.entries(s.conspiracy.prep).filter(([, v]) => v).map(([k, v]) => `<li>${esc(PREP_NAMES[k] ?? k)}${k === 'reservas' ? `: ${v} moedas` : ''}</li>`).join('');
   return frame('notebook-modal', 'Caderno do Rei', `
     <div class="nb-cols">
       <section><h3>Como me sinto</h3><p>${esc(MOOD_LOOK[mood])}</p>${memo ? `<ul class="memo">${memo}</ul>` : ''}
-        ${prep ? `<h3>O que guardei para o pior</h3><ul>${prep}</ul>` : ''}</section>
+        ${prep ? `<h3>O que guardei para o pior</h3><ul>${prep}</ul>` : ''}
+        ${args ? `<h3>Argumentos que posso usar</h3><ul class="memo">${args}</ul>` : ''}</section>
       <section><h3>Suspeitas</h3><p class="sub">${esc(insightLabel(s))}</p>${clues ? `<ul class="clues">${clues}</ul>` : '<p class="sub">Nada escrito ainda. Ande pelo castelo, converse, escute.</p>'}
         ${knowsLaw ? `<h3>As cinco chaves</h3><ul class="keys">${SEAT_IDS.map((k) => { const h = keyHolder(s, k); const who = holder(s, k); return `<li>${esc(SEATS[k].key)}: ${who ? esc(char(who).name) : 'ninguém'} <em class="key key-${h === 'pacto' && insight(s) < 60 ? 'duvida' : h}">${h === 'coroa' ? 'confio' : h === 'duvida' ? 'não sei' : insight(s) >= 60 ? 'suspeito' : 'não sei'}</em></li>`; }).join('')}</ul>` : ''}
       </section>

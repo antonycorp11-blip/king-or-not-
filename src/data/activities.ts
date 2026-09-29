@@ -1,6 +1,9 @@
 import type { Effect, GameState, RoomId, ScreenId } from '../types';
 import { EVENTS } from './events';
 import { insight } from '../engine/conspiracy';
+import { whereIs } from '../engine/npcs';
+
+const whereIsSpouseHere = (s: GameState) => whereIs(s, s.spouse!)?.room === 'aposentos';
 
 // O que o rei pode fazer por iniciativa própria em cada lugar.
 // Atividades abrem pequenas histórias (eventos 'atividade') ou mudam o dia do rei.
@@ -18,7 +21,7 @@ export interface ActivityDef {
   rest?: boolean; // conta como descanso para o humor
   event?: string | ((s: GameState) => string | undefined); // história que se abre
   screen?: ScreenId; // leva a uma tela de gestão
-  special?: 'dormir' | 'sentar' | 'cadeiras' | 'conselhoExtra' | 'caderno';
+  special?: 'dormir' | 'sentar' | 'cadeiras' | 'conselhoExtra' | 'caderno' | 'lerJuntos';
   toast?: string;
 }
 
@@ -36,9 +39,11 @@ export const ACTIVITIES: ActivityDef[] = [
   { id: 'dormir', room: 'quarto', label: 'Deitar e encerrar o dia', sub: 'Resumo do dia', icon: 'selo', hours: 0, special: 'dormir' },
   { id: 'descansar', room: 'quarto', label: 'Descansar', sub: '1 hora · alivia o cansaço', icon: 'ampulheta', hours: 1, perDay: true, rest: true, effects: { mood: { fatigue: -35, stress: -8, anger: -10 } }, toast: 'Você fecha os olhos por uma hora. O reino continua lá quando abre.' },
   { id: 'escrivaninha', room: 'quarto', label: 'A escrivaninha do meu pai', sub: 'Trancada desde o enterro', icon: 'cadeado', hours: 0.5, once: 'diarioPai', event: 'escrivaninha_pai', cond: (s) => s.day >= 3 },
+  { id: 'ler', room: 'quarto', label: 'Ler antes de dormir', sub: 'Livros da biblioteca, à luz de vela', icon: 'livro', hours: 0, screen: 'biblioteca', cond: (s) => s.hour >= 16 },
   { id: 'caderno', room: 'quarto', label: 'Caderno do Rei', sub: 'Suspeitas e anotações', icon: 'livro', hours: 0, special: 'caderno' },
   // Aposentos
   { id: 'varanda', room: 'aposentos', label: 'Tomar ar na varanda', sub: '30 min · vista do jardim', icon: 'flor', hours: 0.5, perDay: true, rest: true, effects: { mood: { stress: -10, joy: 4 } }, toast: 'Lá embaixo, o jardim. Mais longe, a cidade. Mais longe ainda, tudo o que você governa.' },
+  { id: 'lerJuntos', room: 'aposentos', label: 'Ler junto com a rainha', sub: 'Um livro a dois', icon: 'coracao', hours: 0, special: 'lerJuntos', perDay: true, cond: (s) => !!s.spouse && whereIsSpouseHere(s) },
   // Salão
   { id: 'sentar', room: 'salao', label: 'Sentar no trono', sub: 'Receber a fila de audiências', icon: 'coroa', hours: 0, special: 'sentar', cond: (s) => !s.castle.seated },
   { id: 'biblioteca', room: 'salao', label: 'Ir à biblioteca', sub: 'Ler e estudar', icon: 'livro', hours: 0, screen: 'biblioteca' },

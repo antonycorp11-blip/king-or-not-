@@ -1341,3 +1341,22 @@ body.character-gallery-page { overflow: auto; height: auto; min-height: 100vh; b
 .m .hud .medal { width: 64px; height: 64px; }
 .m .hud .medal .ico-lg { width: 58px; height: 58px; }
 .m .hud .medal span { display: none; }
+
+/* Leitura v2 */
+.read-claim { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: rgba(255,255,255,.35); border-left: 5px solid #8a1c24; }
+.read-claim p { margin: 0; font-size: 22px; }
+.read-claim u { text-decoration: none; color: #a8281f; font-weight: 700; }
+.cipher { font-family: var(--pix); font-size: 34px; letter-spacing: 6px; color: #4a2470; }
+.link-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; align-items: start; }
+.link-grid > div:first-child { display: flex; flex-direction: column; gap: 8px; }
+.link-left { text-align: left; padding: 10px 14px; font-size: 19px; background: rgba(255,255,255,.4); border: 2px solid #a08a60; color: var(--ink); }
+.link-left.sel { border-color: #2a5ab0; background: #e0e8ff; }
+.link-left.made { border-color: #7a5a1a; }
+.link-left.right { border-color: #2a7a3a; background: #d8f0c8; }
+.link-left.wrong { border-color: #a8281f; background: #f6d0c8; }
+.read-options.col { flex-direction: column; }
+.read-options .btn small { font-size: .7em; opacity: .75; }
+.book.missing { opacity: .75; filter: grayscale(.4); }
+.m .read-claim p { font-size: 18px; }
+.m .link-left { font-size: 16px; padding: 8px 10px; }
+.m .link-grid { grid-template-columns: 1.4fr 1fr; }
