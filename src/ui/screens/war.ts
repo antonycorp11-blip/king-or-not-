@@ -1,26 +1,23 @@
 import type { ProvinceId } from '../../types';
 import type { App } from '../app';
 import { HOUSES, HOUSE_IDS, PROVINCES } from '../../data/realm';
-import { clamp, hasSkill, knows, save } from '../../engine/core';
+import { clamp, save } from '../../engine/core';
 import { canSpend, spendHours } from '../../engine/day';
 import { computeEconomy } from '../../engine/economy';
-import { enemyLabel, warTurnHours, ADJ, PEACE_COST, attackOnce, blitz, canNegotiatePeace, canTakeTurn, endPlayerTurn, fortify, levyUnits, negotiatePeace, playerReinforcement, reinforce, terr, totals, type BattleRound } from '../../engine/war';
+import { enemyLabel, warTurnHours, ADJ, PEACE_COST, canNegotiatePeace, levyUnits, negotiatePeace, terr, totals } from '../../engine/war';
 import { iconImg } from '../../render/pixel';
 import { esc, shield } from '../common';
 import { MARCH_HOURS, MARCH_TARGETS, armyAt, marchArmy, marchPreview, northThreat, tension, tensionLabel } from '../../engine/army';
+import { ORDERS, TACTICS, TERRAIN, TROOPS, TROOP_IDS, commander, initArmies, royalArmy, setOrder, setTactic } from '../../engine/campaign';
+import { holder } from '../../engine/council';
+import { char } from '../../data/characters';
+import { portrait } from '../common';
+import type { OrderType, Tactic } from '../../types';
+
+const MERC_COST = 150;
 
 const RECRUIT_COST = 100;
 const TRAIN_COST = 80;
-
-function turnOpen(app: App) {
-  return app.s.flags.warTurnDay === app.s.day && !!app.s.war && !app.s.war.result;
-}
-
-function diceHtml(r: BattleRound) {
-  const die = (n: number, cls: string) => `<span class="die ${cls}">${n}</span>`;
-  return `<div class="dice"><div>${r.att.map((n) => die(n, 'att')).join('')}</div><span>vs</span><div>${r.def.map((n) => die(n, 'def')).join('')}</div></div>
-    <small>Atacante perdeu ${r.attLoss} · Defensor perdeu ${r.defLoss}</small>`;
-}
 
 export function render(app: App): string {
   const s = app.s;
@@ -68,35 +65,52 @@ export function render(app: App): string {
       }).join('')}</div>
       ${target && target !== at ? `<div class="march-plan"><p>${esc(marchPreview(s, target))}</p><button class="act-btn a-vermelho" data-act="march">${iconImg('espadas', 'ico-lg')}<span><b>Marchar para ${PROVINCES[target].name}</b><small>${MARCH_HOURS}h · os lordes vão reagir</small></span></button></div>` : ''}`;
   } else {
+    initArmies(s);
     const enemyName = enemyLabel(w.enemy);
-    const open = turnOpen(app);
-    const sel = ((app.ui.warSel ?? '').split('>')[0] || null) as ProvinceId | null;
     const tot = totals(w);
+    const planned = w.plannedDay === s.day;
+    const marshal = holder(s, 'marechal');
+    const selId = Number((app.ui.warSel ?? '').replace('army:', '')) || null;
+    const armyCard = (a: NonNullable<typeof w.armies>[number]) => {
+      const c = commander(a.commander);
+      const sel = selId === a.id;
+      const canOrder = a.owner === 'rei' && (planned || w.delegated) && !w.delegated;
+      return `<div class="army ${a.owner} ${sel ? 'sel' : ''}">
+        <header>${portrait(a.commander, 'army-portrait')}<div><b>${esc(a.name)}</b><small>${esc(char(a.commander).name)} · Estratégia ${c.estrategia}${c.esp !== 'nenhuma' ? ` · ${c.esp}` : ''}</small><small>Em ${PROVINCES[a.at].name} (${TERRAIN[a.at].name})</small></div>
+        ${a.owner === 'rei' ? `<button class="btn sm" data-act="armySel" data-arg="${a.id}">${sel ? 'Selecionado' : 'Comandar'}</button>` : ''}</header>
+        <div class="troops">${TROOP_IDS.filter((t) => a.troops[t]).map((t) => `<span title="${TROOPS[t].name}">${iconImg(TROOPS[t].icon)}<b>${a.troops[t] * 100}</b></span>`).join('')}</div>
+        <div class="meters"><span>Moral <i class="bar"><em style="width:${a.morale}%"></em></i></span><span>Comida <b>${a.supply}</b> dia(s)</span></div>
+        ${a.owner === 'rei' ? `<p class="order">Ordem: <b>${ORDERS[a.order].name}</b>${a.to && (a.order === 'atacar' || a.order === 'marchar') ? ` → ${PROVINCES[a.to].name}` : ''} · Tática: <b>${TACTICS[a.tactic].name}</b></p>` : `<p class="order">Parece preparar: <b>${ORDERS[a.order].name}</b>${a.to ? ` → ${PROVINCES[a.to].name}` : ''}</p>`}
+        ${sel && canOrder ? `<div class="seg orders">${(Object.keys(ORDERS) as OrderType[]).map((o) => `<button class="${a.order === o ? 'on' : ''}" data-act="order" data-arg="${a.id}:${o}" title="${esc(ORDERS[o].help)}">${ORDERS[o].name}</button>`).join('')}</div>
+          ${a.order === 'atacar' || a.order === 'marchar' ? `<p class="sub">Toque no mapa a província de destino.</p>` : ''}
+          <div class="seg tactics">${(Object.keys(TACTICS) as Tactic[]).map((t) => `<button class="${a.tactic === t ? 'on' : ''}" data-act="tactic" data-arg="${a.id}:${t}" title="${esc(TACTICS[t].help)}">${TACTICS[t].name}</button>`).join('')}</div>
+          <p class="sub">${esc(TACTICS[a.tactic].help)}</p>` : ''}
+      </div>`;
+    };
     let body = '';
     if (w.result) {
       const msg = { vitoria: 'Vitória! O reino celebra seu jovem rei.', derrota: 'Derrota. A capital caiu.', paz: 'Um tratado de paz encerrou a guerra.' }[w.result];
       body = `<h3>${msg}</h3><p class="sub">A guerra terminou no turno ${w.turn}.</p>`;
-    } else if (!open) {
-      body = canTakeTurn(s)
-        ? `<p>Reúna os generais para planejar o turno de hoje. Você receberá <b>${playerReinforcement(s)}</b> tropas de reforço.</p>
-           <button class="act-btn a-vermelho" data-act="council">${iconImg('espadas', 'ico-lg')}<span><b>Conselho de Guerra</b><small>Comandar este turno · ${warTurnHours(s)}h</small></span></button>
-           <p class="sub warn">Se você não comandar hoje, o inimigo age mesmo assim e a moral cai.</p>`
-        : '<p>Você já comandou a guerra hoje. O inimigo se move durante a noite.</p>';
     } else {
-      const mode = app.ui.warMode;
-      const selT = sel ? terr(w, sel) : undefined;
-      body = `<div class="seg">${(['reforcar', 'atacar', 'mover'] as const).map((m) => `<button class="${mode === m ? 'on' : ''}" data-act="mode" data-arg="${m}">${{ reforcar: `Reforçar (${w.reinforcements})`, atacar: 'Atacar', mover: w.moveUsed ? 'Mover ✓' : 'Mover' }[m]}</button>`).join('')}</div>
-        <p class="sub">${{ reforcar: 'Clique nos seus escudos no mapa para posicionar os reforços.', atacar: 'Escolha um exército seu (2+ tropas) e depois um inimigo vizinho, que pisca em vermelho.', mover: 'Escolha um exército seu e depois um vizinho seu. Uma vez por turno.' }[mode]}</p>
-        ${selT ? `<p>Selecionado: <b>${PROVINCES[selT.id].name}</b> (${selT.units})</p>` : ''}
-        ${app.ui.warResult ?? ''}
-        <button class="btn primary" data-act="endTurn">Encerrar turno</button>`;
-      if (canNegotiatePeace(s)) body += `<button class="btn" data-act="peace" ${s.res.influencia < PEACE_COST ? 'disabled' : ''}>Negociar paz (−${PEACE_COST} Influência)</button>`;
+      body = `${w.delegated ? `<p class="deleg">${portrait(marshal ?? 'aurelian', 'whisper-portrait')} <span><b>${esc(char(marshal ?? 'aurelian').name)}</b> conduz a guerra. Ele decide as ordens toda noite e fica com a glória.</span></p><button class="btn" data-act="delegateWar">Retomar o comando</button>`
+        : planned ? `<p class="sub">O Conselho de Guerra está reunido. Escolha um exército, dê a ordem e a tática. As batalhas acontecem durante a noite.</p>`
+        : `<button class="act-btn a-vermelho" data-act="council">${iconImg('espadas', 'ico-lg')}<span><b>Reunir o Conselho de Guerra</b><small>Dar ordens hoje · ${warTurnHours(s)}h</small></span></button>
+           <p class="sub warn">Sem novas ordens, os exércitos repetem as de ontem e a moral cai um pouco.</p>
+           ${marshal ? `<button class="btn" data-act="delegateWar">Delegar a guerra a ${esc(char(marshal).name)}</button>` : ''}`}
+        <div class="armies">${w.armies!.filter((a) => a.owner === 'rei').map(armyCard).join('')}</div>
+        <h3>O inimigo</h3>
+        <div class="armies foe">${w.armies!.filter((a) => a.owner === 'inimigo').map(armyCard).join('') || '<p class="sub">Só guarnições atrás de muralhas.</p>'}</div>
+        <div class="row2">
+          <button class="act-btn a-dourado" data-act="recruit">${iconImg('moedas', 'ico-lg')}<span><b>Recrutar infantaria</b><small>−${RECRUIT_COST} ouro · +100 · 1h</small></span></button>
+          <button class="act-btn a-dourado" data-act="mercs">${iconImg('moedas', 'ico-lg')}<span><b>Contratar mercenários</b><small>−${MERC_COST} ouro · +300 · fogem sem soldo</small></span></button>
+        </div>
+        ${canNegotiatePeace(s) ? `<button class="btn" data-act="peace" ${s.res.influencia < PEACE_COST ? 'disabled' : ''}>Negociar paz (−${PEACE_COST} Influência)</button>` : ''}`;
     }
     side = `<h2>Guerra contra ${enemyName}</h2>
-      <div class="pd-row"><span>Turno <b>${w.turn}</b></span><span>Suas tropas <b>${tot.rei}</b></span><span>Inimigo <b>${tot.inimigo}</b></span></div>
-      <p class="sub">${hasSkill(s, 'tatico') ? 'Olhar Tático: +1 no seu maior dado de ataque. ' : ''}${knows(s, 'tatica') ? 'A Arte da Muralha: +1 no maior dado de defesa. ' : ''}${knows(s, 'norhelm') && w.enemy === 'norhelm' ? 'Crônicas de Norhelm: empates são seus ao atacar.' : ''}</p>
+      <div class="pd-row"><span>Noite <b>${w.turn}</b></span><span>Suas forças <b>${tot.rei * 100}</b></span><span>Inimigo <b>${tot.inimigo * 100}</b></span><span>Clima <b>${w.weather ?? 'limpo'}</b></span></div>
       ${body}
-      <div class="war-log">${w.log.slice(0, 6).map((l) => `<p>${esc(l)}</p>`).join('')}</div>`;
+      <h3>Relatório do front</h3>
+      <div class="war-log">${w.log.slice(0, 8).map((l) => `<p>${esc(l)}</p>`).join('') || '<p>Nenhuma notícia ainda.</p>'}</div>`;
   }
 
   return `<div class="map-stage with-card war-stage">
@@ -114,32 +128,25 @@ export function after(app: App) {
   const w = s.war;
   const [from, to] = (app.ui.warSel ?? '').split('>') as [ProvinceId | '', ProvinceId | undefined];
   const selected = (from || null) as ProvinceId | null;
-  const targets = w && selected && app.ui.warMode === 'atacar' && turnOpen(app) ? ADJ[selected].filter((id) => terr(w, id)?.owner === 'inimigo') : [];
+  const selArmy = w?.armies?.find((a) => `army:${a.id}` === app.ui.warSel);
+  const targets = selArmy ? ADJ[selArmy.at] : [];
   map.onPick = (id) => {
-    if (w && turnOpen(app)) {
-      onTerritory(app, id);
-      save(s);
-      app.render();
-    }
+    if (!w || w.result) return;
+    const a = w.armies?.find((x) => `army:${x.id}` === app.ui.warSel);
+    if (!a || !(w.plannedDay === s.day) || w.delegated) return app.toast(w.delegated ? 'O Marechal está no comando.' : 'Reúna o Conselho de Guerra para dar ordens.');
+    setOrder(s, a.id, a.order === 'marchar' ? 'marchar' : 'atacar', id);
+    app.toast(`${a.name}: ${a.order === 'marchar' ? 'marchar' : 'atacar'} rumo a ${PROVINCES[id].name}.`);
+    save(s);
+    app.render();
   };
   if (!w) map.onPick = (id) => pickMarch(app, id);
-  map.update(s, w ? { lens: 'guerra', selected, target: to ?? null, targets, clash: app.ui.warClash as ProvinceId | null } : { lens: 'exercito', selected: null, target: (app.ui.warSel || null) as ProvinceId | null });
+  map.update(s, w ? { lens: 'guerra', selected: selArmy?.at ?? selected, target: selArmy?.to ?? to ?? null, targets, clash: app.ui.warClash as ProvinceId | null } : { lens: 'exercito', selected: null, target: (app.ui.warSel || null) as ProvinceId | null });
 }
 
 function pickMarch(app: App, id: ProvinceId) {
   if (!MARCH_TARGETS.includes(id)) return app.toast(`${PROVINCES[id].name} pertence a Norhelm.`);
   app.ui.warSel = id === armyAt(app.s) ? null : id;
   app.render();
-}
-
-function clash(app: App, id: ProvinceId) {
-  app.ui.warClash = id;
-  window.setTimeout(() => {
-    if (app.ui.warClash === id) {
-      app.ui.warClash = null;
-      if (app.ui.screen === 'guerra') app.render();
-    }
-  }, 1300);
 }
 
 export function handle(app: App, act: string, arg: string) {
@@ -153,8 +160,9 @@ export function handle(app: App, act: string, arg: string) {
       s.res.ouro -= RECRUIT_COST;
       s.res.exercito += 100;
       if (w && !w.result) {
-        const c = terr(w, 'castelmar');
-        if (c?.owner === 'rei') c.units += 1;
+        const a = royalArmy(s);
+        if (a) a.troops.infantaria += 1;
+        else { const c = terr(w, 'castelmar'); if (c?.owner === 'rei') c.units += 1; }
       }
       break;
     case 'train':
@@ -165,50 +173,37 @@ export function handle(app: App, act: string, arg: string) {
       s.res.moral = clamp(s.res.moral + 10, 0, 100);
       break;
     case 'council':
-      if (!w || !canTakeTurn(s)) return;
+      if (!w || w.result || w.plannedDay === s.day) return;
       if (!canSpend(s, warTurnHours(s))) return app.toast('Não há horas suficientes hoje.');
       spendHours(s, warTurnHours(s));
-      s.flags.warTurnDay = s.day;
-      app.ui.warMode = 'reforcar';
-      app.ui.warSel = null;
-      app.ui.warResult = null;
+      w.plannedDay = s.day;
+      app.ui.warSel = `army:${royalArmy(s)?.id ?? ''}`;
       break;
-    case 'mode':
-      app.ui.warMode = arg as typeof app.ui.warMode;
-      app.ui.warSel = null;
-      app.ui.warResult = null;
+    case 'armySel':
+      app.ui.warSel = `army:${arg}`;
       break;
-    case 'terr':
-      if (!w || !turnOpen(app)) return;
-      onTerritory(app, arg as ProvinceId);
-      break;
-    case 'roll':
-    case 'blitz': {
-      if (!w || !app.ui.warSel) return;
-      const [from, to] = app.ui.warSel.split('>') as ProvinceId[];
-      if (!to) return;
-      clash(app, to);
-      if (act === 'roll') {
-        const r = attackOnce(s, from, to);
-        app.ui.warResult = diceHtml(r) + attackButtons(app, from, to);
-      } else {
-        const rounds = blitz(s, from, to);
-        app.ui.warResult = `<small>${rounds.length} rodadas de batalha.</small>`;
-        app.ui.warSel = null;
-      }
-      if (terr(w, to)!.owner === 'rei') {
-        app.ui.warSel = null;
-        app.ui.warResult = `<p class="good">${PROVINCES[to].name} conquistada!</p>`;
-      }
+    case 'order': {
+      const [id, o] = arg.split(':');
+      setOrder(s, Number(id), o as OrderType);
       break;
     }
-    case 'endTurn': {
+    case 'tactic': {
+      const [id, t] = arg.split(':');
+      setTactic(s, Number(id), t as Tactic);
+      break;
+    }
+    case 'delegateWar':
       if (!w) return;
-      const out = endPlayerTurn(s);
-      s.flags.warTurnDay = 0;
-      app.ui.warSel = null;
-      app.ui.warResult = null;
-      app.toast(out.join(' ') || 'O inimigo aguardou.');
+      w.delegated = !w.delegated;
+      app.toast(w.delegated ? 'O Marechal assume a guerra. Ele fica com as vitórias, e com o poder que elas trazem.' : 'Você retoma o comando da guerra.');
+      break;
+    case 'mercs': {
+      if (s.res.ouro < MERC_COST) return app.toast('Ouro insuficiente.');
+      const a = royalArmy(s);
+      if (!a) return app.toast('Não há exército real em campo para receber os mercenários.');
+      s.res.ouro -= MERC_COST;
+      a.troops.mercenarios += 3;
+      app.toast('Trezentos mercenários chegam ao acampamento. Lutam bem enquanto houver ouro.');
       break;
     }
     case 'peace':
@@ -235,49 +230,4 @@ export function handle(app: App, act: string, arg: string) {
   }
   save(s);
   app.render();
-}
-
-function attackButtons(app: App, from: ProvinceId, to: ProvinceId) {
-  const a = terr(app.s.war!, from)!;
-  const d = terr(app.s.war!, to)!;
-  if (a.units < 2 || d.owner === 'rei') return '';
-  return `<div class="row"><button class="btn" data-act="roll">Rolar dados</button><button class="btn primary" data-act="blitz">Atacar até o fim</button></div>`;
-}
-
-function onTerritory(app: App, id: ProvinceId) {
-  const s = app.s;
-  const w = s.war!;
-  const t = terr(w, id)!;
-  const mode = app.ui.warMode;
-  const cur = app.ui.warSel?.split('>')[0] as ProvinceId | undefined;
-  if (mode === 'reforcar') {
-    if (t.owner !== 'rei') return;
-    if (w.reinforcements <= 0) return app.toast('Sem reforços restantes neste turno.');
-    reinforce(s, id);
-    return;
-  }
-  if (mode === 'atacar') {
-    if (t.owner === 'rei') {
-      if (t.units < 2) return app.toast('Precisa de pelo menos 2 tropas para atacar.');
-      app.ui.warSel = id;
-      app.ui.warResult = null;
-      return;
-    }
-    if (!cur || !ADJ[cur].includes(id)) return app.toast('Escolha primeiro um território seu vizinho a este.');
-    app.ui.warSel = `${cur}>${id}`;
-    app.ui.warResult = `<p>Atacar <b>${PROVINCES[id].name}</b> (${t.units}) a partir de <b>${PROVINCES[cur].name}</b> (${terr(w, cur)!.units})?</p>${attackButtons(app, cur, id)}`;
-    return;
-  }
-  // mover
-  if (t.owner !== 'rei') return;
-  if (!cur) {
-    app.ui.warSel = id;
-    return;
-  }
-  if (w.moveUsed) return app.toast('Você já moveu tropas neste turno.');
-  if (!ADJ[cur].includes(id)) return app.toast('Só é possível mover para um vizinho.');
-  const n = Math.floor((terr(w, cur)!.units - 1) / 2) || terr(w, cur)!.units - 1;
-  fortify(s, cur, id, n);
-  app.ui.warSel = null;
-  app.toast(`${n} tropas movidas para ${PROVINCES[id].name}.`);
 }

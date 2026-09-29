@@ -2,8 +2,8 @@
 import { newGame, applyEffect, softenCost } from '../src/engine/core';
 import { startDay, endDay, eventOf, canSpend, spendHours } from '../src/engine/day';
 import { dynamicChoices } from '../src/data/events';
-import { canTakeTurn, endPlayerTurn, blitz, ADJ, terr, reinforce } from '../src/engine/war';
-import type { Choice, GameState, Req } from '../src/types';
+import { initArmies, setOrder, setTactic } from '../src/engine/campaign';
+import type { Choice, GameState, ProvinceId, Req } from '../src/types';
 import { BOOKS } from '../src/data/progression';
 import { companionsFor, genericAdvice } from '../src/data/companions';
 import { marchArmy } from '../src/engine/army';
@@ -107,14 +107,21 @@ for (let run = 0; run < 300; run++) {
       a.done = true;
       spendHours(s, ev.hours ?? 1);
     }
-    if (s.war && canTakeTurn(s)) {
+    // guerra: ordens aos exércitos (ou delegar ao Marechal)
+    if (s.war && !s.war.result) {
       const w = s.war;
-      while (w.reinforcements > 0) reinforce(s, 'castelmar');
-      for (const t of w.territories.filter((t) => t.owner === 'rei' && t.units > 3)) {
-        const foe = ADJ[t.id].map((n) => terr(w, n)).find((n) => n && n.owner === 'inimigo' && n.units < t.units);
-        if (foe && !w.result) blitz(s, t.id, foe.id);
+      initArmies(s);
+      if (Math.random() < 0.7) w.delegated = true;
+      else {
+        w.delegated = false;
+        w.plannedDay = s.day;
+        const seat = w.enemy === 'norhelm' ? 'hjalmgard' : w.territories.find((t) => t.owner === 'inimigo')?.id;
+        for (const a of w.armies!.filter((x) => x.owner === 'rei')) {
+          const r = Math.random();
+          setOrder(s, a.id, r < 0.45 ? 'atacar' : r < 0.75 ? 'defender' : r < 0.9 ? 'forragear' : 'recuar', seat as ProvinceId);
+          setTactic(s, a.id, (['formacao', 'carga', 'flanco', 'falsa'] as const)[Math.floor(Math.random() * 4)]);
+        }
       }
-      if (!w.result) endPlayerTurn(s);
     }
     endDay(s);
   }

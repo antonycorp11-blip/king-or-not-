@@ -1,6 +1,7 @@
 import type { GameState, HouseId, LogEntry, ProvinceId, WarState, WarTerritory } from '../types';
 import { HOUSES, PROVINCES } from '../data/realm';
 import { clamp, hasSkill, knows, rand } from './core';
+import { campaignNight, initArmies, totalsV2 } from './campaign';
 
 // Tabuleiro estilo War: territórios, dados de ataque (até 3) contra defesa (até 2).
 export const ADJ: Record<ProvinceId, ProvinceId[]> = {
@@ -61,6 +62,7 @@ export function startWar(s: GameState, enemy: 'norhelm' | HouseId) {
   }
   s.war = { enemy, turn: 1, lastTurnDay: s.day - 1, territories: t, reinforcements: 0, moveUsed: false, log: [] };
   beginPlayerTurn(s);
+  initArmies(s);
 }
 
 export function terr(w: WarState, id: ProvinceId) {
@@ -211,25 +213,17 @@ export function endPlayerTurn(s: GameState): string[] {
   return out;
 }
 
-// Chamado pelo fim do dia: se o rei não conduziu a guerra hoje, o inimigo age mesmo assim.
+// Chamado pelo fim do dia: a noite de campanha resolve marchas, batalhas e cercos.
 export function warEndOfDay(s: GameState, entries: LogEntry[]) {
   const w = s.war;
   if (!w || w.result) return;
-  if (s.flags.warTurnDay === s.day) {
-    // o rei abriu o conselho mas não encerrou o turno: encerra sem punição
-    const out = endPlayerTurn(s);
-    s.flags.warTurnDay = 0;
-    entries.push({ icon: 'espadas', title: 'Frente de batalha', text: out.join(' ') || 'O inimigo aguardou.', tone: 'neutro' });
-  } else if (w.lastTurnDay < s.day) {
-    const out = endPlayerTurn(s);
-    s.res.moral = clamp(s.res.moral - 3, 0, 100);
-    entries.push({ icon: 'espadas', title: 'Guerra sem comando', text: `Você não conduziu a guerra hoje. ${out.join(' ')}`, delta: '−3 moral', tone: 'ruim' });
-  }
+  s.flags.warTurnDay = 0;
+  campaignNight(s, entries);
+  checkWarEnd(s);
 }
 
 export function totals(w: WarState) {
-  const sum = (o: 'rei' | 'inimigo') => w.territories.filter((t) => t.owner === o).reduce((a, t) => a + t.units, 0);
-  return { rei: sum('rei'), inimigo: sum('inimigo') };
+  return totalsV2(w);
 }
 
 export function checkWarEnd(s: GameState) {

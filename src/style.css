@@ -1376,3 +1376,32 @@ body.character-gallery-page { overflow: auto; height: auto; min-height: 100vh; b
 .eco-card .btn.sm { padding: 4px 10px; }
 .ledger-modal .estado-list li { grid-template-columns: 1fr auto; }
 .ledger-modal .estado-list li em { font-size: 24px; }
+
+/* Guerra v2 */
+.wm-army.garrison .stand { width: 40px; height: 46px; opacity: .92; }
+.wm-army.garrison .stand img { width: 18px; height: 18px; }
+.wm-army.garrison .stand b { font-size: 17px; }
+.wm-army.field .stand { width: 62px; height: 74px; }
+.wm-army.field .wm-cmd { width: 40px; height: 40px; border: 2px solid #f2c14e; margin-top: -4px; }
+.wm-army.field.inimigo .wm-cmd { border-color: #c8c8d8; }
+.armies { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+.army { padding: 8px 10px; background: rgba(255,255,255,.35); border: 2px solid #a08a60; }
+.army.sel { border-color: #2a5ab0; background: rgba(220,230,255,.55); }
+.army.inimigo { border-color: #8a3a2a; background: rgba(240,210,200,.4); }
+.army header { display: flex; align-items: center; gap: 8px; }
+.army header div { display: flex; flex-direction: column; flex: 1; line-height: 1.1; }
+.army header small { font-size: 14px; color: #5a4630; }
+.army-portrait { width: 48px; height: 48px; flex: none; }
+.army .troops { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.army .troops span { display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; background: #f4e8c8; border: 1px solid #b89a60; font-size: 15px; }
+.army .troops .ico { width: 16px; height: 16px; }
+.army .meters { display: flex; gap: 14px; align-items: center; font-size: 15px; }
+.army .meters .bar { display: inline-block; width: 90px; height: 8px; background: #3d3030; vertical-align: middle; }
+.army .meters .bar em { display: block; height: 100%; background: linear-gradient(90deg, #ce4b36, #d8ad48, #76aa7b); }
+.army .order { margin: 6px 0 2px; font-size: 16px; }
+.seg.orders, .seg.tactics { flex-wrap: wrap; margin-top: 6px; }
+.seg.orders button, .seg.tactics button { font-size: 14px; padding: 5px 8px; }
+.deleg { display: flex; align-items: center; gap: 8px; font-size: 16px; }
+.war-card { overflow-y: auto; }
+.army header .btn { width: auto; flex: none; padding: 4px 10px; font-size: 14px; }
+.army header b { font-size: 18px; }

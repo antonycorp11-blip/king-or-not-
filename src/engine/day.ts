@@ -5,6 +5,7 @@ import { char } from '../data/characters';
 import { ACT_END, DAY_END, DAY_START, MARRIAGE_DEADLINE, applyEffect, clamp, governabilidade, hasSkill, influenceGain, rand, save } from './core';
 import { enemyLabel, warEndOfDay } from './war';
 import { armyDaily } from './army';
+import { demobilize } from './campaign';
 import { deliverLetters } from './letters';
 import { checkRebellions } from '../data/events/crisis';
 import { companion } from '../data/companions';
@@ -205,6 +206,7 @@ export function endDay(s: GameState): LogEntry[] {
 
   // 2. Guerra: o inimigo age se você não comandou hoje; em paz, o acampamento do exército
   warEndOfDay(s, entries);
+  demobilize(s, entries);
   armyDaily(s, entries);
 
   // 3. Economia

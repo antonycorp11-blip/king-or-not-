@@ -296,8 +296,38 @@ export interface WarTerritory {
   units: number;
 }
 
+export type TroopType = 'infantaria' | 'arqueiros' | 'cavalaria' | 'guarda' | 'mercenarios';
+export type OrderType = 'defender' | 'marchar' | 'atacar' | 'forragear' | 'recuar';
+export type Tactic = 'formacao' | 'carga' | 'flanco' | 'falsa';
+
+// Um exército em campanha: comandante, tropas (em centenas), moral e suprimento
+export interface WarArmy {
+  id: number;
+  owner: 'rei' | 'inimigo';
+  name: string;
+  commander: string;
+  at: ProvinceId;
+  troops: Record<TroopType, number>;
+  morale: number; // 0..100
+  supply: number; // dias de comida
+  order: OrderType;
+  to?: ProvinceId;
+  tactic: Tactic;
+  house?: HouseId; // hoste de uma casa (não é tropa do rei)
+  wins?: number;
+  tired?: boolean; // lutou na noite anterior: reorganiza antes de avançar
+}
+
 export interface WarState {
   enemy: 'norhelm' | HouseId;
+  armies?: WarArmy[];
+  weather?: 'limpo' | 'chuva' | 'neve' | 'nevoa';
+  forts?: Partial<Record<ProvinceId, number>>;
+  nextArmyId?: number;
+  delegated?: boolean; // o Marechal conduz a guerra
+  plannedDay?: number; // dia em que o rei reuniu o conselho de guerra
+  baseArmy?: number; // tamanho do exército antes da guerra
+  demobilized?: boolean;
   turn: number;
   lastTurnDay: number;
   territories: WarTerritory[];

@@ -6,6 +6,7 @@ import { levyUnits } from '../engine/war';
 import type { HouseId } from '../types';
 import { ISLAND, SEEDS, WH, WW, cellAt, routePath, world, type Cell } from '../render/worldmap';
 import { hexToRgb, iconUrl, mix } from '../render/pixel';
+import { portrait } from './common';
 
 // Mesa de guerra: diorama em perspectiva, com filtros de cor, estandartes em pé e movimento.
 export type Lens = 'casas' | 'lealdade' | 'producao' | 'escassez' | 'rotas' | 'impostos' | 'guerra' | 'exercito';
@@ -250,8 +251,12 @@ export class WorldMap {
       if (war) {
         const t = s.war!.territories.find((z) => z.id === id);
         if (!t) continue;
-        const cls = [t.owner, v.selected === id ? 'sel' : '', v.target === id ? 'tgt' : '', v.targets?.includes(id) ? 'adj' : ''].join(' ');
-        out.push(`<button class="wm-army ${cls}" style="${pct(x, y - 4)}" data-act="terr" data-arg="${id}"><span class="stand"><img class="pix" src="${iconUrl(t.owner === 'rei' ? 'coroa' : H.sigil)}" alt=""><b>${t.units}</b></span></button>`);
+        const cls = [t.owner, 'garrison', v.selected === id ? 'sel' : '', v.target === id ? 'tgt' : '', v.targets?.includes(id) ? 'adj' : ''].join(' ');
+        out.push(`<span class="wm-army ${cls}" style="${pct(x, y + 2)}" title="Guarnição${s.war!.forts?.[id] ? ` · muralhas nível ${s.war!.forts[id]}` : ''}"><span class="stand"><img class="pix" src="${iconUrl(t.owner === 'rei' ? 'castelo' : H.sigil)}" alt=""><b>${t.units}</b></span></span>`);
+        (s.war!.armies ?? []).filter((a) => a.at === id).forEach((a, k) => {
+          const n = Object.values(a.troops).reduce((m, q) => m + q, 0);
+          out.push(`<button class="wm-army field ${a.owner} ${a.to && v.target === a.to && v.selected === id ? 'sel' : ''}" style="${pct(x - 13 + k * 13, y - 10)}" ${a.owner === 'rei' ? `data-act="armySel" data-arg="${a.id}"` : ''} title="${a.name}"><span class="stand">${portrait(a.commander, 'wm-cmd')}<b>${n}</b></span></button>`);
+        });
         out.push(`<span class="wm-label ${north ? 'foe' : ''}" style="${pct(x, y + 11)}">${P.name}</span>`);
         continue;
       }
