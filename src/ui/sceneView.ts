@@ -1,13 +1,14 @@
 import { CELL_H, CELL_W, FOOT, frameCount, getFrame, hasSheet, type Anim } from '../render/actors';
 import { getTopDownFrame, loadTopDownAssets, TOPDOWN_CELL_W, TOPDOWN_CELL_H, TOPDOWN_FOOT, type TopDownDir } from '../render/topdown';
-import { SH, SW, cityscape, library, throneRoom, type Room } from '../render/scenes';
+import { SH, SW, cityscape, throneRoom, type Room } from '../render/scenes';
 import { createThroneHall, drawHallLights, HALL_H, HALL_W, loadHallAtlas, type HallObject, type ThroneHall } from '../render/throneHall';
-import { addHallSideDoors, createCastleRoom, loadRoomArt, type RoomArt } from '../render/castleRooms';
+import { addHallSideDoors, createCastleRoom } from '../render/castleRooms';
+import { createPropRoom, loadRoomKit } from '../render/propRooms';
 import { ROOMS } from '../data/castle';
 import type { RoomId } from '../types';
 
 // Camadas: céu (CSS) → cidade (dia/noite) → sala (janelas vazadas) → personagens animados → chamas → luz.
-export type RoomKind = 'trono' | 'biblioteca' | Exclude<RoomId, 'salao'>;
+export type RoomKind = 'trono' | Exclude<RoomId, 'salao'>;
 
 export interface SceneMarker { key: string; x: number; y: number; label: string; act: string; arg: string; kind: 'porta' | 'pessoa' | 'objeto' | 'acao' }
 
@@ -61,7 +62,7 @@ export class SceneView {
   private movementEnabled = false;
   private atlas: HTMLImageElement | null = null;
   private rooms = new Map<string, ThroneHall>();
-  private roomArt = new Map<string, RoomArt | null>();
+  private kits = new Set<string>(); // cômodos cuja arte já foi pedida
   private markerLayer!: HTMLElement;
   onTap?: (key: string) => void; // toque em alguém da cena
   onKingMove?: () => void; // o rei levantou do trono e começou a andar
@@ -132,7 +133,7 @@ export class SceneView {
     this.kind = kind;
     this.staticHallDrawn = false;
     const td = this.topDown;
-    this.room = td ? { canvas: td.canvas, flames: [] } : kind === 'biblioteca' ? library() : kind === 'trono' ? throneRoom(!hasSheet('rei')) : { canvas: blankRoom(), flames: [] };
+    this.room = td ? { canvas: td.canvas, flames: [] } : kind === 'trono' ? throneRoom(!hasSheet('rei')) : { canvas: blankRoom(), flames: [] };
     copyInto(this.roomCanvas, this.room.canvas);
     const topDown = !!td;
     this.el.classList.toggle('top-down', topDown);
@@ -153,26 +154,35 @@ export class SceneView {
   // Cômodo top-down atual (salão ou outro cômodo do castelo), se a arte já carregou
   private get topDown(): ThroneHall | null {
     const k = this.kind;
-    if (!k || k === 'biblioteca' || !this.atlas) return k === 'trono' ? this.hall : null;
+    if (!k) return null;
     if (k === 'trono') return this.hall;
+    if (!this.atlas) return null;
     let r = this.rooms.get(k);
     if (!r) {
-      r = createCastleRoom(this.atlas, k, this.roomArt.get(k) ?? null);
+      r = loadingRoom();
       this.rooms.set(k, r);
-      // Se a arte gerada do cômodo existir, reconstrói com ela assim que carregar
-      if (!this.roomArt.has(k)) void loadRoomArt(k).then((art) => {
-        this.roomArt.set(k, art);
-        if (!art) return;
-        this.rooms.delete(k);
-        if (this.kind === k) this.refreshRoom();
-      });
+      if (!this.kits.has(k)) {
+        this.kits.add(k);
+        void loadRoomKit(k).then((kit) => {
+          // arte gerada; se faltar, os móveis desenhados em código seguram o lugar
+          this.rooms.set(k, kit ? createPropRoom(kit, k) : createCastleRoom(this.atlas!, k));
+          if (this.kind === k) this.refreshRoom();
+        });
+      }
     }
     return r;
   }
 
+  // Pré-carrega a arte de um cômodo (ex.: os vizinhos do atual)
+  prefetch(k: Exclude<RoomId, 'salao'>) {
+    if (this.kits.has(k)) return;
+    this.kits.add(k);
+    void loadRoomKit(k).then((kit) => { if (kit && this.atlas) this.rooms.set(k, createPropRoom(kit, k)); });
+  }
+
   private get walkRect(): [number, number, number, number] {
     const k = this.kind;
-    return !k || k === 'trono' || k === 'biblioteca' ? [112, 215, 1168, 612] : ROOMS[k].walk;
+    return !k || k === 'trono' ? [112, 215, 1168, 612] : ROOMS[k].walk;
   }
 
   // Portas, pessoas e objetos clicáveis, em coordenadas do cenário
@@ -492,6 +502,10 @@ export class SceneView {
   }
 }
 
+function loadingRoom(): ThroneHall {
+  return { canvas: blankRoom(), objects: [], lights: [], drawObject() {} };
+}
+
 function blankRoom() {
   const c = document.createElement('canvas');
   c.width = HALL_W; c.height = HALL_H;
@@ -528,7 +542,11 @@ function hallPath(x: number, y: number, tx: number, ty: number, objects: HallObj
   const blocked = (gx: number, gy: number) => {
     const p = center(gx, gy);
     if (p.x < walk[0] - 12 || p.x > walk[2] + 12 || p.y < walk[1] - 2 || p.y > walk[3] + 4) return true;
-    return objects.some((o) => o.solid && p.x > o.x - 18 && p.x < o.x + o.w + 18 && p.y > o.y - 12 && p.y < o.y + o.h + 10);
+    return objects.some((o) => {
+      if (!o.solid) return false;
+      const [hx, hy, hw, hh] = o.hit ?? [o.x, o.y, o.w, o.h];
+      return p.x > hx - 18 && p.x < hx + hw + 18 && p.y > hy - 12 && p.y < hy + hh + 10;
+    });
   };
   const toGrid = (px: number, py: number) => ({ x: clamp(Math.floor(px / cell), 0, cols - 1), y: clamp(Math.floor(py / cell), 0, rows - 1) });
   const start = toGrid(x, y), end = toGrid(tx, ty);

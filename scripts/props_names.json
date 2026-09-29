@@ -1,0 +1,254 @@
+{
+ "0B9B473A-F37E-4E1E-8EC6-C6AEAE98368B.PNG": {
+  "id": "estabulos",
+  "names": [
+   "baia_cavalo",
+   "baia_vazia",
+   "cavalo_branco",
+   "suporte_selas",
+   "feno_solto",
+   "cocho"
+  ]
+ },
+ "1005E311-C443-4C69-99A8-965AD2BE7E39.PNG": {
+  "id": "muralhas",
+  "names": [
+   "muralha",
+   "muralha_canto",
+   "torre",
+   "portaria",
+   "escada_muralha",
+   "pinheiro",
+   "arbusto",
+   "lanterna_pedra"
+  ]
+ },
+ "38859D59-EF61-4993-ADE6-7E22ED1A2695.PNG": {
+  "id": "conselho",
+  "names": [
+   "mesa_conselho",
+   "trono_conselho",
+   "cadeira_frente",
+   "cadeira_costas",
+   "mesa_mapa",
+   "armario_documentos",
+   "estante_baixa",
+   "estandarte_pe"
+  ]
+ },
+ "416B5DA3-5524-4653-9309-F6D2EBCC0D77.PNG": {
+  "id": "biblioteca",
+  "names": [
+   "estante_grande",
+   "estante_escada",
+   "mesa_leitura",
+   "escrivaninha_pequena",
+   "globo",
+   "atril",
+   "pilha_livros",
+   "pilha_livros2",
+   "poltrona_leitura",
+   "cesto_pergaminhos"
+  ]
+ },
+ "5045BD2B-1BC5-44AE-9A44-A2FF1351AA33.PNG": {
+  "id": "quarto",
+  "names": [
+   "cama_rei",
+   "bau_rei",
+   "guarda_roupa",
+   "criado_mudo",
+   "escrivaninha_rei",
+   "manto_coroa",
+   "lavatorio",
+   "poltrona_rei"
+  ]
+ },
+ "5E2DF9CB-ACBF-4FFB-979E-CF0BCC47AD75.PNG": {
+  "id": "jardim",
+  "names": [
+   "fonte",
+   "canteiro_ret",
+   "sebe_h",
+   "canteiro_redondo",
+   "sebe_v",
+   "arco_rosas",
+   "banco_jardim",
+   "lago_cisnes",
+   "arvore",
+   "poste_luz",
+   "topiaria"
+  ]
+ },
+ "701B5225-44B6-478D-9E63-501DF7DC9DFA.PNG": {
+  "id": "patio",
+  "names": [
+   "boneco_treino",
+   "suporte_armas",
+   "alvo",
+   "fardos_feno",
+   "poco",
+   "carroca",
+   "tenda",
+   "braseiro_tripe",
+   "mastro",
+   "bebedouro",
+   "forja"
+  ]
+ },
+ "766203CA-28A2-4144-906C-382C1D8EEBD0.PNG": {
+  "id": "tesouro",
+  "names": [
+   "ouro_grande",
+   "ouro_medio",
+   "ouro_pouco",
+   "bau_aberto",
+   "bau_fechado",
+   "bau_grande",
+   "coroa_pedestal",
+   "prateleira_ouro",
+   "mesa_moedas",
+   "saco1",
+   "saco2",
+   "saco3"
+  ]
+ },
+ "9EEAA9F3-54CC-43FD-AF1B-03E5C521E71F.PNG": {
+  "id": "tapetes",
+  "names": [
+   "passadeira_v",
+   "passadeira_h",
+   "passadeira_cruz",
+   "passadeira_fim",
+   "tapete_leao",
+   "tapete_azul",
+   "tapete_rosa",
+   "capacho"
+  ]
+ },
+ "A086E871-A0EA-4181-AA09-302238DB17D3.PNG": {
+  "id": "ui",
+  "names": [
+   "ui_pergaminho",
+   "ui_moldura_madeira",
+   "ui_medalhao",
+   "ui_selo",
+   "ui_medalhao_pressionado",
+   "ui_fita",
+   "ui_moldura_ouro",
+   "ui_vela",
+   "ic_moedas",
+   "ic_flor",
+   "ic_coroa",
+   "ic_povo",
+   "ic_escudo",
+   "ic_espadas",
+   "ic_livro",
+   "ic_carta"
+  ]
+ },
+ "C632C299-81EC-4CC0-B744-539933FE8FC4.PNG": {
+  "id": "capela",
+  "split": true,
+  "names": [
+   "altar",
+   "banco_igreja",
+   "estatua_senhora",
+   "confessionario",
+   "pia_batismal",
+   "velas_votivas",
+   "pulpito",
+   "lapide",
+   "entrada_cripta"
+  ]
+ },
+ "D680360A-BDD9-418B-80B5-D5A792289132.PNG": {
+  "id": "decor",
+  "names": [
+   "candelabro",
+   "candelabro_alto",
+   "lareira_leao",
+   "braseiro",
+   "planta_vaso",
+   "palmeira",
+   "armadura",
+   "estatua_nobre",
+   "busto",
+   "mesinha_vaso"
+  ]
+ },
+ "D7A28561-DA00-4FB5-BD64-7186F1938743.PNG": {
+  "id": "cozinha",
+  "names": [
+   "lareira_cozinha",
+   "forno",
+   "panelas_parede",
+   "mesa_preparo",
+   "mesa_banquete",
+   "barris",
+   "sacos_grao",
+   "caixote_legumes",
+   "prateleira_potes",
+   "cesto_paes",
+   "balde",
+   "caldeirao"
+  ]
+ },
+ "D7F4B4A3-7967-4246-83E4-1740C0E02837.PNG": {
+  "id": "masmorra",
+  "names": [
+   "cela",
+   "porta_cela",
+   "correntes",
+   "cama_palha",
+   "mesa_chaves",
+   "tronco",
+   "estante_pergaminhos",
+   "gaveteiro_mapas",
+   "mesa_escriba"
+  ]
+ },
+ "DEE1567F-00E5-4B61-9E87-E9661699BA34.PNG": {
+  "id": "portas",
+  "names": [
+   "porta_dupla",
+   "porta_simples",
+   "arco_corredor",
+   "porta_lateral_esq",
+   "porta_lateral_dir",
+   "escada_desce",
+   "escada_sobe",
+   "portao_ferro"
+  ]
+ },
+ "EB386EA2-7594-4710-B844-204928484C31.PNG": {
+  "id": "paredes",
+  "names": [
+   "janela_azul",
+   "janela_rosa",
+   "vitral",
+   "bandeira_azul",
+   "bandeira_vermelha",
+   "arandela",
+   "tocha",
+   "quadro_rei",
+   "prateleira_parede"
+  ]
+ },
+ "EE747558-1271-4E79-87AA-83E67AE017E2.PNG": {
+  "id": "rainha",
+  "names": [
+   "cama_rainha",
+   "penteadeira",
+   "banquinho",
+   "biombo",
+   "poltrona_creme",
+   "mesa_cha",
+   "harpa",
+   "guarda_roupa_branco",
+   "comoda",
+   "vaso_rosas",
+   "cama_principe"
+  ]
+ }
+}

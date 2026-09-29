@@ -59,6 +59,21 @@ export const ACTIVITIES: ActivityDef[] = [
   { id: 'cacar', room: 'patio', label: 'Sair para caçar', sub: '3 horas', icon: 'lobo', hours: 3, perDay: true, event: series('caca_'), cond: (s) => s.hour <= 15 && (!s.war || !!s.war.result) },
   { id: 'cidade', room: 'patio', label: 'Descer à cidade disfarçado', sub: '2 horas', icon: 'povo', hours: 2, perDay: true, event: series('cidade_'), cond: (s) => s.hour <= 17 },
   { id: 'inspecionar', room: 'patio', label: 'Inspecionar o quartel', sub: '1 hora · moral', icon: 'escudo', hours: 1, perDay: true, effects: { res: { moral: 3 }, mood: { fatigue: 6 } }, toast: 'Você passa pelas fileiras, lembra dois nomes e elogia uma bota. A moral sobe.' },
+  // Biblioteca e arquivos
+  { id: 'estudar', room: 'biblioteca', label: 'Escolher um livro', sub: 'Ler 30 min, 1 h ou 2 h', icon: 'livro', hours: 0, screen: 'biblioteca' },
+  { id: 'pesquisar', room: 'arquivos', label: 'Pesquisar nos registros', sub: '1 hora · leis e segredos antigos', icon: 'pergaminho', hours: 1, perDay: true, effects: { xp: 8, run: (s) => { if (s.day >= 10 && !s.conspiracy.clues.includes('lei_chaves')) { s.conspiracy.clues.push('lei_chaves'); s.log.push({ icon: 'mascara', title: 'Nova anotação no caderno', text: 'A Lei das Cinco Chaves. Está escrito no Caderno do Rei.', tone: 'rumor' }); } } }, toast: 'Poeira, tinta velha e nomes de mortos. Às vezes, um nome vivo no meio deles.' },
+  // Tesouro
+  { id: 'contas', room: 'tesouro', label: 'Conferir os cofres', sub: 'Comércio, impostos e rotas', icon: 'moedas', hours: 0, screen: 'provincias' },
+  { id: 'contar', room: 'tesouro', label: 'Contar o ouro pessoalmente', sub: '1 hora · o tesoureiro sua frio', icon: 'olho', hours: 1, perDay: true, effects: { xp: 6, run: (s) => { const t = s.council.seats.tesoureiro; if (t) { const b = s.bonds[t]; if (b) b.medo = Math.min(100, b.medo + 8); } } }, toast: 'Você conta pilha por pilha. Bate com o livro. Quase. O tesoureiro enxuga a testa.' },
+  // Cozinha
+  { id: 'provar', room: 'cozinha', label: 'Provar o que está no fogo', sub: '30 min · a cozinha adora', icon: 'coracao', hours: 0.5, perDay: true, rest: true, effects: { mood: { joy: 8, stress: -6 }, res: { povo: 1 } }, toast: 'Dona Ilda serve um prato que não é para rei, é para gente. É o melhor que você comeu no mês.' },
+  // Jardim
+  { id: 'passear', room: 'jardim', label: 'Passear entre as roseiras', sub: '30 min · respira', icon: 'flor', hours: 0.5, perDay: true, rest: true, effects: { mood: { stress: -14, joy: 6, anger: -10 } }, toast: 'Os cisnes brigam, a fonte canta, e por meia hora ninguém pede nada ao rei.' },
+  // Estábulos
+  { id: 'cavalgar', room: 'estabulos', label: 'Cavalgar pelos campos', sub: '1 hora · o vento leva a raiva', icon: 'lobo', hours: 1, perDay: true, rest: true, effects: { mood: { anger: -30, stress: -12, fatigue: 8 } }, toast: 'Você galopa até as colinas. Lá de cima, o castelo parece pequeno. Os problemas também, por um instante.' },
+  { id: 'cacar2', room: 'estabulos', label: 'Sair para caçar', sub: '3 horas', icon: 'lobo', hours: 3, perDay: true, event: series('caca_'), cond: (s) => s.hour <= 15 && (!s.war || !!s.war.result) },
+  // Masmorras
+  { id: 'presos', room: 'masmorra', label: 'Visitar os presos', sub: '30 min · ouvir o que ninguém ouve', icon: 'cadeado', hours: 0.5, perDay: true, effects: { mood: { stress: 6 }, res: { influencia: 2 }, xp: 5 }, toast: 'Um preso jura inocência. Outro jura vingança. Um terceiro só pede água. Você manda dar água aos três.' },
   // Capela
   { id: 'rezar', room: 'capela', label: 'Rezar em silêncio', sub: '30 min · alivia a angústia', icon: 'estrela', hours: 0.5, perDay: true, rest: true, effects: { mood: { stress: -18, joy: 4 } }, toast: 'Você não sabe bem para quem reza. Mas o peito aperta menos.' },
   { id: 'cripta', room: 'capela', label: 'Esconder ouro na cripta', sub: '−100 ouro · reserva secreta', icon: 'moedas', hours: 1, perDay: true, cond: (s) => s.res.ouro >= 100 && (insight(s) >= 20 || s.day >= 30), effects: { res: { ouro: -100 }, run: (s) => { s.conspiracy.prep.reservas = (s.conspiracy.prep.reservas ?? 0) + 100; } }, toast: 'Cem moedas descansam agora sob a lápide do seu bisavô. Ninguém viu. Você acha.' },

@@ -161,6 +161,14 @@ const EXTRA: Character[] = [
   variant('salvio', 'Mestre Sálvio', 'Cozinheiro-chefe', 'coroa', 'corvin', undefined, ['Molhos', 'Venenos?', 'Drama']),
   variant('frei_aske', 'Frei Aske', 'Monge cronista', 'coroa', 'theodric', undefined, ['Crônicas', 'Profecias', 'Vinho']),
   variant('sir_bram', 'Sir Bram Salgueiro', 'Cavaleiro vassalo dos Seren', 'seren', 'cavaleiro', '#1f6a44', ['Fé', 'Arco', 'Silêncio']),
+  // Criadagem do castelo vivo (folhas top-down próprias)
+  variant('criada', 'Rosa', 'Criada do castelo', 'coroa', 'camponesa', undefined, ['Lençóis', 'Pressa', 'Ouvidos']),
+  variant('cozinheiro', 'Ubaldo', 'Ajudante de cozinha', 'coroa', 'campones', undefined, ['Panelas', 'Fome', 'Canções']),
+  variant('cozinheira', 'Dona Ilda', 'Cozinheira', 'coroa', 'marta', undefined, ['Caldos', 'Broncas', 'Receitas']),
+  variant('jardineiro', 'Joaquim', 'Jardineiro real', 'coroa', 'campones', undefined, ['Rosas', 'Paciência', 'Terra']),
+  variant('escriba', 'Mestre Matias', 'Escriba dos arquivos', 'coroa', 'theodric', undefined, ['Tinta', 'Registros', 'Memória']),
+  variant('pajem', 'Tico', 'Pajem real', 'coroa', 'mensageiro', undefined, ['Recados', 'Correria', 'Curiosidade']),
+  variant('sentinela', 'Sentinela Real', 'Guarda dos corredores', 'coroa', 'guarda', undefined, ['Lança', 'Vigília', 'Tédio']),
 ];
 for (const c of EXTRA) CHARACTERS[c.id] = c;
 

@@ -375,6 +375,62 @@
       "width": 384,
       "height": 640,
       "foot": 148
+    },
+    {
+      "id": "criada",
+      "file": "criada.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "cozinheiro",
+      "file": "cozinheiro.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "cozinheira",
+      "file": "cozinheira.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "jardineiro",
+      "file": "jardineiro.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "escriba",
+      "file": "escriba.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "pajem",
+      "file": "pajem.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "sentinela",
+      "file": "sentinela.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
     }
   ]
 }

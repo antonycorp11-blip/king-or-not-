@@ -19,6 +19,7 @@ export interface HallObject {
   id: string; asset: HallAsset; x: number; y: number; w: number; h: number;
   depth: number; solid: boolean;
   paint?: (c: CanvasRenderingContext2D, o: HallObject) => void; // móveis desenhados em código
+  hit?: [number, number, number, number]; // área que bloqueia a passagem (padrão: o retângulo todo)
 }
 export interface HallLight { x: number; y: number; radius: number }
 export interface ThroneHall {

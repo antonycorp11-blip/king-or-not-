@@ -79,7 +79,7 @@ export interface Effect {
 // Castelo
 export type RoomId =
   | 'quarto' | 'aposentos' | 'salao' | 'conselho' | 'patio' | 'capela'
-  | 'tesouro' | 'masmorra' | 'cozinha' | 'arquivos' | 'jardim' | 'estabulos';
+  | 'tesouro' | 'masmorra' | 'cozinha' | 'arquivos' | 'jardim' | 'estabulos' | 'biblioteca';
 export type FloorId = 'superior' | 'principal' | 'inferior' | 'exterior';
 
 export interface CastleState {

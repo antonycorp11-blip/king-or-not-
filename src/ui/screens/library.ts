@@ -183,8 +183,8 @@ export function render(app: App): string {
   const s = app.s;
   app.scene.setRoom('biblioteca');
   app.scene.sync([
-    { key: 'rei', id: 'rei', x: 150, foot: 184, facing: 1, anim: 'idle' },
-    { key: 'theodric', id: 'theodric', x: 250, foot: 184, facing: -1, anim: 'talk' },
+    { key: 'rei', id: 'rei', x: 560, foot: 560, facing: 1, anim: 'idle', free: true, dir: 'north' },
+    { key: 'npc-theodric', id: 'theodric', x: 790, foot: 400, facing: -1, anim: 'talk', dir: 'west' },
   ]);
   app.scene.setMode('full');
   const line = LINES[s.day % LINES.length];

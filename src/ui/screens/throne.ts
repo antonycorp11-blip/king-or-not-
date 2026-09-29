@@ -202,6 +202,7 @@ export function render(app: App): string {
   const inSalao = s.castle.room === 'salao';
 
   app.scene.setRoom(inSalao ? 'trono' : (s.castle.room as Exclude<typeof s.castle.room, 'salao'>));
+  for (const e of ROOMS[s.castle.room].exits) if (e.to !== 'salao') app.scene.prefetch(e.to as Exclude<typeof e.to, 'salao'>);
   const actors = sceneActors(app);
   app.scene.sync(actors);
   app.scene.setMarkers(markers(app, actors));

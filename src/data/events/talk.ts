@@ -28,6 +28,13 @@ const GREET: Record<string, string[]> = {
   rhoswen: ['"Veio treinar? Não? Então veio apanhar em outra coisa."', '"Meu rei. Afiei sua espada. Você não usa, mas afiei."'],
   isolde: ['"Meu rei, que surpresa agradável. Ou calculada. Nunca sei com você."', '"Sente-se. Estou lendo mentiras de Véridian. São ótimas."'],
   sigrid: ['"Aqui está mais quieto que o salão. Gosto disso. E de você, às vezes."', '"No norte já nevou. Aqui ainda faz sol. Estranho reino."'],
+  criada: ['Rosa quase derruba a pilha de lençóis. "Majestade! Eu não vi o senhor. Quer dizer, vi. Mas não esperava."', '"A cama do senhor tem mais travesseiros que a vila da minha mãe tem galinhas, Majestade."'],
+  cozinheiro: ['Ubaldo limpa as mãos no avental, e o avental fica mais sujo. "Majestade! Quer provar o caldo? Ninguém nunca quer."', '"Se o senhor sentir gosto de sal no jantar, fui eu. Se sentir gosto de nada, foi o Mestre Sálvio."'],
+  cozinheira: ['Dona Ilda nem para de sovar a massa. "Rei ou não rei, aqui na cozinha quem manda sou eu. Senta aí e come um pão."', '"O senhor está magro. Seu pai também ficou magro no último ano. Coma."'],
+  jardineiro: ['Joaquim tira o chapéu de palha. "As rosas estão tristes, Majestade. Rosa sente quando o castelo está tenso."', '"Os cisnes brigaram de novo. Dizem que é por uma cisne do lago do Lorde Gaspard."'],
+  escriba: ['Mestre Matias não levanta os olhos do registro. "Um momento, Majestade. Se eu parar no meio da linha, a tinta esquece o que ia dizer."', '"Tudo que acontece neste castelo passa por esta mesa. Tudo. Até o que não devia."'],
+  pajem: ['Tico chega correndo e freia derrapando. "Majestade! Tenho um recado! Esqueci qual. Mas era importante!"', '"Eu levo cartas para todo mundo, Majestade. Sei quem escreve para quem. Não que eu leia. Muito."'],
+  sentinela: ['A sentinela bate a lança no chão. "Majestade. Nada a relatar. Nunca há nada a relatar. Até haver."', '"Os presos cantam à noite, Majestade. Uma canção sobre o senhor. Não é bonita."'],
 };
 
 // O que cada um sabe: pistas reais quando as condições permitem, fofoca útil quando não.
@@ -41,11 +48,14 @@ function gossip(s: GameState, id: string): { text: string; clue?: string } {
     case 'isabelle': if (!c.includes('otho_norte')) return { text: '"Otho Montclair troca cartas com alguém do norte. Seu pai sabia. Eu nunca entendi por que ele não fez nada. Agora acho que ele estava esperando provas."', clue: 'otho_norte' }; break;
     case 'aldric': if (s.day >= 30 && !c.includes('selo_copiado') && bond(s, 'aldric').lealdade >= 55) return { text: 'Aldric fecha a porta. "Achei cera vermelha com a marca do Selo numa gaveta que não é a minha. Alguém sabe copiar a sua assinatura, Majestade. E eu não sei quem."', clue: 'selo_copiado' }; break;
     case 'pimenta': if (s.day >= 20 && !c.includes('reuniao_noturna')) return { text: '"Uma adivinha: o que tem cinco cadeiras, zero reis e só acontece depois da meia-noite?" Ele não ri. "Não é piada, Majestade. Olhe a sala do conselho à noite."', clue: 'reuniao_noturna' }; break;
+    case 'escriba': if (s.day >= 14 && !c.includes('lei_chaves')) return { text: '"Três vezes este mês, Majestade, alguém pediu o pergaminho da Lei das Cinco Chaves. Sempre à noite, sempre sem assinar. Se cinco guardiões girarem suas chaves, o rei é declarado incapaz."', clue: 'lei_chaves' }; break;
+    case 'pajem': if (s.day >= 20 && !c.includes('reuniao_noturna')) return { text: '"Levei cinco bilhetes iguais ontem à noite, Majestade. Cinco! Um para cada cadeira do conselho. Todos diziam só: meia-noite."', clue: 'reuniao_noturna' }; break;
+    case 'criada': if (s.flags.portoesCasa && !c.includes('guarda_trocada')) return { text: '"Os guardas novos do portão não sabem o nome de ninguém, Majestade. Perguntaram onde fica o seu quarto. Duas vezes."', clue: 'guarda_trocada' }; break;
     case 'sombra': if (!c.includes('cinco_cadeiras') && s.day >= 25) return { text: '"De graça, só hoje: o Pacto não precisa de exército. Precisa de cinco pessoas que achem que você é um menino. Conte quantas você tem à mesa."', clue: 'cinco_cadeiras' }; break;
   }
   // Nada de pista: algo verdadeiro sobre o dia de amanhã ou sobre a corte
   const next = s.scheduled.find((x) => x.day === s.day + 1 && EVENT_MAP[x.id]);
-  if (next && ['aldric', 'isabelle', 'pimenta', 'clara', 'aurelian'].includes(id))
+  if (next && ['aldric', 'isabelle', 'pimenta', 'clara', 'aurelian', 'criada', 'pajem', 'cozinheira', 'sentinela'].includes(id))
     return { text: `"Ouvi dizer que amanhã ${name(EVENT_MAP[next.id].speaker)} vem tratar de ${EVENT_MAP[next.id].topic.toLowerCase()}. Não ouvi de mim."` };
   const powerful = Object.entries(s.council.power).sort((a, b) => b[1] - a[1])[0];
   if (powerful && powerful[1] >= 45 && powerful[0] !== id)

@@ -1,0 +1,1196 @@
+{
+ "sheets": {
+  "estabulos": "estabulos.webp",
+  "muralhas": "muralhas.webp",
+  "conselho": "conselho.webp",
+  "biblioteca": "biblioteca.webp",
+  "quarto": "quarto.webp",
+  "jardim": "jardim.webp",
+  "patio": "patio.webp",
+  "tesouro": "tesouro.webp",
+  "tapetes": "tapetes.webp",
+  "ui": "ui.webp",
+  "capela": "capela.webp",
+  "decor": "decor.webp",
+  "cozinha": "cozinha.webp",
+  "masmorra": "masmorra.webp",
+  "portas": "portas.webp",
+  "paredes": "paredes.webp",
+  "rainha": "rainha.webp"
+ },
+ "props": {
+  "baia_cavalo": [
+   "estabulos",
+   0,
+   0,
+   245,
+   246
+  ],
+  "baia_vazia": [
+   "estabulos",
+   249,
+   0,
+   245,
+   245
+  ],
+  "cavalo_branco": [
+   "estabulos",
+   498,
+   0,
+   62,
+   196
+  ],
+  "suporte_selas": [
+   "estabulos",
+   564,
+   0,
+   196,
+   124
+  ],
+  "feno_solto": [
+   "estabulos",
+   764,
+   0,
+   181,
+   112
+  ],
+  "cocho": [
+   "estabulos",
+   0,
+   250,
+   184,
+   84
+  ],
+  "torre": [
+   "muralhas",
+   0,
+   0,
+   106,
+   255
+  ],
+  "escada_muralha": [
+   "muralhas",
+   110,
+   0,
+   160,
+   188
+  ],
+  "portaria": [
+   "muralhas",
+   274,
+   0,
+   269,
+   180
+  ],
+  "pinheiro": [
+   "muralhas",
+   547,
+   0,
+   90,
+   161
+  ],
+  "muralha_canto": [
+   "muralhas",
+   641,
+   0,
+   180,
+   158
+  ],
+  "muralha": [
+   "muralhas",
+   0,
+   259,
+   294,
+   108
+  ],
+  "lanterna_pedra": [
+   "muralhas",
+   298,
+   259,
+   35,
+   107
+  ],
+  "arbusto": [
+   "muralhas",
+   337,
+   259,
+   65,
+   63
+  ],
+  "armario_documentos": [
+   "conselho",
+   0,
+   0,
+   138,
+   221
+  ],
+  "estandarte_pe": [
+   "conselho",
+   142,
+   0,
+   79,
+   212
+  ],
+  "mesa_conselho": [
+   "conselho",
+   225,
+   0,
+   442,
+   206
+  ],
+  "mesa_mapa": [
+   "conselho",
+   0,
+   225,
+   356,
+   179
+  ],
+  "trono_conselho": [
+   "conselho",
+   360,
+   225,
+   107,
+   176
+  ],
+  "cadeira_frente": [
+   "conselho",
+   471,
+   225,
+   72,
+   132
+  ],
+  "cadeira_costas": [
+   "conselho",
+   547,
+   225,
+   64,
+   126
+  ],
+  "estante_baixa": [
+   "conselho",
+   615,
+   225,
+   130,
+   108
+  ],
+  "estante_escada": [
+   "biblioteca",
+   0,
+   0,
+   126,
+   264
+  ],
+  "estante_grande": [
+   "biblioteca",
+   130,
+   0,
+   310,
+   252
+  ],
+  "mesa_leitura": [
+   "biblioteca",
+   444,
+   0,
+   264,
+   206
+  ],
+  "escrivaninha_pequena": [
+   "biblioteca",
+   712,
+   0,
+   125,
+   163
+  ],
+  "globo": [
+   "biblioteca",
+   841,
+   0,
+   94,
+   154
+  ],
+  "atril": [
+   "biblioteca",
+   0,
+   268,
+   101,
+   136
+  ],
+  "poltrona_leitura": [
+   "biblioteca",
+   105,
+   268,
+   78,
+   131
+  ],
+  "pilha_livros": [
+   "biblioteca",
+   187,
+   268,
+   72,
+   114
+  ],
+  "cesto_pergaminhos": [
+   "biblioteca",
+   263,
+   268,
+   65,
+   91
+  ],
+  "pilha_livros2": [
+   "biblioteca",
+   332,
+   268,
+   62,
+   74
+  ],
+  "cama_rei": [
+   "quarto",
+   0,
+   0,
+   294,
+   438
+  ],
+  "guarda_roupa": [
+   "quarto",
+   298,
+   0,
+   139,
+   230
+  ],
+  "manto_coroa": [
+   "quarto",
+   441,
+   0,
+   105,
+   163
+  ],
+  "escrivaninha_rei": [
+   "quarto",
+   550,
+   0,
+   184,
+   157
+  ],
+  "lavatorio": [
+   "quarto",
+   738,
+   0,
+   106,
+   147
+  ],
+  "poltrona_rei": [
+   "quarto",
+   848,
+   0,
+   88,
+   138
+  ],
+  "criado_mudo": [
+   "quarto",
+   940,
+   0,
+   72,
+   130
+  ],
+  "bau_rei": [
+   "quarto",
+   0,
+   442,
+   118,
+   86
+  ],
+  "fonte": [
+   "jardim",
+   0,
+   0,
+   184,
+   211
+  ],
+  "poste_luz": [
+   "jardim",
+   188,
+   0,
+   53,
+   182
+  ],
+  "arco_rosas": [
+   "jardim",
+   245,
+   0,
+   143,
+   180
+  ],
+  "arvore": [
+   "jardim",
+   392,
+   0,
+   173,
+   180
+  ],
+  "lago_cisnes": [
+   "jardim",
+   569,
+   0,
+   260,
+   167
+  ],
+  "topiaria": [
+   "jardim",
+   833,
+   0,
+   62,
+   162
+  ],
+  "sebe_v": [
+   "jardim",
+   899,
+   0,
+   58,
+   149
+  ],
+  "canteiro_redondo": [
+   "jardim",
+   0,
+   215,
+   114,
+   95
+  ],
+  "canteiro_ret": [
+   "jardim",
+   118,
+   215,
+   176,
+   88
+  ],
+  "sebe_h": [
+   "jardim",
+   298,
+   215,
+   214,
+   72
+  ],
+  "banco_jardim": [
+   "jardim",
+   516,
+   215,
+   130,
+   62
+  ],
+  "tenda": [
+   "patio",
+   0,
+   0,
+   214,
+   172
+  ],
+  "suporte_armas": [
+   "patio",
+   218,
+   0,
+   177,
+   168
+  ],
+  "mastro": [
+   "patio",
+   399,
+   0,
+   88,
+   155
+  ],
+  "forja": [
+   "patio",
+   491,
+   0,
+   218,
+   150
+  ],
+  "poco": [
+   "patio",
+   713,
+   0,
+   128,
+   145
+  ],
+  "boneco_treino": [
+   "patio",
+   845,
+   0,
+   87,
+   143
+  ],
+  "braseiro_tripe": [
+   "patio",
+   936,
+   0,
+   70,
+   137
+  ],
+  "carroca": [
+   "patio",
+   0,
+   176,
+   180,
+   129
+  ],
+  "alvo": [
+   "patio",
+   184,
+   176,
+   132,
+   124
+  ],
+  "fardos_feno": [
+   "patio",
+   320,
+   176,
+   162,
+   122
+  ],
+  "bebedouro": [
+   "patio",
+   486,
+   176,
+   210,
+   104
+  ],
+  "ouro_grande": [
+   "tesouro",
+   0,
+   0,
+   290,
+   172
+  ],
+  "coroa_pedestal": [
+   "tesouro",
+   294,
+   0,
+   102,
+   166
+  ],
+  "prateleira_ouro": [
+   "tesouro",
+   400,
+   0,
+   218,
+   152
+  ],
+  "bau_aberto": [
+   "tesouro",
+   622,
+   0,
+   153,
+   148
+  ],
+  "mesa_moedas": [
+   "tesouro",
+   0,
+   176,
+   254,
+   145
+  ],
+  "bau_grande": [
+   "tesouro",
+   258,
+   176,
+   156,
+   123
+  ],
+  "ouro_medio": [
+   "tesouro",
+   418,
+   176,
+   216,
+   119
+  ],
+  "saco1": [
+   "tesouro",
+   638,
+   176,
+   84,
+   94
+  ],
+  "bau_fechado": [
+   "tesouro",
+   726,
+   176,
+   111,
+   82
+  ],
+  "saco2": [
+   "tesouro",
+   841,
+   176,
+   64,
+   78
+  ],
+  "saco3": [
+   "tesouro",
+   909,
+   176,
+   50,
+   58
+  ],
+  "ouro_pouco": [
+   "tesouro",
+   0,
+   325,
+   152,
+   55
+  ],
+  "tapete_azul": [
+   "tapetes",
+   0,
+   0,
+   186,
+   223
+  ],
+  "tapete_leao": [
+   "tapetes",
+   190,
+   0,
+   190,
+   222
+  ],
+  "passadeira_v": [
+   "tapetes",
+   384,
+   0,
+   66,
+   216
+  ],
+  "passadeira_cruz": [
+   "tapetes",
+   454,
+   0,
+   232,
+   216
+  ],
+  "passadeira_fim": [
+   "tapetes",
+   690,
+   0,
+   112,
+   182
+  ],
+  "tapete_rosa": [
+   "tapetes",
+   806,
+   0,
+   172,
+   164
+  ],
+  "passadeira_h": [
+   "tapetes",
+   0,
+   227,
+   326,
+   62
+  ],
+  "capacho": [
+   "tapetes",
+   330,
+   227,
+   82,
+   41
+  ],
+  "ui_pergaminho": [
+   "ui",
+   0,
+   0,
+   350,
+   269
+  ],
+  "ui_moldura_madeira": [
+   "ui",
+   354,
+   0,
+   177,
+   218
+  ],
+  "ui_moldura_ouro": [
+   "ui",
+   535,
+   0,
+   100,
+   132
+  ],
+  "ui_vela": [
+   "ui",
+   639,
+   0,
+   73,
+   132
+  ],
+  "ui_fita": [
+   "ui",
+   0,
+   273,
+   474,
+   108
+  ],
+  "ui_medalhao": [
+   "ui",
+   478,
+   273,
+   88,
+   92
+  ],
+  "ui_selo": [
+   "ui",
+   570,
+   273,
+   91,
+   92
+  ],
+  "ui_medalhao_pressionado": [
+   "ui",
+   665,
+   273,
+   88,
+   92
+  ],
+  "ic_escudo": [
+   "ui",
+   757,
+   273,
+   56,
+   70
+  ],
+  "ic_flor": [
+   "ui",
+   817,
+   273,
+   66,
+   66
+  ],
+  "ic_livro": [
+   "ui",
+   887,
+   273,
+   96,
+   65
+  ],
+  "ic_coroa": [
+   "ui",
+   0,
+   385,
+   66,
+   64
+  ],
+  "ic_espadas": [
+   "ui",
+   70,
+   385,
+   68,
+   64
+  ],
+  "ic_povo": [
+   "ui",
+   142,
+   385,
+   71,
+   60
+  ],
+  "ic_moedas": [
+   "ui",
+   217,
+   385,
+   70,
+   56
+  ],
+  "ic_carta": [
+   "ui",
+   291,
+   385,
+   75,
+   49
+  ],
+  "estatua_senhora": [
+   "capela",
+   0,
+   0,
+   84,
+   248
+  ],
+  "altar": [
+   "capela",
+   88,
+   0,
+   205,
+   212
+  ],
+  "entrada_cripta": [
+   "capela",
+   297,
+   0,
+   146,
+   198
+  ],
+  "confessionario": [
+   "capela",
+   447,
+   0,
+   159,
+   154
+  ],
+  "pia_batismal": [
+   "capela",
+   610,
+   0,
+   84,
+   146
+  ],
+  "velas_votivas": [
+   "capela",
+   698,
+   0,
+   133,
+   140
+  ],
+  "pulpito": [
+   "capela",
+   835,
+   0,
+   157,
+   122
+  ],
+  "banco_igreja": [
+   "capela",
+   0,
+   252,
+   298,
+   112
+  ],
+  "lapide": [
+   "capela",
+   302,
+   252,
+   246,
+   100
+  ],
+  "candelabro_alto": [
+   "decor",
+   0,
+   0,
+   96,
+   256
+  ],
+  "armadura": [
+   "decor",
+   100,
+   0,
+   86,
+   220
+  ],
+  "palmeira": [
+   "decor",
+   190,
+   0,
+   142,
+   211
+  ],
+  "lareira_leao": [
+   "decor",
+   336,
+   0,
+   257,
+   208
+  ],
+  "estatua_nobre": [
+   "decor",
+   597,
+   0,
+   90,
+   202
+  ],
+  "busto": [
+   "decor",
+   691,
+   0,
+   58,
+   166
+  ],
+  "candelabro": [
+   "decor",
+   753,
+   0,
+   74,
+   154
+  ],
+  "mesinha_vaso": [
+   "decor",
+   831,
+   0,
+   66,
+   150
+  ],
+  "planta_vaso": [
+   "decor",
+   0,
+   260,
+   120,
+   146
+  ],
+  "braseiro": [
+   "decor",
+   124,
+   260,
+   111,
+   112
+  ],
+  "lareira_cozinha": [
+   "cozinha",
+   0,
+   0,
+   242,
+   188
+  ],
+  "forno": [
+   "cozinha",
+   246,
+   0,
+   168,
+   170
+  ],
+  "barris": [
+   "cozinha",
+   418,
+   0,
+   158,
+   142
+  ],
+  "mesa_preparo": [
+   "cozinha",
+   580,
+   0,
+   232,
+   140
+  ],
+  "mesa_banquete": [
+   "cozinha",
+   0,
+   192,
+   230,
+   130
+  ],
+  "panelas_parede": [
+   "cozinha",
+   234,
+   192,
+   250,
+   121
+  ],
+  "prateleira_potes": [
+   "cozinha",
+   488,
+   192,
+   139,
+   120
+  ],
+  "caldeirao": [
+   "cozinha",
+   631,
+   192,
+   105,
+   117
+  ],
+  "sacos_grao": [
+   "cozinha",
+   740,
+   192,
+   128,
+   100
+  ],
+  "cesto_paes": [
+   "cozinha",
+   872,
+   192,
+   90,
+   95
+  ],
+  "caixote_legumes": [
+   "cozinha",
+   0,
+   326,
+   99,
+   86
+  ],
+  "balde": [
+   "cozinha",
+   103,
+   326,
+   76,
+   82
+  ],
+  "estante_pergaminhos": [
+   "masmorra",
+   0,
+   0,
+   102,
+   204
+  ],
+  "cela": [
+   "masmorra",
+   106,
+   0,
+   232,
+   198
+  ],
+  "porta_cela": [
+   "masmorra",
+   342,
+   0,
+   134,
+   196
+  ],
+  "correntes": [
+   "masmorra",
+   480,
+   0,
+   99,
+   180
+  ],
+  "mesa_escriba": [
+   "masmorra",
+   583,
+   0,
+   132,
+   165
+  ],
+  "gaveteiro_mapas": [
+   "masmorra",
+   719,
+   0,
+   162,
+   164
+  ],
+  "mesa_chaves": [
+   "masmorra",
+   0,
+   208,
+   142,
+   150
+  ],
+  "tronco": [
+   "masmorra",
+   146,
+   208,
+   158,
+   122
+  ],
+  "cama_palha": [
+   "masmorra",
+   308,
+   208,
+   186,
+   84
+  ],
+  "escada_sobe": [
+   "portas",
+   0,
+   0,
+   218,
+   229
+  ],
+  "escada_desce": [
+   "portas",
+   222,
+   0,
+   224,
+   224
+  ],
+  "porta_dupla": [
+   "portas",
+   450,
+   0,
+   188,
+   196
+  ],
+  "porta_lateral_esq": [
+   "portas",
+   642,
+   0,
+   68,
+   190
+  ],
+  "porta_lateral_dir": [
+   "portas",
+   714,
+   0,
+   68,
+   190
+  ],
+  "portao_ferro": [
+   "portas",
+   786,
+   0,
+   204,
+   170
+  ],
+  "arco_corredor": [
+   "portas",
+   0,
+   233,
+   131,
+   166
+  ],
+  "porta_simples": [
+   "portas",
+   135,
+   233,
+   105,
+   150
+  ],
+  "janela_azul": [
+   "paredes",
+   0,
+   0,
+   151,
+   271
+  ],
+  "janela_rosa": [
+   "paredes",
+   155,
+   0,
+   143,
+   257
+  ],
+  "vitral": [
+   "paredes",
+   302,
+   0,
+   124,
+   246
+  ],
+  "bandeira_azul": [
+   "paredes",
+   430,
+   0,
+   122,
+   244
+  ],
+  "bandeira_vermelha": [
+   "paredes",
+   556,
+   0,
+   111,
+   244
+  ],
+  "quadro_rei": [
+   "paredes",
+   671,
+   0,
+   138,
+   186
+  ],
+  "prateleira_parede": [
+   "paredes",
+   0,
+   275,
+   231,
+   171
+  ],
+  "tocha": [
+   "paredes",
+   235,
+   275,
+   46,
+   160
+  ],
+  "arandela": [
+   "paredes",
+   285,
+   275,
+   95,
+   127
+  ],
+  "cama_rainha": [
+   "rainha",
+   0,
+   0,
+   258,
+   285
+  ],
+  "guarda_roupa_branco": [
+   "rainha",
+   262,
+   0,
+   124,
+   198
+  ],
+  "cama_principe": [
+   "rainha",
+   390,
+   0,
+   120,
+   192
+  ],
+  "harpa": [
+   "rainha",
+   514,
+   0,
+   103,
+   184
+  ],
+  "penteadeira": [
+   "rainha",
+   621,
+   0,
+   169,
+   182
+  ],
+  "biombo": [
+   "rainha",
+   794,
+   0,
+   158,
+   168
+  ],
+  "mesa_cha": [
+   "rainha",
+   0,
+   289,
+   145,
+   160
+  ],
+  "vaso_rosas": [
+   "rainha",
+   149,
+   289,
+   90,
+   160
+  ],
+  "comoda": [
+   "rainha",
+   243,
+   289,
+   117,
+   146
+  ],
+  "poltrona_creme": [
+   "rainha",
+   364,
+   289,
+   103,
+   137
+  ],
+  "banquinho": [
+   "rainha",
+   471,
+   289,
+   54,
+   52
+  ]
+ },
+ "textures": {
+  "tex_carvalho": "tex_carvalho.webp",
+  "tex_pedra": "tex_pedra.webp",
+  "tex_marmore": "tex_marmore.webp",
+  "tex_cozinha": "tex_cozinha.webp",
+  "tex_calcada": "tex_calcada.webp",
+  "tex_cascalho": "tex_cascalho.webp",
+  "tex_grama": "tex_grama.webp",
+  "tex_parquet": "tex_parquet.webp",
+  "tex_parede": "tex_parede.webp"
+ }
+}
