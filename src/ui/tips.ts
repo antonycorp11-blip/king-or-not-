@@ -4,7 +4,7 @@ export type TipId = 'castelo' | 'conselho' | 'inicio' | 'dialogo' | 'chegada' | 
 export const TIPS: Record<TipId, { title: string; text: string; pos?: 'center' | 'top' | 'right' | 'left' }> = {
   castelo: {
     title: 'O seu castelo',
-    text: 'Cada dia começa no seu quarto. <b>Toque no chão</b> para andar, nas <b>portas</b> para mudar de cômodo e nas <b>pessoas</b> para conversar. A <b>Agenda</b> mostra compromissos; o botão <b>Castelo</b> leva a qualquer lugar e responde <b>onde está</b> cada pessoa. A fila de audiências espera no <b>Salão do Trono</b>.',
+    text: 'Cada dia começa no seu quarto. <b>Toque no chão</b> para andar, nas <b>portas</b> para mudar de cômodo, nas <b>pessoas</b> para conversar e <b>no rei</b> para ver o que dá para fazer ali. Toque no <b>retrato</b> ou nos números do topo para ver o Estado do Reino; o <b>sino</b> guarda os avisos. A <b>Agenda</b> mostra compromissos; o botão <b>Castelo</b> leva a qualquer lugar e responde <b>onde está</b> cada pessoa. A fila de audiências espera no <b>Salão do Trono</b>.',
     pos: 'right',
   },
   conselho: {

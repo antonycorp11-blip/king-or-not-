@@ -150,6 +150,20 @@ function markers(app: App, actors: ActorSpec[]): SceneMarker[] {
   const R = ROOMS[s.castle.room];
   const out: SceneMarker[] = R.exits.filter((e) => ROOMS[e.to].ready).map((e) => ({ key: `exit-${e.to}`, x: e.x, y: e.y - 44, label: `${iconImg('seta')} ${e.label}`, act: 'exit', arg: e.to, kind: 'porta' as const }));
   for (const a of actors) if (a.key.startsWith('npc-')) out.push({ key: a.key, x: a.x, y: a.foot - 108, label: esc(shortName(a.id)), act: 'talk', arg: a.id, kind: 'pessoa' });
+  // Anel de ações: tocar no rei abre o que dá para fazer ali mesmo
+  const [kx, ky] = s.castle.room === 'salao' && s.castle.seated ? [640, 330] : [s.castle.x, s.castle.y];
+  if (app.ui.ring) {
+    const acts = activitiesIn(s, s.castle.room);
+    const items = [...acts.map((a) => ({ label: `${iconImg(a.icon)} ${esc(a.label)}`, act: 'activity', arg: a.id })),
+      { label: `${iconImg('pergaminho')} Agenda`, act: 'agenda', arg: '' }, { label: `${iconImg('castelo')} Ir a…`, act: 'castleMap', arg: '' }];
+    const n = items.length;
+    items.forEach((it, i) => {
+      const ang = -Math.PI / 2 + (i / n) * Math.PI * 2;
+      const x = Math.max(150, Math.min(1130, kx + Math.cos(ang) * 190));
+      const y = Math.max(150, Math.min(640, ky - 50 + Math.sin(ang) * 120));
+      out.push({ key: `ring-${i}`, x, y, label: it.label, act: it.act, arg: it.arg, kind: 'acao' });
+    });
+  } else out.push({ key: 'ring-hint', x: kx, y: ky - 118, label: `${iconImg('estrela')} Ações`, act: 'ring', arg: '', kind: 'acao' });
   return out;
 }
 
@@ -158,7 +172,6 @@ function roomHud(app: App): string {
   const s = app.s;
   const R = ROOMS[s.castle.room];
   const mood = moodLabel(s);
-  const acts = activitiesIn(s, s.castle.room);
   const vis = visibleAudiences(s);
   const urgent = vis.find((a) => eventOf(a).kind === 'urgente');
   const away = s.castle.room !== 'salao';
@@ -170,7 +183,6 @@ function roomHud(app: App): string {
     <div class="castle-dock">
       <button class="dock-btn" data-act="agenda">${iconImg('pergaminho', 'ico-lg')}<span>Agenda${next ? `<small>${fmt(next.hour)} ${esc(next.title)}</small>` : ''}</span></button>
       <button class="dock-btn" data-act="castleMap">${iconImg('castelo', 'ico-lg')}<span>Castelo<small>Ir a · Onde está?</small></span></button>
-      ${acts.map((a) => `<button class="dock-btn act" data-act="activity" data-arg="${a.id}">${iconImg(a.icon, 'ico-lg')}<span>${esc(a.label)}<small>${esc(a.sub)}</small></span></button>`).join('')}
       ${s.hour < DAY_END ? `<button class="dock-btn" data-act="waitHour">${iconImg('ampulheta', 'ico-lg')}<span>${s.hour < 8 ? 'Esperar a corte abrir<small>As portas abrem às 8h</small>' : 'Esperar 1 hora'}</span></button>` : ''}
       ${s.castle.room !== 'quarto' ? `<button class="dock-btn end" data-act="endDay">${iconImg('selo', 'ico-lg')}<span>Encerrar o dia<small>Voltar ao quarto e dormir</small></span></button>` : ''}
     </div>

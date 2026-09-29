@@ -1,8 +1,8 @@
 import type { CouncilSeatId, GameState, Good, LogEntry, RoomId, ScreenId } from '../types';
-import { applyEffect as applyEffectSafe, governabilidade, govLabel, influenceGain, load, newGame, save, clearSave, storeLocal } from '../engine/core';
+import { applyEffect as applyEffectSafe, load, newGame, save, clearSave, storeLocal } from '../engine/core';
 import { athgGameStarted, athgReady, cloudLoad, inPortal } from '../engine/cloud';
 import { computeEconomy } from '../engine/economy';
-import { currentObjective, endDay, eventOf, isQueued, notices, pickNight, pushAudience, spendHours, startDay, visibleAudiences } from '../engine/day';
+import { endDay, eventOf, isQueued, notices, pickNight, pushAudience, spendHours, startDay, visibleAudiences } from '../engine/day';
 import { arrival, startInline, travel } from '../engine/castle';
 import { pickMatter } from '../engine/agenda';
 import { moodRemark } from '../engine/mood';
@@ -11,7 +11,7 @@ import { ROOMS } from '../data/castle';
 import { EVENT_MAP } from '../data/events';
 import { char } from '../data/characters';
 import { renderCastleModal, handleCastleModal, type CastleModal } from './castleModals';
-import { unreadCount } from '../engine/letters';
+import { floatDeltas, renderEstado, renderFeed, renderHud, type FeedItem } from './hud';
 import { loadCharacterAssets, setCrowned, type Expr } from '../render/actors';
 import { companionsFor } from '../data/companions';
 import { companionLine, guardLine, waitingLine } from '../data/banter';
@@ -62,6 +62,9 @@ export interface UIState {
   dialogCollapsed: boolean;
   castleModal: CastleModal;
   seatPick: CouncilSeatId | null;
+  panel: 'estado' | 'feed' | null; // pergaminhos do HUD
+  navOpen: boolean;
+  ring: boolean; // anel de ações em volta do rei
 }
 
 export interface ScreenModule {
@@ -86,6 +89,9 @@ export class App {
   scene: SceneView;
   private root: HTMLElement;
   private worldMap: WorldMap | null = null;
+  feed: FeedItem[] = [];
+  feedSeen = 0;
+  private prevRes: Record<string, number> | null = null;
   private seenArrivals = new Set<number>();
   private arrivalsDay = 0;
 
@@ -98,10 +104,13 @@ export class App {
     this.root.id = 'ui';
     this.stage.appendChild(this.root);
     this.s = load() ?? newGame();
-    this.ui = { screen: 'titulo', dialog: null, useInfluence: false, province: 'castelmar', warSel: null, warMode: 'reforcar', warResult: null, summary: null, summaryDay: 0, confirmEnd: false, help: false, lens: 'casas', good: 'graos', cardOpen: true, armyOpen: false, warClash: null, queueCollapsed: false, dialogCollapsed: false, castleModal: null, seatPick: null };
+    this.ui = { screen: 'titulo', dialog: null, useInfluence: false, province: 'castelmar', warSel: null, warMode: 'reforcar', warResult: null, summary: null, summaryDay: 0, confirmEnd: false, help: false, lens: 'casas', good: 'graos', cardOpen: true, armyOpen: false, warClash: null, queueCollapsed: false, dialogCollapsed: false, castleModal: null, seatPick: null, panel: null, navOpen: true, ring: false };
     this.stage.addEventListener('click', (e) => this.onClick(e));
     // tocar numa pessoa pelo castelo abre uma conversa
-    this.scene.onTap = (key) => { if (key.startsWith('npc-')) this.talkTo(key.slice(4)); };
+    this.scene.onTap = (key) => {
+      if (key.startsWith('npc-')) return this.talkTo(key.slice(4));
+      if (key === 'rei' && !this.ui.dialog && this.ui.screen === 'trono') { this.ui.ring = !this.ui.ring; this.render(); }
+    };
     this.scene.onKingMove = () => { if (this.s.castle.seated) { this.s.castle.seated = false; } };
     window.addEventListener('resize', () => this.fit());
     window.addEventListener('orientationchange', () => window.setTimeout(() => this.fit(), 250));
@@ -149,6 +158,7 @@ export class App {
     const root = document.documentElement;
     root.classList.toggle('m', mobile);
     root.classList.toggle('portrait', mobile && h > w);
+    if (mobile !== this.wasMobile) { this.wasMobile = mobile; this.ui && (this.ui.navOpen = !mobile); }
     let W = 1920;
     let H = 1080;
     if (mobile) {
@@ -202,6 +212,8 @@ export class App {
   }
 
   go(screen: ScreenId) {
+    this.ui.panel = null;
+    this.ui.ring = false;
     if (this.ui.dialog && !this.ui.dialog.reply) {
       this.toast('Termine a audiência antes de sair do salão.');
       return;
@@ -220,6 +232,8 @@ export class App {
       box.className = 'toasts';
       this.stage.appendChild(box);
     }
+    this.feed.push({ day: this.s.day, hour: this.s.hour, text: msg });
+    if (this.feed.length > 80) { this.feed.shift(); this.feedSeen = Math.max(0, this.feedSeen - 1); }
     const t = document.createElement('div');
     t.className = 'toast';
     t.textContent = msg;
@@ -366,9 +380,10 @@ export class App {
     if (screen !== 'biblioteca' && screen !== 'trono') this.scene.setRoom(s.castle.room === 'salao' ? 'trono' : (s.castle.room as Exclude<RoomId, 'salao'>));
     this.scene.setMovementEnabled(screen === 'trono' && !ui.dialog && !ui.summary && !s.ended && !this.needsCompanion() && !ui.castleModal);
     if (screen !== 'trono' && screen !== 'biblioteca') { this.scene.setMarkers([]); if (s.castle.room === 'salao') this.scene.sync(this.throneActors()); }
-    const modal = screen === 'trono' ? renderCastleModal(this) : '';
+    const modal = ui.panel === 'estado' ? renderEstado(this) : ui.panel === 'feed' ? renderFeed(this) : screen === 'trono' ? renderCastleModal(this) : '';
     this.root.innerHTML = this.topbar() + `<div class="screen screen-${screen} room-${s.castle.room}">${mod.render(this)}</div>` + this.confirmModal() + (modal || (this.needsCompanion() ? this.companionModal() : this.tipHtml()));
     mod.after?.(this);
+    this.prevRes = floatDeltas(this, this.prevRes);
   }
 
   // Personagens fixos do salão: rei no trono, guardas, rainha e rainha-mãe.
@@ -391,6 +406,7 @@ export class App {
   }
 
   private lifeClock = 6;
+  private wasMobile: boolean | null = null;
 
   private lifeTick() {
     const s = this.s;
@@ -451,54 +467,7 @@ export class App {
   }
 
   private topbar() {
-    const s = this.s;
-    const gov = governabilidade(s);
-    const eco = computeEconomy(s);
-    const night = !!s.flags.nightPending;
-    const hoursLeft = night ? 0 : 20 - s.hour;
-    const hh = night ? '21:00' : `${String(Math.floor(s.hour)).padStart(2, '0')}:${String(Math.round((s.hour % 1) * 60)).padStart(2, '0')}`;
-    const obj = currentObjective(s);
-    const chip = (icon: string, val: string, label: string, tip: string, cls = '') => `<div class="chip ${cls}" title="${tip}">${iconImg(icon)}<div><b>${val}</b><small>${label}</small></div></div>`;
-    const items: [ScreenId, string, string][] = [
-      ['trono', 'coroa', 'Castelo'],
-      ['provincias', 'castelo', 'Províncias'],
-      ['biblioteca', 'livro', 'Biblioteca'],
-      ['rei', 'estrela', 'O Rei'],
-      ['corte', 'povo', 'Corte'],
-      ['guerra', 'espadas', 'Guerra'],
-    ];
-    const badge = (id: ScreenId) => {
-      if (id === 'rei' && s.skillPoints > 0) return `<em>${s.skillPoints}</em>`;
-      if (id === 'guerra' && s.war && !s.war.result) return '<em>!</em>';
-      if (id === 'trono') {
-        const n = visibleAudiences(s).length;
-        return n ? `<em>${n}</em>` : '';
-      }
-      if (id === 'corte') {
-        const n = unreadCount(s);
-        return n ? `<em class="mail-badge">${n}</em>` : '';
-      }
-      return '';
-    };
-    return `<div class="topbar">
-      <div class="date-ribbon">
-        <div class="day">Dia ${s.day}</div>
-        <div class="clock">${iconImg('ampulheta')}<span>${hh}</span></div>
-        <div class="hours">${Array.from({ length: 12 }, (_, i) => `<i class="${i < 12 - hoursLeft ? 'spent' : ''}"></i>`).join('')}</div>
-      </div>
-      <div class="objective" title="Objetivo atual">${iconImg('selo')}<div><small>Objetivo</small><b>${obj.title}</b><span>${obj.text}</span></div></div>
-      <div class="chips">
-        ${chip('moedas', String(s.res.ouro), 'Tesouro', `Saldo diário estimado: ${eco.net >= 0 ? '+' : ''}${eco.net}`, s.res.ouro < 0 ? 'bad' : '')}
-        ${chip('flor', String(s.res.influencia), 'Influência', `+${influenceGain(s)} por dia (vem da Governabilidade)`)}
-        ${chip('coroa', String(s.res.prestigio), 'Prestígio', 'Respeito dos nobres e do conselho. Se chegar a 0, você é deposto.')}
-        ${chip('povo', String(s.res.povo), 'Povo', 'Apoio das pessoas comuns. Se chegar a 0, revolta popular.', s.res.povo < 25 ? 'bad' : '')}
-        ${chip('escudo', `${gov}`, govLabel(gov), 'Governabilidade = Povo + Prestígio + Lealdade das Casas. Gera Influência todo dia.', gov < 35 ? 'bad' : '')}
-        ${chip('espadas', String(s.res.exercito), `Moral ${s.res.moral}`, `Soldo: ${eco.upkeep} de ouro por dia`, s.res.moral < 35 ? 'bad' : '')}
-      </div>
-      <nav class="nav">${items
-        .map(([id, icon, label]) => `<button class="medal ${this.ui.screen === id ? 'on' : ''} ${id === 'corte' && unreadCount(s) ? 'blink' : ''}" data-act="go" data-arg="${id}" title="${label}" ${night ? 'disabled' : ''}>${iconImg(icon, 'ico-lg')}${badge(id)}<span>${label}</span></button>`)
-        .join('')}<button class="medal help-btn" data-act="help" title="Como jogar" ${night ? 'disabled' : ''}>${iconImg('balao', 'ico-lg')}<span>Ajuda</span></button></nav>
-    </div>`;
+    return renderHud(this);
   }
 
   private confirmModal() {
@@ -529,6 +498,7 @@ export class App {
   }
 
   travelTo(to: RoomId) {
+    this.ui.ring = false;
     if (this.ui.dialog && !this.ui.dialog.reply) return this.toast('Termine a conversa antes de sair.');
     if (this.ui.dialog) { Throne.dismissSpeaker(this); this.ui.dialog = null; }
     if (to === this.s.castle.room) { this.ui.castleModal = null; this.ui.screen = 'trono'; return this.render(); }
@@ -628,6 +598,11 @@ export class App {
         this.render();
         return this.autoOpenUrgent();
       case 'closeHelp': this.ui.help = false; return this.render();
+      case 'estado': this.ui.panel = this.ui.panel === 'estado' ? null : 'estado'; return this.render();
+      case 'closeEstado': case 'closeFeed': this.ui.panel = null; return this.render();
+      case 'feed': this.ui.panel = 'feed'; this.feedSeen = this.feed.length; return this.render();
+      case 'navToggle': this.ui.navOpen = !this.ui.navOpen; return this.render();
+      case 'ring': this.ui.ring = !this.ui.ring; return this.render();
       case 'travel': return this.travelTo(arg as RoomId);
       case 'exit': return this.walkOut(arg as RoomId);
       case 'talk': return this.talkTo(arg);
@@ -635,6 +610,7 @@ export class App {
       case 'toggleQueue': this.ui.queueCollapsed = !this.ui.queueCollapsed; return this.render();
       case 'toggleDialog': this.ui.dialogCollapsed = !this.ui.dialogCollapsed; return this.render();
     }
+    if (act === 'agenda' || act === 'castleMap' || act === 'activity') this.ui.ring = false;
     if (handleCastleModal(this, act, arg)) return;
     if (this.ui.screen !== 'titulo') {
       const mod = SCREENS[this.ui.screen as ScreenId];

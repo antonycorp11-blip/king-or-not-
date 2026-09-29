@@ -9,7 +9,7 @@ import type { RoomId } from '../types';
 // Camadas: céu (CSS) → cidade (dia/noite) → sala (janelas vazadas) → personagens animados → chamas → luz.
 export type RoomKind = 'trono' | 'biblioteca' | Exclude<RoomId, 'salao'>;
 
-export interface SceneMarker { key: string; x: number; y: number; label: string; act: string; arg: string; kind: 'porta' | 'pessoa' | 'objeto' }
+export interface SceneMarker { key: string; x: number; y: number; label: string; act: string; arg: string; kind: 'porta' | 'pessoa' | 'objeto' | 'acao' }
 
 export interface ActorSpec {
   key: string; // identidade na cena (ex.: 'rei', 'speaker', 'guard1')
@@ -120,7 +120,7 @@ export class SceneView {
       const x = ((event.clientX - rect.left) / rect.width) * HALL_W;
       const y = ((event.clientY - rect.top) / rect.height) * HALL_H;
       // tocar numa pessoa conversa com ela; tocar no chão anda
-      const hit = [...this.actors.values()].filter((a) => a.key.startsWith('npc-')).find((a) => Math.abs(a.x - x) < 34 && y > a.foot - 100 && y < a.foot + 12);
+      const hit = [...this.actors.values()].filter((a) => a.key.startsWith('npc-') || a.key === 'rei').find((a) => { const p = this.hallPosition(a); return Math.abs(p.x - x) < 34 && y > p.foot - 100 && y < p.foot + 12; });
       if (hit && this.onTap) { this.onTap(hit.key); return; }
       if (!this.movementEnabled) return;
       this.moveTo('rei', x, y);

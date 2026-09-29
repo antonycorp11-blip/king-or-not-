@@ -1267,3 +1267,77 @@ body.character-gallery-page { overflow: auto; height: auto; min-height: 100vh; b
 #ui > * { pointer-events: auto; }
 #ui > .screen-trono { pointer-events: none; }
 #ui > .screen-trono > * { pointer-events: auto; }
+
+/* ======================= HUD do reino (v2) ======================= */
+.topbar.hud { height: 92px; gap: 12px; align-items: center; }
+.hud-king { display: flex; align-items: center; gap: 12px; height: 92px; padding: 6px 16px 6px 8px; color: #f4e6c8; text-align: left;
+  background: linear-gradient(#2a1f38f2, #150f20f2); border: 3px solid #0c0810; box-shadow: inset 0 0 0 2px var(--gold), 0 4px 0 rgba(0,0,0,.35); }
+.hud-portrait { width: 76px; height: 76px; border: 3px solid var(--gold); background: #1a1224; }
+.hud-time { display: flex; flex-direction: column; line-height: 1.02; }
+.hud-time b { font-family: var(--title); font-size: 34px; color: var(--gold-l); }
+.hud-time em { font-family: var(--pix); font-style: normal; font-size: 28px; }
+.hud-time small { font-size: 15px; color: #d8c49a; text-transform: lowercase; }
+.candle { position: relative; width: 18px; height: 70px; display: flex; flex-direction: column; justify-content: flex-end; }
+.candle i { display: block; width: 100%; background: linear-gradient(90deg, #e8dcc0, #fff6e2 45%, #cbbd9c); border: 2px solid #3a2a18; border-bottom-width: 4px; transition: height .6s ease; position: relative; }
+.candle i::before { content: ''; position: absolute; left: 50%; top: -16px; width: 10px; height: 14px; transform: translateX(-50%); border-radius: 50% 50% 40% 40%; background: radial-gradient(circle at 50% 70%, #fff4a0, #f2a02a 60%, transparent 70%); animation: flicker 1.4s infinite; }
+.candle u { position: absolute; left: -4px; right: -4px; bottom: -4px; height: 6px; background: #b8903a; border: 2px solid #3a2a18; }
+@keyframes flicker { 50% { transform: translateX(-50%) scale(.85, 1.12); } }
+.hud-res { display: flex; gap: 8px; align-items: stretch; height: 76px; }
+.hud-chip { display: flex; align-items: center; gap: 8px; min-width: 176px; padding: 4px 14px 4px 8px; color: #f4e6c8; text-align: left;
+  background: linear-gradient(#221a30f2, #140f1ef2); border: 3px solid #0c0810; box-shadow: inset 0 0 0 2px #b8903a; }
+.hud-chip span { display: flex; flex-direction: column; line-height: 1.02; }
+.hud-chip b { font-family: var(--pix); font-size: 30px; }
+.hud-chip small { font-size: 15px; opacity: .8; }
+.hud-chip.bad b { color: #ff7a6a; }
+.hud-chip:hover, .hud-more:hover, .hud-king:hover { filter: brightness(1.12); }
+.hud-more { display: flex; align-items: center; gap: 8px; padding: 4px 14px; font-family: var(--sc); font-size: 18px; color: var(--ink);
+  background: linear-gradient(#f4e4bf, #d9c08b); border: 3px solid #5a3e18; box-shadow: inset 0 0 0 2px #fff4d4; }
+.hud-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.bell { position: relative; width: 72px; height: 72px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #7a2a2a, #3a0e10 70%); border: 3px solid #0c0810; box-shadow: inset 0 0 0 3px var(--gold); }
+.bell .ico-lg { width: 40px; height: 40px; }
+.bell em { position: absolute; top: -4px; right: -4px; background: #c82a2a; color: #fff; font-family: var(--pix); font-style: normal; font-size: 16px; min-width: 26px; height: 26px; line-height: 22px; border: 2px solid #fff2c0; border-radius: 50%; }
+.bell.ring { animation: bellRing 2.4s infinite; }
+@keyframes bellRing { 0%, 80%, 100% { transform: rotate(0); } 84% { transform: rotate(12deg); } 88% { transform: rotate(-10deg); } 92% { transform: rotate(6deg); } }
+.nav-toggle { display: none; width: 72px; height: 72px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #3a5ab0, #16225a 70%); border: 3px solid #0c0810; box-shadow: inset 0 0 0 3px var(--gold); }
+.hud .medal { width: 70px; height: 84px; }
+.hud .medal .ico-lg { width: 58px; height: 58px; padding: 11px; }
+/* números que sobem */
+.float-delta { position: absolute; z-index: 40; pointer-events: none; font-family: var(--pix); font-size: 30px; font-weight: 700; text-shadow: 0 2px 0 #000, 0 0 8px #000; animation: floatUp 2.2s ease-out forwards; opacity: 0; }
+.float-delta.up { color: #9df08a; }
+.float-delta.down { color: #ff7a6a; }
+@keyframes floatUp { 0% { opacity: 0; transform: translateY(0); } 12% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(46px); } }
+/* pergaminhos do HUD */
+.estado-list, .feed-list { list-style: none; padding: 0; margin: 10px 0; display: flex; flex-direction: column; gap: 6px; }
+.estado-list li { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 12px; padding: 6px 12px; background: rgba(255,255,255,.35); }
+.estado-list li span { display: flex; flex-direction: column; }
+.estado-list li small { font-size: 16px; color: #5a4630; }
+.estado-list li em { font-family: var(--pix); font-style: normal; font-size: 28px; }
+.estado-list li.bad em { color: #a8281f; }
+.feed-list li { padding: 6px 10px; background: rgba(255,255,255,.3); font-size: 18px; }
+.feed-list time { display: block; font-family: var(--pix); font-size: 14px; color: #7a5a1a; }
+/* anel de ações em volta do rei */
+.scene-marker.m-acao span { font-size: 18px; padding: 8px 14px; color: #2a1a10; background: linear-gradient(#f8e8c0, #d8b870); border: 3px solid #5a3e18; border-radius: 22px; box-shadow: 0 4px 10px rgba(0,0,0,.45), inset 0 0 0 2px #fff4d4; }
+.scene-marker.m-acao:hover span { filter: brightness(1.08); }
+.scene-marker.m-acao .ico { width: 22px; height: 22px; }
+.m .scene-marker.m-acao span { font-size: 21px; padding: 10px 16px; }
+/* celular deitado */
+.m .topbar.hud { height: 62px; gap: 6px; }
+.m .hud-king { height: 62px; padding: 3px 10px 3px 4px; gap: 6px; }
+.m .hud-portrait { width: 52px; height: 52px; }
+.m .hud-time b { font-size: 24px; }
+.m .hud-time em { font-size: 22px; }
+.m .hud-time small { display: none; }
+.m .candle { height: 48px; width: 14px; }
+.m .hud-res { height: 58px; gap: 5px; }
+.m .hud-chip { min-width: 0; padding: 2px 10px 2px 4px; gap: 4px; }
+.m .hud-chip .ico-lg { width: 32px; height: 32px; }
+.m .hud-chip b { font-size: 26px; }
+.m .hud-chip small { font-size: 12px; }
+.m .hud-more span { display: none; }
+.m .hud-more { padding: 4px 10px; }
+.m .bell, .m .nav-toggle { width: 58px; height: 58px; display: block; }
+.m .hud .nav { display: none; position: absolute; right: 0; top: 66px; flex-direction: column; gap: 4px; padding: 6px; background: rgba(12, 8, 16, .92); border: 2px solid var(--gold); }
+.m .hud .nav.open { display: flex; }
+.m .hud .medal { width: 64px; height: 64px; }
+.m .hud .medal .ico-lg { width: 58px; height: 58px; }
+.m .hud .medal span { display: none; }
