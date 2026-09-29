@@ -1147,3 +1147,117 @@ body.character-gallery-page { overflow: auto; height: auto; min-height: 100vh; b
 .character-grid p { font-size: 13px; color: #bbb5a5; min-height: 30px; margin: 6px 12px; }
 .character-grid small { font: 10px system-ui; letter-spacing: .12em; text-transform: uppercase; color: #bba36e; }
 @media (max-width: 560px) { .character-gallery { padding: 20px 12px; } .character-gallery header { align-items: flex-start; } .character-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .character-gallery nav { gap: 10px; } .character-gallery input { width: 180px; } }
+
+/* ======================= CASTELO VIVO (v2) ======================= */
+/* Marcadores sobre o cenário: portas e nomes de quem está no cômodo */
+.scene-markers { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.scene-marker { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; border: 0; padding: 0; background: none; }
+.scene-marker span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-family: var(--sc); letter-spacing: .03em; }
+.scene-marker.m-porta span { font-size: 19px; padding: 6px 14px; color: #fff2d0; background: rgba(20, 14, 24, .82); border: 2px solid var(--gold); border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,.35); }
+.scene-marker.m-porta:hover span { background: rgba(60, 40, 20, .92); }
+.scene-marker.m-pessoa span { font-size: 15px; padding: 2px 9px; color: #2a1a10; background: rgba(240, 224, 188, .9); border: 1px solid #7a5a1a; border-radius: 10px; }
+.scene-marker.m-pessoa:hover span { background: #fff4d8; }
+.m .scene-marker.m-porta span { font-size: 22px; padding: 8px 16px; }
+.m .scene-marker.m-pessoa span { font-size: 19px; padding: 4px 11px; }
+
+/* Placa do cômodo e humor do rei (diegético) */
+.room-plaque { position: absolute; left: 14px; top: 106px; width: 420px; padding: 10px 16px; display: flex; flex-direction: column; gap: 2px; z-index: 4; }
+.screen.room-salao .room-plaque { top: auto; bottom: 14px; }
+.room-plaque b { font-family: var(--sc); font-size: 26px; }
+.room-plaque small { font-size: 16px; line-height: 1.2; color: #5a4630; }
+.room-plaque .mood { font-size: 16px; color: #6a2a2a; margin-top: 4px; }
+.room-plaque .mood-satisfeito, .room-plaque .mood-esperancoso, .room-plaque .mood-sereno { color: #2a5a3a; }
+
+/* Dock de ações do cômodo */
+.castle-dock { position: absolute; right: 14px; bottom: 14px; left: 450px; display: flex; flex-wrap: wrap-reverse; justify-content: flex-end; gap: 8px; z-index: 4; }
+.dock-btn { display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 8px 14px; text-align: left; color: #fff2d0; background: linear-gradient(#3a2a44, #1a1224); border: 3px solid #0a0610; box-shadow: inset 0 0 0 2px var(--gold-d), 0 4px 0 rgba(0,0,0,.35); font-size: 19px; }
+.dock-btn span { display: flex; flex-direction: column; }
+.dock-btn small { font-size: 14px; opacity: .8; }
+.dock-btn.act { background: linear-gradient(#4a3418, #2a1c0c); box-shadow: inset 0 0 0 2px var(--gold), 0 4px 0 rgba(0,0,0,.35); }
+.dock-btn.end { background: linear-gradient(#2e4aa8, #14226a); }
+.dock-btn:hover { filter: brightness(1.15); }
+.hall-call { position: absolute; right: 14px; top: 106px; display: flex; align-items: center; gap: 12px; padding: 8px 16px; color: #fff2d0; background: rgba(20, 14, 24, .9); border: 3px solid var(--gold); z-index: 4; font-size: 19px; text-align: left; }
+.hall-call span { display: flex; flex-direction: column; }
+.hall-call small { font-size: 14px; opacity: .85; }
+.hall-call.urgent { border-color: #d8483a; animation: pulse 1.4s infinite; }
+.hall-call .q-portrait { width: 54px; height: 54px; }
+.screen.room-salao .castle-dock { left: 450px; }
+.screen.room-salao .idle-bar { display: none; }
+.m .room-plaque { width: 330px; top: 96px; padding: 6px 10px; }
+.m .room-plaque b { font-size: 21px; }
+.m .room-plaque small { display: none; }
+.m .screen.room-salao .room-plaque { top: auto; bottom: 8px; width: 260px; }
+.m .castle-dock { left: 8px; right: 8px; bottom: 8px; gap: 6px; }
+.m .screen.room-salao .castle-dock { left: 276px; }
+.m .dock-btn { min-height: 58px; font-size: 18px; padding: 6px 10px; }
+.m .dock-btn small { display: none; }
+.m .hall-call { top: 96px; right: 8px; font-size: 17px; }
+
+/* Reuniões: cada cadeira fala antes do rei decidir */
+.council-args { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; max-height: 210px; overflow: auto; }
+.council-args p { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 18px; line-height: 1.2; }
+.council-args b { font-family: var(--sc); }
+.council-args small { color: #6a4a1a; font-size: 14px; margin-right: 4px; }
+.council-args .whisper-portrait { width: 38px; height: 38px; flex: none; }
+.dialog.council .speech { bottom: 128px; }
+.choices.many { grid-auto-flow: row; grid-template-columns: repeat(3, 1fr); height: auto; }
+.hall-view .dialog.council .speech p { font-size: 20px; }
+.dialog.council .council-args p { font-size: 17px; }
+.choice.outburst { outline: 3px dashed #d8483a; outline-offset: -6px; }
+.m .council-args { max-height: 96px; }
+.m .council-args p { font-size: 14px; }
+
+/* Modais do castelo */
+.castle-modal { width: min(1320px, 94%); max-height: 88%; overflow: auto; position: relative; }
+.castle-modal h3 { font-family: var(--sc); margin: 16px 0 6px; }
+.modal-x { position: absolute; right: 14px; top: 10px; width: 44px; height: 44px; font-size: 30px; line-height: 1; background: none; border: 2px solid var(--gold-d); color: var(--ink); }
+.agenda-list { list-style: none; padding: 0; margin: 10px 0; display: flex; flex-direction: column; gap: 6px; }
+.agenda-list .ap { display: grid; grid-template-columns: 90px 1fr auto; gap: 12px; align-items: center; padding: 8px 12px; background: rgba(255,255,255,.35); border-left: 5px solid var(--gold-d); }
+.agenda-list .ap.imp-3 { border-left-color: #a8281f; }
+.agenda-list .ap.imp-1 { border-left-color: #8a8a70; }
+.agenda-list time { font-family: var(--pix); font-size: 24px; }
+.agenda-list .ap div { display: flex; flex-direction: column; }
+.agenda-list .ap small { font-size: 17px; color: #5a4630; }
+.agenda-list .ap em { font-style: normal; font-size: 16px; padding: 2px 10px; background: #e0d0a8; }
+.agenda-list .ap-faltou em { background: #e6b0a0; }
+.agenda-list .ap-feito { opacity: .6; }
+.agenda-list em.here { background: #b8e0a8; }
+.loose { margin: 4px 0 10px; }
+.castle-modal .hint { font-size: 17px; color: #5a4630; }
+.floors { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.floor { display: flex; flex-direction: column; gap: 6px; }
+.room-card { display: flex; flex-direction: column; align-items: flex-start; padding: 10px 12px; text-align: left; background: #fff6de; border: 2px solid var(--gold-d); font-size: 19px; }
+.room-card small { font-size: 15px; color: #6a5236; }
+.room-card.here { background: #e8f0c8; }
+.room-card.closed { opacity: .45; }
+.where-list, .cand-list { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.where-list li, .cand-list li { display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: rgba(255,255,255,.35); }
+.where-list span, .cand-list span { display: flex; flex-direction: column; flex: 1; }
+.where-list small, .cand-list small { font-size: 16px; color: #5a4630; }
+.cand-list i { font-size: 15px; color: #6a4a1a; }
+.where-portrait { width: 52px; height: 52px; flex: none; }
+.seat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.seat-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px; text-align: center; background: rgba(255,255,255,.35); border: 2px solid var(--gold-d); }
+.seat-card header { display: flex; flex-direction: column; align-items: center; }
+.seat-card header b { font-family: var(--sc); font-size: 19px; }
+.seat-card header small, .seat-card > small { font-size: 14px; color: #6a5236; }
+.seat-card p { margin: 2px 0; font-size: 15px; line-height: 1.2; }
+.seat-card .deleg { color: #7a2a2a; }
+.seat-card .vacant { color: #7a2a2a; font-style: italic; }
+.seat-portrait { width: 84px; height: 84px; }
+.key { font-style: normal; font-size: 14px; padding: 2px 8px; }
+.key-coroa { background: #c8e0b0; }
+.key-duvida { background: #f0dca0; }
+.key-pacto { background: #eab0a0; }
+.nb-cols { display: grid; grid-template-columns: 1fr 1.4fr; gap: 24px; }
+.clues { list-style: none; padding: 0; }
+.clues li { padding: 6px 0; border-bottom: 1px dashed #a08a60; }
+.clues p { margin: 2px 0; font-size: 18px; font-style: italic; }
+.memo { font-size: 17px; }
+.memo time { font-family: var(--pix); color: #7a5a1a; margin-right: 6px; }
+.m .castle-modal { padding: 14px 18px; }
+.m .floors { grid-template-columns: repeat(2, 1fr); }
+.m .seat-grid { grid-template-columns: repeat(3, 1fr); }
+.m .where-list, .m .cand-list { grid-template-columns: 1fr; }
+.m .nb-cols { grid-template-columns: 1fr; }
+.m .agenda-list .ap { grid-template-columns: 70px 1fr auto; }

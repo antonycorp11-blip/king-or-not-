@@ -9,10 +9,14 @@ import { CRISIS_EVENTS } from './crisis';
 import { NIGHT_EVENTS } from './night';
 import { ARC_EVENTS } from './arcs';
 import { HUMOR_EVENTS } from './humor';
+import { COUNCIL_EVENTS } from './council';
+import { CASTLE_LIFE_EVENTS } from './castleLife';
+import { ENCOUNTER_EVENTS } from './encounters';
+import { TALK_EVENTS, talkChoices } from './talk';
 import { ECHO_EVENTS } from './echoes';
 import { ROUTINE_EVENTS } from './routines';
 
-export const EVENTS: GameEvent[] = [...COURT_EVENTS, ...MARRIAGE_EVENTS, ...PEOPLE_EVENTS, ...WAR_EVENTS, ...ARMY_EVENTS, ...SUMMON_EVENTS, ...CRISIS_EVENTS, ...NIGHT_EVENTS, ...ARC_EVENTS, ...HUMOR_EVENTS, ...ECHO_EVENTS, ...ROUTINE_EVENTS];
+export const EVENTS: GameEvent[] = [...COURT_EVENTS, ...MARRIAGE_EVENTS, ...PEOPLE_EVENTS, ...WAR_EVENTS, ...ARMY_EVENTS, ...SUMMON_EVENTS, ...CRISIS_EVENTS, ...NIGHT_EVENTS, ...ARC_EVENTS, ...HUMOR_EVENTS, ...ECHO_EVENTS, ...ROUTINE_EVENTS, ...COUNCIL_EVENTS, ...CASTLE_LIFE_EVENTS, ...ENCOUNTER_EVENTS, ...TALK_EVENTS];
 
 export const EVENT_MAP: Record<string, GameEvent> = Object.fromEntries(EVENTS.map((e) => [e.id, e]));
 
@@ -21,5 +25,8 @@ import { dynamicChoices as marriageChoices } from './marriage';
 import type { Choice, GameState } from '../../types';
 
 export function dynamicChoices(eventId: string, s: GameState, node = 'start'): Choice[] | null {
-  return (node === 'start' ? marriageChoices(eventId, s) : null) ?? dynamicSummonChoices(eventId, node, s);
+  return (node === 'start' ? marriageChoices(eventId, s) ?? talkChoices(eventId, s) : null) ?? dynamicSummonChoices(eventId, node, s);
 }
+
+// Só estes tipos entram na fila do salão; os outros acontecem pelo castelo.
+export const AUDIENCE_KINDS: GameEvent['kind'][] = ['audiencia', 'urgente', 'familia', 'conselho', 'casamento'];

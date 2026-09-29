@@ -11,7 +11,8 @@
     "pressure": "esbuild scripts/pressure.ts --bundle --platform=node --outfile=build/pressure.cjs --log-level=warning && node build/pressure.cjs",
     "topdown:prepare": "node scripts/topdown-catalog.mjs && python3 scripts/prepare_topdown.py",
     "topdown:check": "node scripts/topdown-catalog.mjs && python3 scripts/check_topdown.py",
-    "topdown:test": "esbuild scripts/check_topdown_runtime.ts --bundle --platform=node --format=esm --outfile=build/check-topdown.mjs --log-level=warning && node build/check-topdown.mjs"
+    "topdown:test": "esbuild scripts/check_topdown_runtime.ts --bundle --platform=node --format=esm --outfile=build/check-topdown.mjs --log-level=warning && node build/check-topdown.mjs",
+    "test:save": "esbuild scripts/save-test.ts --bundle --platform=node --outfile=build/save-test.cjs --log-level=warning && node build/save-test.cjs"
   },
   "devDependencies": {
     "esbuild": "^0.25.12",

@@ -4,7 +4,7 @@ export const HALL_W = 1280;
 export const HALL_H = 720;
 export const HALL_ATLAS = 'assets/cenarios/trono/atlas.png';
 
-const regions = {
+export const regions = {
   floor: [28, 22, 257, 260], wall: [342, 22, 255, 261],
   carpet: [662, 25, 244, 254], steps: [946, 86, 299, 188],
   throne: [52, 313, 213, 304], column: [404, 312, 136, 305],
@@ -18,6 +18,7 @@ export type HallAsset = keyof typeof regions;
 export interface HallObject {
   id: string; asset: HallAsset; x: number; y: number; w: number; h: number;
   depth: number; solid: boolean;
+  paint?: (c: CanvasRenderingContext2D, o: HallObject) => void; // móveis desenhados em código
 }
 export interface HallLight { x: number; y: number; radius: number }
 export interface ThroneHall {
@@ -156,6 +157,7 @@ export function createThroneHall(atlas: HTMLImageElement): ThroneHall {
   ctx.fillStyle = shade; ctx.fillRect(98, 192, 1084, 42);
   objects.sort((a, b) => a.depth - b.depth);
   return { canvas, objects, lights, drawObject(c, o) {
+    if (o.paint) { o.paint(c, o); return; }
     if (o.id.startsWith('front-wall-')) {
       c.save(); c.beginPath(); c.rect(o.x, o.y, o.w, o.h); c.clip();
       for (let x = o.x; x < o.x + o.w; x += 165) sprite(c, 'wall', x, o.y + 12, 165, 138);

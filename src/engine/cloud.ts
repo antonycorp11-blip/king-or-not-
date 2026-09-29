@@ -1,4 +1,5 @@
 import type { GameState } from '../types';
+import { migrate } from './migrate';
 
 // Integração com o portal ATHG (SDK carregado no index.html).
 // Dentro do portal, o save vai para a conta do jogador (nuvem); fora dele, o SDK usa o localStorage.
@@ -52,8 +53,7 @@ export async function cloudLoad(): Promise<GameState | null> {
   const A = sdk();
   if (!A || !inPortal()) return null;
   try {
-    const data = (await A.load()) as GameState | null;
-    return data && typeof data === 'object' && data.version === 1 ? data : null;
+    return migrate(await A.load());
   } catch {
     return null;
   }

@@ -2,9 +2,14 @@ import { CELL_H, CELL_W, FOOT, frameCount, getFrame, hasSheet, type Anim } from 
 import { getTopDownFrame, loadTopDownAssets, TOPDOWN_CELL_W, TOPDOWN_CELL_H, TOPDOWN_FOOT, type TopDownDir } from '../render/topdown';
 import { SH, SW, cityscape, library, throneRoom, type Room } from '../render/scenes';
 import { createThroneHall, drawHallLights, HALL_H, HALL_W, loadHallAtlas, type HallObject, type ThroneHall } from '../render/throneHall';
+import { addHallSideDoors, createCastleRoom, loadRoomArt, type RoomArt } from '../render/castleRooms';
+import { ROOMS } from '../data/castle';
+import type { RoomId } from '../types';
 
 // Camadas: céu (CSS) → cidade (dia/noite) → sala (janelas vazadas) → personagens animados → chamas → luz.
-export type RoomKind = 'trono' | 'biblioteca';
+export type RoomKind = 'trono' | 'biblioteca' | Exclude<RoomId, 'salao'>;
+
+export interface SceneMarker { key: string; x: number; y: number; label: string; act: string; arg: string; kind: 'porta' | 'pessoa' | 'objeto' }
 
 export interface ActorSpec {
   key: string; // identidade na cena (ex.: 'rei', 'speaker', 'guard1')
@@ -54,6 +59,12 @@ export class SceneView {
   private hall: ThroneHall | null = null;
   private staticHallDrawn = false;
   private movementEnabled = false;
+  private atlas: HTMLImageElement | null = null;
+  private rooms = new Map<string, ThroneHall>();
+  private roomArt = new Map<string, RoomArt | null>();
+  private markerLayer!: HTMLElement;
+  onTap?: (key: string) => void; // toque em alguém da cena
+  onKingMove?: () => void; // o rei levantou do trono e começou a andar
 
   constructor(host: HTMLElement) {
     this.el = document.createElement('div');
@@ -77,7 +88,8 @@ export class SceneView {
       <canvas class="pix layer flames"></canvas>
       <div class="tint"></div>
       <div class="vignette"></div>
-      <div class="bubbles"></div>`;
+      <div class="bubbles"></div>
+      <div class="scene-markers"></div>`;
     host.appendChild(this.el);
     const [cd, cn] = this.el.querySelectorAll<HTMLCanvasElement>('.city-day, .city-night');
     copyInto(cd, cityscape(false));
@@ -86,24 +98,31 @@ export class SceneView {
     this.actorsCanvas = this.el.querySelector('.actors')!;
     this.flamesCanvas = this.el.querySelector('.flames')!;
     this.bubbleLayer = this.el.querySelector('.bubbles')!;
+    this.markerLayer = this.el.querySelector('.scene-markers')!;
     for (const c of [this.actorsCanvas, this.flamesCanvas]) {
       c.width = SW;
       c.height = SH;
     }
     requestAnimationFrame(this.loop);
     void loadHallAtlas().then((atlas) => {
+      this.atlas = atlas;
       this.hall = createThroneHall(atlas);
+      addHallSideDoors(this.hall);
       this.refreshRoom();
       this.el.dataset.art = 'ready';
     }).catch(() => { this.el.dataset.art = 'error'; });
     void loadTopDownAssets(() => this.drawActors());
     this.el.addEventListener('pointerdown', (event) => {
-      if (!this.movementEnabled || !this.isHall) return;
+      if (!this.isHall) return;
       const target = event.target as HTMLElement;
       if (!target.matches('canvas.room, canvas.actors, canvas.flames, .scene')) return;
       const rect = this.el.getBoundingClientRect();
       const x = ((event.clientX - rect.left) / rect.width) * HALL_W;
       const y = ((event.clientY - rect.top) / rect.height) * HALL_H;
+      // tocar numa pessoa conversa com ela; tocar no chão anda
+      const hit = [...this.actors.values()].filter((a) => a.key.startsWith('npc-')).find((a) => Math.abs(a.x - x) < 34 && y > a.foot - 100 && y < a.foot + 12);
+      if (hit && this.onTap) { this.onTap(hit.key); return; }
+      if (!this.movementEnabled) return;
       this.moveTo('rei', x, y);
     });
   }
@@ -112,9 +131,10 @@ export class SceneView {
     if (this.kind === kind) return;
     this.kind = kind;
     this.staticHallDrawn = false;
-    this.room = kind === 'trono' ? this.hall ? { canvas: this.hall.canvas, flames: [] } : throneRoom(!hasSheet('rei')) : library();
+    const td = this.topDown;
+    this.room = td ? { canvas: td.canvas, flames: [] } : kind === 'biblioteca' ? library() : kind === 'trono' ? throneRoom(!hasSheet('rei')) : { canvas: blankRoom(), flames: [] };
     copyInto(this.roomCanvas, this.room.canvas);
-    const topDown = kind === 'trono' && !!this.hall;
+    const topDown = !!td;
     this.el.classList.toggle('top-down', topDown);
     this.el.closest<HTMLElement>('#stage')?.classList.toggle('hall-view', topDown);
     for (const c of [this.actorsCanvas, this.flamesCanvas]) {
@@ -125,6 +145,46 @@ export class SceneView {
     this.actors.clear();
     for (const b of this.bubbles.values()) b.el.remove();
     this.bubbles.clear();
+    this.markerLayer.innerHTML = '';
+  }
+
+  get roomKind() { return this.kind; }
+
+  // Cômodo top-down atual (salão ou outro cômodo do castelo), se a arte já carregou
+  private get topDown(): ThroneHall | null {
+    const k = this.kind;
+    if (!k || k === 'biblioteca' || !this.atlas) return k === 'trono' ? this.hall : null;
+    if (k === 'trono') return this.hall;
+    let r = this.rooms.get(k);
+    if (!r) {
+      r = createCastleRoom(this.atlas, k, this.roomArt.get(k) ?? null);
+      this.rooms.set(k, r);
+      // Se a arte gerada do cômodo existir, reconstrói com ela assim que carregar
+      if (!this.roomArt.has(k)) void loadRoomArt(k).then((art) => {
+        this.roomArt.set(k, art);
+        if (!art) return;
+        this.rooms.delete(k);
+        if (this.kind === k) this.refreshRoom();
+      });
+    }
+    return r;
+  }
+
+  private get walkRect(): [number, number, number, number] {
+    const k = this.kind;
+    return !k || k === 'trono' || k === 'biblioteca' ? [112, 215, 1168, 612] : ROOMS[k].walk;
+  }
+
+  // Portas, pessoas e objetos clicáveis, em coordenadas do cenário
+  setMarkers(list: SceneMarker[]) {
+    this.markerLayer.innerHTML = list.map((m) => `<button class="scene-marker m-${m.kind}" data-act="${m.act}" data-arg="${m.arg}" style="left:${(m.x / HALL_W) * 100}%;top:${(m.y / HALL_H) * 100}%"><span>${m.label}</span></button>`).join('');
+  }
+
+  kingPos(): { x: number; y: number } | null {
+    const a = this.actors.get('rei');
+    if (!a || !a.free) return null;
+    const p = this.hallPosition(a);
+    return { x: Math.round(p.x), y: Math.round(p.foot) };
   }
 
   // redesenha a sala (ex.: quando a arte gerada termina de carregar)
@@ -168,7 +228,7 @@ export class SceneView {
     for (const [k, a] of this.actors) if (!keep.has(k) && !a.leaving && a.tx === undefined) this.actors.delete(k);
     for (const s of specs) {
       const cur = this.actors.get(s.key);
-      if (cur && cur.id === s.id) {
+      if (cur && cur.id === s.id && !!cur.free === !!s.free) {
         if (cur.roam) Object.assign(cur, { foot: s.foot, scale: s.scale, dim: s.dim, roam: s.roam });
         else if (cur.tx === undefined && !cur.leaving && !cur.free) Object.assign(cur, { x: s.x, foot: s.foot, facing: s.facing, anim: s.anim, scale: s.scale, dim: s.dim, dir: s.dir });
         else if (cur.tx === undefined && !cur.leaving) Object.assign(cur, { anim: s.anim, scale: s.scale, dim: s.dim });
@@ -222,14 +282,16 @@ export class SceneView {
   }
 
   // Caminho em grade simples para o salão. Funciona para mouse, caneta e toque.
-  moveTo(key: string, x: number, y: number) {
-    if (!this.isHall) return;
+  moveTo(key: string, x: number, y: number, onArrive?: () => void) {
+    if (!this.isHall) { onArrive?.(); return; }
     const actor = this.actors.get(key);
-    if (!actor || actor.leaving) return;
+    if (!actor || actor.leaving) { onArrive?.(); return; }
     const start = this.hallPosition(actor);
-    const goal = { x: clamp(x, 112, 1168), y: clamp(y, 215, 610) };
-    const path = hallPath(start.x, start.foot, goal.x, goal.y, this.hall!.objects);
-    if (!path.length) return;
+    const [x0, y0, x1, y1] = this.walkRect;
+    const goal = { x: clamp(x, x0, x1), y: clamp(y, y0, y1) };
+    const path = hallPath(start.x, start.foot, goal.x, goal.y, this.topDown!.objects, this.walkRect);
+    if (path.length < 2) { onArrive?.(); return; }
+    if (key === 'rei') this.onKingMove?.();
     actor.free = true;
     actor.x = start.x;
     actor.foot = start.foot;
@@ -239,7 +301,7 @@ export class SceneView {
     actor.ty = first.y;
     actor.anim = 'walk'; actor.after = 'idle'; actor.speed = 125;
     actor.dir = directionFor(actor.x, actor.foot, actor.tx, actor.ty);
-    actor.onArrive = undefined;
+    actor.onArrive = onArrive;
     this.staticHallDrawn = false;
   }
 
@@ -338,11 +400,12 @@ export class SceneView {
     ctx.imageSmoothingEnabled = this.isHall;
     const list = [...this.actors.values()].sort((a, b) => this.hallPosition(a).foot - this.hallPosition(b).foot);
     let objectIndex = 0;
-    const objects = this.isHall ? this.hall!.objects : [];
+    const td = this.topDown;
+    const objects = this.isHall && td ? td.objects : [];
     for (const a of list) {
       const p = this.hallPosition(a);
       while (objectIndex < objects.length && objects[objectIndex].depth <= p.foot)
-        this.hall!.drawObject(ctx, objects[objectIndex++]);
+        td!.drawObject(ctx, objects[objectIndex++]);
       const source = this.isHall
         ? getTopDownFrame(a.id, this.hallDirection(a), a.frame, a.anim)
         : getFrame(a.id, a.anim, a.frame);
@@ -370,12 +433,13 @@ export class SceneView {
       } else ctx.drawImage(source.src, source.sx, source.sy, sourceW, sourceH, dx, dy, w, h);
       ctx.restore();
     }
-    while (objectIndex < objects.length) this.hall!.drawObject(ctx, objects[objectIndex++]);
+    while (objectIndex < objects.length) td!.drawObject(ctx, objects[objectIndex++]);
     this.staticHallDrawn = this.isHall && this.actors.size === 0;
   }
 
   private hallDirection(a: ActorState): TopDownDir {
     if (a.free) return a.dir ?? 'south';
+    if (a.key.startsWith('npc-') || this.kind !== 'trono') return a.dir ?? 'south';
     if (a.key === 'rei') return 'south';
     if (a.key.startsWith('comp-')) return 'west';
     if (a.key.startsWith('guard')) return a.facing > 0 ? 'east' : 'west';
@@ -384,12 +448,14 @@ export class SceneView {
     return a.leaving || (a.tx !== undefined && a.tx < a.x) ? 'south' : 'north';
   }
 
-  private get isHall() { return this.kind === 'trono' && !!this.hall; }
+  private get isHall() { return !!this.topDown; }
 
   // Adaptador exclusivamente visual: preserva o fluxo atual das audiências.
   private hallPosition(a: ActorSpec) {
     if (!this.isHall) return { x: a.x, foot: a.foot, scale: a.scale ?? 1 };
     const scale = .62 * (a.scale ?? 1);
+    // fora do salão (e para quem anda livre ou tem lugar marcado), a posição é a própria
+    if (this.kind !== 'trono' || a.key.startsWith('npc-')) return { x: a.x, foot: a.foot, scale };
     if (a.key === 'rei' && !a.free) return { x: 640, foot: 330, scale: .62 };
     if (a.key === 'rei' && a.free) return { x: a.x, foot: a.foot, scale: .62 };
     if (a.key.startsWith('comp-')) return { x: 760, foot: 347, scale };
@@ -405,7 +471,7 @@ export class SceneView {
     const ctx = this.flamesCanvas.getContext('2d')!;
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     if (this.isHall) {
-      drawHallLights(ctx, this.hall!.lights, now, this.night);
+      drawHallLights(ctx, this.topDown!.lights, now, this.night);
       return;
     }
     const glow = 0.12 + this.night * 0.35;
@@ -424,6 +490,14 @@ export class SceneView {
       ctx.fillRect(f.x, f.y + 6 - h, 1, h - 1);
     }
   }
+}
+
+function blankRoom() {
+  const c = document.createElement('canvas');
+  c.width = HALL_W; c.height = HALL_H;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#141820'; g.fillRect(0, 0, HALL_W, HALL_H);
+  return c;
 }
 
 function copyInto(dst: HTMLCanvasElement, src: HTMLCanvasElement) {
@@ -447,18 +521,18 @@ function directionFor(x: number, y: number, tx: number, ty: number): TopDownDir 
 
 interface GridNode { x: number; y: number; f: number; g: number; }
 
-function hallPath(x: number, y: number, tx: number, ty: number, objects: HallObject[]) {
+function hallPath(x: number, y: number, tx: number, ty: number, objects: HallObject[], walk: [number, number, number, number] = [100, 214, 1180, 616]) {
   const cell = 32;
   const cols = Math.ceil(HALL_W / cell), rows = Math.ceil(HALL_H / cell);
   const center = (gx: number, gy: number) => ({ x: gx * cell + cell / 2, y: gy * cell + cell / 2 });
   const blocked = (gx: number, gy: number) => {
     const p = center(gx, gy);
-    if (p.x < 100 || p.x > 1180 || p.y < 214 || p.y > 616) return true;
+    if (p.x < walk[0] - 12 || p.x > walk[2] + 12 || p.y < walk[1] - 2 || p.y > walk[3] + 4) return true;
     return objects.some((o) => o.solid && p.x > o.x - 18 && p.x < o.x + o.w + 18 && p.y > o.y - 12 && p.y < o.y + o.h + 10);
   };
   const toGrid = (px: number, py: number) => ({ x: clamp(Math.floor(px / cell), 0, cols - 1), y: clamp(Math.floor(py / cell), 0, rows - 1) });
   const start = toGrid(x, y), end = toGrid(tx, ty);
-  if (blocked(start.x, start.y)) return [];
+  // quem nasceu dentro de um objeto (porta, móvel) ainda pode sair andando
   let target = end;
   if (blocked(target.x, target.y)) {
     const nearby: Array<{ x: number; y: number; d: number }> = [];
@@ -487,7 +561,7 @@ function hallPath(x: number, y: number, tx: number, ty: number, objects: HallObj
     }
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
       const nx = cur.x + dx, ny = cur.y + dy;
-      if (nx < 0 || ny < 0 || nx >= cols || ny >= rows || blocked(nx, ny)) continue;
+      if (nx < 0 || ny < 0 || nx >= cols || ny >= rows || (blocked(nx, ny) && blocked(cur.x, cur.y) === false)) continue;
       const nk = key(nx, ny), ng = cur.g + 1;
       if (ng >= (best.get(nk) ?? Infinity)) continue;
       best.set(nk, ng); came.set(nk, key(cur.x, cur.y));

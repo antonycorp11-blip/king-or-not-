@@ -1,7 +1,17 @@
 // Tutorial contextual: cada dica aparece uma vez, na primeira vez que a situação acontece.
-export type TipId = 'inicio' | 'dialogo' | 'chegada' | 'influencia' | 'resumo' | 'provincias' | 'escassez' | 'biblioteca' | 'rei' | 'corte' | 'guerra';
+export type TipId = 'castelo' | 'conselho' | 'inicio' | 'dialogo' | 'chegada' | 'influencia' | 'resumo' | 'provincias' | 'escassez' | 'biblioteca' | 'rei' | 'corte' | 'guerra';
 
 export const TIPS: Record<TipId, { title: string; text: string; pos?: 'center' | 'top' | 'right' | 'left' }> = {
+  castelo: {
+    title: 'O seu castelo',
+    text: 'Cada dia começa no seu quarto. <b>Toque no chão</b> para andar, nas <b>portas</b> para mudar de cômodo e nas <b>pessoas</b> para conversar. A <b>Agenda</b> mostra compromissos; o botão <b>Castelo</b> leva a qualquer lugar e responde <b>onde está</b> cada pessoa. A fila de audiências espera no <b>Salão do Trono</b>.',
+    pos: 'right',
+  },
+  conselho: {
+    title: 'O Conselho governa quando você não governa',
+    text: 'Cinco cadeiras, cinco chaves. Se você não recebe alguém, o conselheiro responsável decide <b>por você</b>, do jeito dele, e ganha poder. Nas reuniões, cada cadeira defende uma saída: quem você contraria lembra. Em <b>As cinco cadeiras</b> você nomeia e demite.',
+    pos: 'right',
+  },
   inicio: {
     title: 'O salão do trono',
     text: 'Cada dia vai das <b>8h às 20h</b>. Quem pede audiência espera na fila no alto da tela, mas você só vê o <b>rosto</b>. Quem é e o que quer, você só descobre quando a pessoa entra no salão. Cada audiência custa <b>1 hora</b>. Quando quiser, clique em <b>Encerrar o Dia</b>.',

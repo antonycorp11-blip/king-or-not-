@@ -17,7 +17,7 @@ function petition(
   choices: Choice[], ignored: string, minDay = 2,
 ): GameEvent {
   return {
-    id, speaker, topic, kind: 'audiencia', minDay, weight: 2, repeat: 1,
+    id, speaker, topic, kind: 'audiencia', minDay, weight: 1, repeat: 1,
     nodes: { start: { text: (s: GameState) => lines[s.day % 2], choices } },
     ignored: { text: ignored, rel: { [speaker]: -3 }, res: IGNORE_COST[id] },
   };

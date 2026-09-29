@@ -3,6 +3,10 @@ import { BOOKS, SKILLS, XP_PER_POINT } from '../data/progression';
 import { HOUSE_IDS, HOUSES } from '../data/realm';
 import { CHARACTERS } from '../data/characters';
 import { cloudSave } from './cloud';
+import { applyMood, moodXpMul } from './mood';
+import { addBond, echoRel } from './bonds';
+import { addClue } from './conspiracy';
+import { SAVE_VERSION, defaultCastle, defaultConspiracy, defaultCouncil, defaultMood, migrate } from './migrate';
 
 export const SAVE_KEY = 'king-or-not-save-v1';
 export const DAY_START = 8;
@@ -15,7 +19,17 @@ export function newGame(kingName = 'Edric'): GameState {
   for (const id of Object.keys(CHARACTERS)) rel[id] = 0;
   Object.assign(rel, { isabelle: 40, lucas: 50, aldric: 30, corvin: 10, aurelian: 25, theodric: 20, haakon: -10, marta: 0 });
   const s: GameState = {
-    version: 1,
+    version: SAVE_VERSION,
+    phase: 'reinado',
+    castle: defaultCastle('quarto'),
+    agenda: [],
+    council: defaultCouncil(),
+    bonds: {},
+    mood: defaultMood(),
+    conspiracy: defaultConspiracy(),
+    dynasty: [],
+    tracks: {},
+    activitiesToday: [],
     seed: (Math.random() * 2 ** 31) | 0,
     kingName,
     day: 1,
@@ -155,7 +169,16 @@ export function applyEffect(s: GameState, e: Effect | undefined, opts: { soften?
     }
   }
   if (e.loyalty) for (const [h, v] of Object.entries(e.loyalty) as [HouseId, number][]) s.loyalty[h] = clamp(s.loyalty[h] + scale(v), -100, 100);
-  if (e.rel) for (const [c, v] of Object.entries(e.rel)) s.rel[c] = clamp((s.rel[c] ?? 0) + relScale(c, v), -100, 100);
+  if (e.rel) for (const [c, v] of Object.entries(e.rel)) {
+    const d = relScale(c, v);
+    s.rel[c] = clamp((s.rel[c] ?? 0) + d, -100, 100);
+    echoRel(s, c, d);
+  }
+  if (e.bond) for (const [c, d] of Object.entries(e.bond)) addBond(s, c, d);
+  if (e.mood) applyMood(s, e.mood);
+  if (e.clue) for (const c of Array.isArray(e.clue) ? e.clue : [e.clue]) addClue(s, c);
+  if (e.power) for (const [c, v] of Object.entries(e.power)) s.council.power[c] = clamp((s.council.power[c] ?? 0) + v, 0, 100);
+  if (e.track) for (const [k, v] of Object.entries(e.track)) s.tracks[k] = (s.tracks[k] ?? 0) + v;
   if (e.flags) {
     Object.assign(s.flags, e.flags);
     if (opts.origin) {
@@ -172,7 +195,7 @@ export function applyEffect(s: GameState, e: Effect | undefined, opts: { soften?
     if (hasSkill(s, 'codigo')) s.res.prestigio = clamp(s.res.prestigio + 3, 0, 100);
   }
   if (e.log) for (const l of Array.isArray(e.log) ? e.log : [e.log]) log(s, l);
-  if (e.xp) addXp(s, e.xp);
+  if (e.xp) addXp(s, Math.round(e.xp * moodXpMul(s)));
   e.run?.(s);
 }
 
@@ -204,8 +227,7 @@ export function load(): GameState | null {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
-    const s = JSON.parse(raw) as GameState;
-    return s.version === 1 ? s : null;
+    return migrate(JSON.parse(raw));
   } catch {
     return null;
   }

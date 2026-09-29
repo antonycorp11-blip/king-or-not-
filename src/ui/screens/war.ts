@@ -100,6 +100,7 @@ export function render(app: App): string {
   }
 
   return `<div class="map-stage with-card war-stage">
+    <div class="map-caption"><b>Mapa militar</b><small>${w ? 'Estandartes mostram forças e vizinhos atacáveis.' : 'Selecione uma província para mover o exército real.'}</small></div>
     <div class="map-slot" id="map-slot"></div>
     ${army}
   </div>

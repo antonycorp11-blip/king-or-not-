@@ -51,6 +51,7 @@ export function render(app: App): string {
   </div>`;
 
   return `<div class="map-stage ${ui.cardOpen ? 'with-card' : ''}">
+    <div class="map-caption"><b>Mapa comercial</b><small>Selecione uma província para ver produção, impostos e rotas.</small></div>
     <div class="map-slot" id="map-slot"></div>
     ${lensBar}
     ${ecoCard}

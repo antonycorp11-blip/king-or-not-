@@ -1,5 +1,5 @@
 import type { Audience, DecisionOrigin, GameEvent, GameState, LogEntry, Resources } from '../types';
-import { EVENTS, EVENT_MAP } from '../data/events';
+import { AUDIENCE_KINDS, EVENTS, EVENT_MAP } from '../data/events';
 import { HOUSE_IDS, HOUSES, PROVINCES, GOODS } from '../data/realm';
 import { char } from '../data/characters';
 import { ACT_END, DAY_END, DAY_START, MARRIAGE_DEADLINE, applyEffect, clamp, governabilidade, hasSkill, influenceGain, rand, save } from './core';
@@ -9,6 +9,17 @@ import { deliverLetters } from './letters';
 import { checkRebellions } from '../data/events/crisis';
 import { companion } from '../data/companions';
 import { computeEconomy, taxKey } from './economy';
+import { buildAgenda, tickAgenda } from './agenda';
+import { captures, delegate } from './council';
+import { conspiracyDaily, trackOf } from './conspiracy';
+import { applyMood, moodHours, moodLabel, moodSleep, MOOD_NAMES } from './mood';
+import { bond } from './bonds';
+import { ROOMS } from '../data/castle';
+
+// Avisos que a interface mostra assim que o tempo passa (compromissos perdidos etc.)
+export const notices: LogEntry[] = [];
+
+export const WAKE_HOUR = DAY_START - 0.5;
 
 export function eventOf(a: Audience): GameEvent {
   return EVENT_MAP[a.eventId];
@@ -46,8 +57,12 @@ export function pickNight(s: GameState): GameEvent | null {
 }
 
 export function startDay(s: GameState) {
-  s.hour = DAY_START;
+  // O rei acorda no quarto, antes de a corte abrir as portas.
+  s.hour = WAKE_HOUR;
   s.log = [];
+  const bed = ROOMS.quarto.spots.cama;
+  s.castle = { ...s.castle, room: 'quarto', x: bed[0] + 90, y: bed[1] + 110, seated: false, visitedToday: ['quarto'] };
+  s.activitiesToday = [];
   s.dayStart = { res: { ...s.res }, loyalty: { ...s.loyalty } };
   s.audiences = s.audiences.filter((a) => !a.done && a.expires >= s.day);
   for (const a of s.audiences) a.arrive = DAY_START; // quem voltou já espera desde cedo
@@ -57,39 +72,61 @@ export function startDay(s: GameState) {
   s.scheduled = s.scheduled.filter((x) => x.day > s.day);
   for (const d of due) {
     const ev = EVENT_MAP[d.id];
+    if (ev?.kind === 'reuniao') { if (!s.council.queue.includes(ev.id)) s.council.queue.push(ev.id); continue; }
     if (ev && (!ev.cond || ev.cond(s)) && !s.audiences.some((a) => a.eventId === ev.id)) addAudience(s, ev, DAY_START, d.origin);
   }
   // roteiro do dia
-  for (const ev of EVENTS) if (ev.day === s.day && eligible(s, ev)) addAudience(s, ev);
+  for (const ev of EVENTS) if (ev.day === s.day && AUDIENCE_KINDS.includes(ev.kind) && eligible(s, ev)) addAudience(s, ev);
 
   deliverLetters(s);
 
   // Desdobramentos vêm primeiro, para decisões antigas não se perderem no sorteio.
-  const followups = EVENTS.filter((e) => e.followup && eligible(s, e))
+  const followups = EVENTS.filter((e) => e.followup && AUDIENCE_KINDS.includes(e.kind) && eligible(s, e))
     .sort((a, b) => (s.flagOrigins?.[a.cause ?? '']?.day ?? 0) - (s.flagOrigins?.[b.cause ?? '']?.day ?? 0));
   for (const ev of followups.slice(0, 2)) addAudience(s, ev, DAY_START);
 
-  // Depois do primeiro dia, a corte traz mais pedidos do que cabem em doze horas.
-  const target = s.day === 1 ? 8 : s.day <= 3 ? 13 : 15;
+  // A fila deve dar escolhas, não virar uma segunda lista de tarefas. Os
+  // pedidos importantes e os desdobramentos de decisões antigas entram
+  // primeiro; as rotinas completam só o espaço que sobrar.
+  const target = s.day === 1 ? 6 : s.day <= 3 ? 8 : 10;
+  const importantSpeakers = new Set(['gaspard', 'brandt', 'aveline', 'otho', 'aldric', 'corvin', 'theodric', 'aurelian', 'isabelle', 'rhoswen', 'isolde', 'sigrid', 'haakon', 'lucas']);
+  const audienceWeight = (e: GameEvent) => {
+    let m = 1;
+    if (e.kind === 'urgente') m *= 3;
+    else if (e.kind === 'conselho' || e.kind === 'casamento' || e.kind === 'familia') m *= 2;
+    if (importantSpeakers.has(e.speaker)) m *= 1.8;
+    if (e.id.startsWith('rotina_')) m *= 0.45;
+    return (e.weight ?? 1) * m;
+  };
   let guard = 0;
   while (s.audiences.length < target && guard++ < 40) {
-    const pool = EVENTS.filter((e) => e.weight && !e.followup && e.kind !== 'noite' && eligible(s, e));
+    const pool = EVENTS.filter((e) => e.weight && !e.followup && AUDIENCE_KINDS.includes(e.kind) && eligible(s, e));
     if (!pool.length) break;
-    const total = pool.reduce((a, e) => a + e.weight!, 0);
+    const total = pool.reduce((a, e) => a + audienceWeight(e), 0);
     let r = rand(s) * total;
-    const pick = pool.find((e) => (r -= e.weight!) <= 0) ?? pool[pool.length - 1];
+    const pick = pool.find((e) => (r -= audienceWeight(e)) <= 0) ?? pool[pool.length - 1];
     // as demandas chegam ao longo do dia; urgentes e as primeiras chegam cedo
     const early = s.audiences.length < 2 || pick.kind === 'urgente';
     addAudience(s, pick, early ? DAY_START : 9 + Math.floor(rand(s) * 8));
   }
+  // Conselheiros muito poderosos atendem pedidos antes que cheguem ao rei.
+  for (const a of s.audiences) {
+    const ev = eventOf(a);
+    if (a.done || !captures(s, ev, () => rand(s))) continue;
+    if (delegate(s, ev, () => rand(s), 'Chegou ao conselheiro antes de chegar ao rei')) a.done = true;
+  }
   // urgentes primeiro
   s.audiences.sort((a, b) => Number(eventOf(b).kind === 'urgente') - Number(eventOf(a).kind === 'urgente'));
+  buildAgenda(s, () => rand(s));
   save(s);
 }
 
+// Quem está na fila do salão (acontecimentos pelo castelo não entram na fila)
 export function visibleAudiences(s: GameState) {
-  return s.audiences.filter((a) => !a.done && (a.arrive ?? DAY_START) <= s.hour);
+  return s.audiences.filter((a) => !a.done && (a.arrive ?? DAY_START) <= s.hour && isQueued(eventOf(a)));
 }
+
+export const isQueued = (ev: GameEvent | undefined) => !!ev && (AUDIENCE_KINDS.includes(ev.kind) || ev.kind === 'noite');
 
 export function currentObjective(s: GameState): { title: string; text: string } {
   if (s.war && !s.war.result) return { title: 'Vencer a guerra', text: `Contra ${enemyLabel(s.war.enemy)} · turno ${s.war.turn}` };
@@ -104,8 +141,14 @@ export function canSpend(s: GameState, hours: number) {
   return s.hour + hours <= DAY_END;
 }
 
-export function spendHours(s: GameState, hours: number) {
+// O tempo passa: cansa o rei e faz a agenda andar. Retorna o que aconteceu enquanto isso.
+export function spendHours(s: GameState, hours: number, activity: 'trabalho' | 'andar' | 'descanso' = 'trabalho') {
   s.hour = Math.min(DAY_END, s.hour + hours);
+  moodHours(s, hours, activity);
+  const missed = tickAgenda(s);
+  s.log.push(...missed);
+  notices.push(...missed);
+  return missed;
 }
 
 const RES_META: Record<keyof Resources, { icon: string; title: string }> = {
@@ -130,11 +173,15 @@ export function endDay(s: GameState): LogEntry[] {
   for (const a of s.audiences) {
     if (a.done) continue;
     const ev = eventOf(a);
+    if (!isQueued(ev)) { a.done = true; continue; } // conversa ou atividade interrompida
     if (a.expires > s.day) {
       pending.push(a);
       continue;
     }
     a.done = true;
+    // Quando o rei não governa, alguém governa por ele.
+    const d = delegate(s, ev, () => rand(s));
+    if (d) continue;
     const origin = { day: s.day, event: ev.topic, decision: 'Audiência ignorada' };
     s.flags[`ignored_${ev.id}`] = true;
     (s.flagOrigins ??= {})[`ignored_${ev.id}`] = origin;
@@ -148,6 +195,12 @@ export function endDay(s: GameState): LogEntry[] {
       entries.push({ icon: 'selo', title: `Ignorado: ${ev.topic}`, text: `${who.name} esperou em vão pela sua atenção.`, delta: '−6', tone: 'ruim' });
     }
   }
+
+  // 1b. Compromissos que ficaram para trás
+  const hour = s.hour;
+  s.hour = 24;
+  tickAgenda(s);
+  s.hour = hour;
 
   // 2. Guerra: o inimigo age se você não comandou hoje; em paz, o acampamento do exército
   warEndOfDay(s, entries);
@@ -249,6 +302,21 @@ export function endDay(s: GameState): LogEntry[] {
   // 9. Rumores para o dia seguinte
   const rumor = pickRumor(s);
   if (rumor) entries.push(rumor);
+
+  // 8b. O Pacto se move no escuro; a casa da rainha avança sua trilha
+  conspiracyDaily(s, () => rand(s), entries);
+  if (s.spouse && s.day >= 21) s.tracks[trackOf(s.spouse)] = (s.tracks[trackOf(s.spouse)] ?? 0) + 1;
+
+  // 8c. O dia pesa no rei: humor antes de dormir
+  if (s.dayStart) {
+    const dp = s.res.prestigio - s.dayStart.res.prestigio;
+    const dv = s.res.povo - s.dayStart.res.povo;
+    applyMood(s, { joy: Math.round((dp + dv) / 2), stress: dp < -4 || dv < -4 ? 6 : 0 });
+  }
+  const mood = moodLabel(s);
+  if (mood !== 'sereno') entries.push({ icon: 'coracao', title: 'O rei vai dormir ' + MOOD_NAMES[mood], text: s.mood.memo.filter((m) => m.day === s.day).map((m) => m.text).slice(-2).join('. ') || 'O dia deixou marcas.', tone: ['satisfeito', 'esperancoso'].includes(mood) ? 'bom' : 'neutro' });
+  const baseline = (gov - 50) / 2 + (s.spouse ? (bond(s, s.spouse).amor - 50) / 4 : 0);
+  moodSleep(s, baseline, s.mood.stress > 70);
 
   // 9. Casas furiosas se rebelam; fim de jogo?
   checkRebellions(s);

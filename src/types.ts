@@ -66,7 +66,108 @@ export interface Effect {
   law?: string;
   log?: LogEntry | LogEntry[];
   run?: (s: GameState) => void;
+  // --- expansão v2 ---
+  bond?: Record<string, Partial<Bond>>; // camadas da relação (amor, confiança...)
+  mood?: MoodDelta; // o que a decisão fez com o rei por dentro
+  clue?: string | string[]; // pistas da conspiração descobertas
+  power?: Record<string, number>; // poder político de conselheiros
+  track?: Record<string, number>; // trilhas de longo prazo (dívida Valmont, oficiais Drakon...)
 }
+
+// ======================= EXPANSÃO v2: o rei dentro do castelo =======================
+
+// Castelo
+export type RoomId =
+  | 'quarto' | 'aposentos' | 'salao' | 'conselho' | 'patio' | 'capela'
+  | 'tesouro' | 'masmorra' | 'cozinha' | 'arquivos' | 'jardim' | 'estabulos';
+export type FloorId = 'superior' | 'principal' | 'inferior' | 'exterior';
+
+export interface CastleState {
+  room: RoomId;
+  x: number; // posição do rei no cômodo (coordenadas 1280x720)
+  y: number;
+  seated: boolean; // sentado no trono (só no salão)
+  visitedToday: RoomId[];
+  lastEncounter?: Partial<Record<RoomId, number>>; // dia do último encontro em cada cômodo
+}
+
+// Agenda
+export type AppointmentKind = 'conselho' | 'audiencia' | 'julgamento' | 'diplomacia' | 'jantar' | 'banquete' | 'treino' | 'religioso' | 'familia' | 'investigacao' | 'viagem';
+export type AppointmentState = 'pendente' | 'feito' | 'atrasado' | 'faltou' | 'cancelado';
+
+export interface Appointment {
+  uid: number;
+  kind: AppointmentKind;
+  title: string;
+  room: RoomId;
+  hour: number; // início
+  duration: number; // horas
+  who: string[]; // participantes
+  importance: 1 | 2 | 3;
+  mandatory?: boolean;
+  eventId?: string; // o que acontece quando o rei comparece
+  matterId?: string; // reunião do conselho
+  state: AppointmentState;
+  note?: string; // o que acontece se faltar
+}
+
+// Conselho
+export type CouncilSeatId = 'chanceler' | 'tesoureiro' | 'marechal' | 'sussurros' | 'guardiao';
+
+export interface CouncilState {
+  seats: Record<CouncilSeatId, string | null>;
+  power: Record<string, number>; // 0..100 poder político acumulado de cada conselheiro
+  delegated: Record<string, number>; // decisões tomadas sem o rei
+  ignored: Record<string, number>; // vezes em que foi voto vencido
+  queue: string[]; // assuntos aguardando reunião
+  decided: string[]; // assuntos já decididos (não voltam)
+  lastMeeting?: number;
+}
+
+// Relações profundas
+export interface Bond {
+  amor: number; // 0..100
+  confianca: number; // 0..100
+  ressentimento: number; // 0..100
+  medo: number; // 0..100
+  lealdade: number; // 0..100
+}
+
+// Humor do rei (o jogador não escolhe; ele acontece)
+export type MoodLabel = 'sereno' | 'satisfeito' | 'esperancoso' | 'cansado' | 'preocupado' | 'triste' | 'irritado' | 'furioso' | 'abalado';
+export interface MoodState {
+  joy: number; // −100..100
+  anger: number; // 0..100
+  stress: number; // 0..100
+  fatigue: number; // 0..100
+  memo: { day: number; text: string }[]; // de onde veio o humor (para o diário)
+}
+export interface MoodDelta { joy?: number; anger?: number; stress?: number; fatigue?: number; why?: string }
+
+// A grande conspiração
+export type KeyHolder = 'coroa' | 'pacto' | 'duvida';
+export interface ConspiracyState {
+  clues: string[]; // pistas descobertas
+  members: string[]; // quem está no pacto (oculto do jogador)
+  exposed: string[]; // membros que o rei desmascarou
+  turned: string[]; // membros que viraram informantes
+  prep: Record<string, number>; // preparação para a queda (reservas, rota de fuga, tropas ocultas...)
+  fallDay?: number;
+  stage: number; // 0 sementes · 1 recrutamento · 2 chaves · 3 sinais · 4 golpe · 5 queda
+}
+
+// Dinastia
+export interface DynastyMember {
+  id: string;
+  name: string;
+  sex: 'm' | 'f';
+  born?: number; // dia de nascimento (undefined = ainda por nascer)
+  due?: number; // dia previsto do parto
+  mother?: string;
+  alive: boolean;
+}
+
+export type CampaignPhase = 'reinado' | 'queda' | 'exilio' | 'reconquista' | 'segundo_reinado';
 
 export interface Req {
   knowledge?: string;
@@ -75,6 +176,7 @@ export interface Req {
   influencia?: number;
   test?: (s: GameState) => boolean;
   label?: string; // texto exibido quando bloqueado
+  mood?: MoodLabel[]; // só disponível nesses humores
 }
 
 export interface Choice {
@@ -87,6 +189,9 @@ export interface Choice {
   reply?: Txt; // reação do interlocutor
   goto?: string; // continua o diálogo em outro nó (sem custo extra de tempo)
   tension?: number; // mudança dramática da tensão, além dos efeitos políticos
+  who?: string; // quem propôs esta saída (retrato no botão: conselheiro, acompanhante)
+  seat?: CouncilSeatId; // posição de uma cadeira do conselho
+  outburst?: boolean; // resposta nascida do humor do rei
 }
 
 export type Txt = string | ((s: GameState) => string);
@@ -104,7 +209,7 @@ export interface Advice {
   choice: Choice; // a nova saída que ele oferece
 }
 
-export type EventKind = 'audiencia' | 'urgente' | 'familia' | 'conselho' | 'casamento' | 'noite';
+export type EventKind = 'audiencia' | 'urgente' | 'familia' | 'conselho' | 'casamento' | 'noite' | 'encontro' | 'reuniao' | 'atividade' | 'conversa';
 
 export interface GameEvent {
   id: string;
@@ -123,6 +228,17 @@ export interface GameEvent {
   ignored?: Effect & { text: string };
   cause?: string; // flag cuja decisão originou esta consequência
   followup?: boolean; // desdobramento que deve entrar antes dos pedidos aleatórios
+  // --- expansão v2 ---
+  domain?: CouncilSeatId | 'pessoal'; // quem governa isto quando o rei não governa ('pessoal' = ninguém)
+  room?: RoomId; // encontros: onde acontece
+  hoursWindow?: [number, number]; // encontros: entre que horas
+  present?: string[]; // encontros: quem mais aparece em cena
+  council?: { lead: CouncilSeatId; positions: Partial<Record<CouncilSeatId, CouncilPosition>> };
+}
+
+export interface CouncilPosition {
+  argument: Txt; // o que o conselheiro defende na mesa
+  choice: Choice;
 }
 
 export interface DecisionOrigin {
@@ -195,6 +311,17 @@ export interface DaySummary {
 
 export interface GameState {
   version: number;
+  // --- v2 ---
+  phase: CampaignPhase;
+  castle: CastleState;
+  agenda: Appointment[];
+  council: CouncilState;
+  bonds: Record<string, Bond>;
+  mood: MoodState;
+  conspiracy: ConspiracyState;
+  dynasty: DynastyMember[];
+  tracks: Record<string, number>;
+  activitiesToday: string[];
   seed: number;
   kingName: string;
   day: number;

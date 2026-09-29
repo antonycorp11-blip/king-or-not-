@@ -8,6 +8,35 @@ import { BOOKS } from '../src/data/progression';
 import { companionsFor, genericAdvice } from '../src/data/companions';
 import { marchArmy } from '../src/engine/army';
 import { KINGDOM_PROVINCES } from '../src/data/realm';
+import { EVENT_MAP, EVENTS } from '../src/data/events';
+import { councilChoices, recordVote } from '../src/engine/council';
+import { keysForPact, insight } from '../src/engine/conspiracy';
+import { moodLabel, moodAdjust } from '../src/engine/mood';
+import { ACTIVITIES } from '../src/data/activities';
+import { pickEncounter } from '../src/engine/castle';
+import type { GameEvent } from '../src/types';
+
+// Joga um acontecimento inteiro com escolhas aleatórias (mesma regra da interface)
+function play(s: GameState, ev: GameEvent) {
+  let node = 'start';
+  for (let depth = 0; depth < 5; depth++) {
+    let choices = (dynamicChoices(ev.id, s, node) ?? ev.nodes[node].choices) as Choice[];
+    if (ev.council && node === 'start') choices = [...councilChoices(s, ev), ...choices];
+    choices = moodAdjust(s, ev, choices);
+    const avail = choices.filter((c) => ok(s, c.req));
+    if (!avail.length) break;
+    const c = avail[Math.floor(Math.random() * avail.length)];
+    if (typeof ev.nodes[node].text === 'function') (ev.nodes[node].text as (s: GameState) => string)(s);
+    applyEffect(s, c.effects);
+    if (c.reply && typeof c.reply === 'function') c.reply(s);
+    if (ev.council && depth === 0) recordVote(s, ev, c.seat ?? null);
+    if (!c.goto) break;
+    if (!ev.nodes[c.goto]) throw new Error(`goto inválido ${ev.id} -> ${c.goto}`);
+    node = c.goto;
+  }
+}
+const stats = { delegated: 0, members: 0, keys: 0, clues: 0, insight: 0, council: 0, encounters: 0 };
+const moods: Record<string, number> = {};
 
 function ok(s: GameState, r?: Req) {
   if (!r) return true;
@@ -33,6 +62,27 @@ for (let run = 0; run < 300; run++) {
       if (b) { spendHours(s, 2); s.bookProgress[b.id] = (s.bookProgress[b.id] ?? 0) + 2; if (s.bookProgress[b.id] >= b.hours) s.knowledge.push(b.knowledge); }
     }
     if (Math.random() < 0.15) marchArmy(s, KINGDOM_PROVINCES[Math.floor(Math.random() * KINGDOM_PROVINCES.length)]);
+    // o castelo: reuniões (metade das vezes), atividades e encontros
+    for (const ap of s.agenda) {
+      if (ap.state !== 'pendente' || !ap.eventId || Math.random() < 0.5) continue;
+      const ev = EVENT_MAP[ap.eventId];
+      if (!ev) throw new Error('compromisso sem evento ' + ap.eventId);
+      if (s.hour < ap.hour) s.hour = ap.hour;
+      ap.state = 'feito';
+      play(s, ev);
+      if (ev.kind === 'reuniao') stats.council++;
+    }
+    if (Math.random() < 0.4) {
+      const act = ACTIVITIES.filter((a) => a.event && (!a.cond || a.cond(s)))[Math.floor(Math.random() * 6)];
+      const id = act && (typeof act.event === 'function' ? act.event(s) : act.event);
+      if (id) { if (!EVENT_MAP[id]) throw new Error('atividade sem evento ' + id); s.seen[id] = s.day; play(s, EVENT_MAP[id]); }
+    }
+    for (const room of ['conselho', 'patio', 'capela', 'aposentos', 'salao', 'quarto'] as const) {
+      s.hour = 9 + Math.random() * 9;
+      const enc = pickEncounter(s, room);
+      if (enc) { s.seen[enc.id] = s.day; play(s, enc); stats.encounters++; }
+    }
+    s.hour = 8;
     const comps = companionsFor(s);
     s.flags.companion = comps[Math.floor(Math.random() * comps.length)].id;
     for (const a of s.audiences) {
@@ -70,6 +120,10 @@ for (let run = 0; run < 300; run++) {
   }
   wars[s.war ? `${s.war.enemy}:${s.war.result ?? 'andamento'}` : 'sem guerra'] = (wars[s.war ? `${s.war.enemy}:${s.war.result ?? 'andamento'}` : 'sem guerra'] ?? 0) + 1;
   gold += s.res.ouro; povo += s.res.povo;
+  stats.delegated += Object.values(s.council.delegated).reduce((a, b) => a + b, 0);
+  stats.members += s.conspiracy.members.length; stats.keys += keysForPact(s); stats.clues += s.conspiracy.clues.length; stats.insight += insight(s);
+  moods[moodLabel(s)] = (moods[moodLabel(s)] ?? 0) + 1;
+  JSON.parse(JSON.stringify(s)); // o save precisa ser serializável
   const key = s.ended ? s.ended.title : 'sem fim';
   results[key] = (results[key] ?? 0) + 1;
   spouses[s.spouse ?? 'nenhuma'] = (spouses[s.spouse ?? 'nenhuma'] ?? 0) + 1;
@@ -78,3 +132,10 @@ console.log('Finais:', results);
 console.log('Rainhas:', spouses);
 console.log('Guerras:', wars);
 console.log('Ouro médio final:', Math.round(gold/300), 'Povo médio:', Math.round(povo/300));
+console.log('Por partida (média): decisões delegadas', (stats.delegated / 300).toFixed(1), '· membros do Pacto', (stats.members / 300).toFixed(1), '· chaves do Pacto', (stats.keys / 300).toFixed(1), '· pistas', (stats.clues / 300).toFixed(1), '· entendimento', (stats.insight / 300).toFixed(0), '· reuniões', (stats.council / 300).toFixed(1), '· encontros', (stats.encounters / 300).toFixed(1));
+console.log('Humor final:', moods);
+// eventos agendados ou citados que não existem
+const missing = new Set<string>();
+const walk = (o: unknown) => { if (!o || typeof o !== 'object') return; const r = o as Record<string, unknown>; if (Array.isArray(r.schedule)) (r.schedule as { id: string }[]).forEach((x) => { if (!EVENT_MAP[x.id]) missing.add(x.id); }); for (const k in r) if (k !== 'run') walk(r[k]); };
+walk(EVENTS);
+if (missing.size) console.log('AGENDADOS INEXISTENTES:', [...missing]);
