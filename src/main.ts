@@ -1,11 +1,14 @@
 import './style.css';
+import { showCharacterGallery } from './ui/characterGallery';
 import { App } from './ui/app';
 import { startWar } from './engine/war';
 import { endDay } from './engine/day';
 import { SceneView } from './ui/sceneView';
 
 const host = document.getElementById('app')!;
-if (new URLSearchParams(location.search).get('cenario') === 'trono') {
+if (new URLSearchParams(location.search).get('personagens') === 'topdown') {
+  showCharacterGallery(host);
+} else if (new URLSearchParams(location.search).get('cenario') === 'trono') {
   // Visita visual independente: não inicia um reinado nem toca no save.
   host.innerHTML = `<main class="scenery-preview"><div class="scenery-stage"></div>
     <header class="scenery-heading"><span>CASTELO REAL</span><h1>Salão do Trono</h1></header>

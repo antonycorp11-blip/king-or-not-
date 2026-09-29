@@ -1,0 +1,283 @@
+{
+  "tool": "built-in image_gen",
+  "transparent_background": true,
+  "basePrompt": "Use case: stylized-concept. Asset type: production 2D RPG character sprite sheet with transparent alpha, for a medieval castle viewed top-down at a steep 45-degree elevated camera, SNES-inspired detailed pixel illustration. Generate ONE character's complete 12-pose sheet. Reference image is the existing character portrait: preserve recognizable face, age, hair, skin, clothing, colors, headwear and jewelry, translating to FULL BODY sprites seen from ABOVE. Do not reproduce the portrait grid.\nLayout: exactly THREE equal-width columns by FOUR equal-height rows, portrait canvas 1024x1536. Each cell contains only one complete figure. Row 1: facing SOUTH toward viewer. Row 2: facing WEST left. Row 3: facing EAST right. Row 4: facing NORTH away, showing back of head and back of outfit, NO FACE. In EACH row columns are: 1 standing neutral feet together; 2 walking left foot forward; 3 walking right foot forward. Twelve figures of the SAME character, precisely aligned, consistent size and costume across every frame. All figures centered horizontally in their cells, feet on the same baseline within each row, occupy about 70% of cell height; generous transparent margins. Top of head and shoulders clearly visible in ALL directions including side directions; foreshortened torso suitable for overhead castle floor. Refined warm medieval pixel-art shading, crisp contours, natural adult proportions (not chibi), detailed small readable costume. Neutral warm lighting same in all directions. Real transparent background with alpha, no ground, no cast shadows, no grid, no text, no labels, no extra props outside character, no frame or border. Keep weapons/accessories completely inside each cell.\nSpecific character: ",
+  "characters": [
+    {
+      "id": "rei",
+      "name": "Rei",
+      "reference": "assets/personagens/01_rei_retrato.png",
+      "description": "Rei, Soberano de Castelmar. Character description: {\"female\":false,\"skin\":\"#f3c9a8\",\"hair\":\"#6b4226\",\"hairStyle\":\"desgrenhado\",\"eyes\":\"#3d6fb6\",\"outfit\":\"#23346e\",\"trim\":\"#e2b64c\",\"head\":\"coroa\",\"fur\":true,\"age\":\"jovem\"}. Preserve the portrait costume details."
+    },
+    {
+      "id": "isabelle",
+      "name": "Isabelle",
+      "reference": "assets/personagens/02_isabelle_retrato.png",
+      "description": "Isabelle, Rainha-mãe. Character description: {\"female\":true,\"skin\":\"#eab89a\",\"hair\":\"#d9d4c7\",\"hairStyle\":\"coque\",\"eyes\":\"#5a7fa8\",\"outfit\":\"#6a2a52\",\"trim\":\"#e2b64c\",\"head\":\"coroa\",\"fur\":true,\"age\":\"velho\"}. Preserve the portrait costume details."
+    },
+    {
+      "id": "lucas",
+      "name": "Príncipe Lucas",
+      "reference": "assets/personagens/03_lucas_retrato.png",
+      "description": "Príncipe Lucas, Irmão do Rei. Character description: {\"female\":false,\"skin\":\"#f3c9a8\",\"hair\":\"#c9b48a\",\"hairStyle\":\"curto\",\"eyes\":\"#4f8a5e\",\"outfit\":\"#274a3a\",\"trim\":\"#c9a24a\",\"age\":\"jovem\"}. Preserve the portrait costume details."
+    },
+    {
+      "id": "aldric",
+      "name": "Chanceler Aldric",
+      "reference": "assets/personagens/04_aldric_retrato.png",
+      "description": "Chanceler Aldric, Conselheiro do Antigo Rei. Character description: {\"female\":false,\"skin\":\"#eab89a\",\"hair\":\"#e6e2da\",\"hairStyle\":\"curto\",\"eyes\":\"#5b6b7a\",\"outfit\":\"#3b2f5e\",\"trim\":\"#d8b45a\",\"beard\":\"cheia\",\"age\":\"velho\",\"accessory\":\"pergaminho\"}. Preserve the portrait costume details."
+    },
+    {
+      "id": "corvin",
+      "name": "Mestre Corvin",
+      "reference": "assets/personagens/05_corvin_retrato.png",
+      "description": "Mestre Corvin, Tesoureiro Real. Character description: {\"female\":false,\"skin\":\"#d49a72\",\"hair\":\"#2b2b33\",\"hairStyle\":\"careca\",\"eyes\":\"#3a3024\",\"outfit\":\"#5a4122\",\"trim\":\"#e2b64c\",\"beard\":\"bigode\",\"age\":\"adulto\",\"accessory\":\"livro\"}. Preserve the portrait costume details."
+    },
+    {
+      "id": "aurelian",
+      "name": "Capitão Aurelian",
+      "reference": "assets/personagens/06_aurelian_retrato.png",
+      "description": "Capitão Aurelian, Comandante da Guarda Real. Character description: {\"female\":false,\"skin\":\"#a86e4c\",\"hair\":\"#3a2416\",\"hairStyle\":\"desgrenhado\",\"eyes\":\"#3a2a1a\",\"outfit\":\"#7a1f24\",\"trim\":\"#b8b8c8\",\"beard\":\"curta\",\"armor\":true,\"age\":\"adulto\"}. Preserve the portrait costume details."
+    },
+    {
+      "id": "theodric",
+      "name": "Grão-Meistre Theodric",
+      "reference": "assets/personagens/07_theodric_retrato.png",
+      "description": "Grão-Meistre Theodric, Guardião da Biblioteca. Character description: {\"female\":false,\"skin\":\"#f3c9a8\",\"hair\":\"#bdbdbd\",\"hairStyle\":\"longo\",\"eyes\":\"#4a5a6a\",\"outfit\":\"#4a4a52\",\"trim\":\"#9c8a5a\",\"beard\":\"cheia\",\"head\":\"capuz\",\"age\":\"velho\",\"accessory\":\"livro\"}. Preserve the portrait costume details."
+    },
+    {
+      "id": "gaspard",
+      "name": "Lorde Gaspard Valmont",
+      "reference": "assets/personagens/08_gaspard_retrato.png",
+      "description": "Lorde Gaspard Valmont, Senhor da Costa Serena. Character description: {\"female\":false,\"skin\":\"#f3c9a8\",\"hair\":\"#b8943a\",\"hairStyle\":\"ondulado\",\"eyes\":\"#3d6fb6\",\"outfit\":\"#1f3f8a\",\"trim\":\"#e2b64c\",\"beard\":\"curta\",\"fur\":true,\"age\":\"adulto\"}. Preserve the portrait costume details."
+    },
+    {
+      "id": "brandt",
+      "name": "Lorde Brandt Drakon",
+      "reference": "assets/personagens/09_brandt_retrato.png",
+      "description": "Lorde Brandt Drakon, Senhor do Vale Rubro. Character description: {\"female\":false,\"skin\":\"#d49a72\",\"hair\":\"#2a1a12\",\"hairStyle\":\"desgrenhado\",\"eyes\":\"#5a3a1a\",\"outfit\":\"#8a1c1c\",\"trim\":\"#d4a444\",\"beard\":\"cheia\",\"fur\":true,\"armor\":true,\"age\":\"adulto\"}. Preserve the portrait costume details."
+    },
+    {
+      "id": "aveline",
+      "name": "Senhora Aveline Seren",
+      "reference": "assets/personagens/10_aveline_retrato.png",
+      "description": "Senhora Aveline Seren, Matriarca dos Bosques Reais. Character description: {\"female\":true,\"skin\":\"#f3c9a8\",\"hair\":\"#8a8a82\",\"hairStyle\":\"tranca\",\"eyes\":\"#4f8a5e\",\"outfit\":\"#23573c\",\"trim\":\"#c9b98a\",\"head\":\"capuz\",\"age\":\"velho\"}. Preserve the portrait costume details."
+    },
+    {
+      "id": "otho",
+      "name": "Lorde Otho Montclair",
+      "reference": "assets/personagens/11_otho_retrato.png",
+      "description": "Lorde Otho Montclair, Senhor das Montanhas de Ferro. Character description: {\"female\":false,\"skin\":\"#eab89a\",\"hair\":\"#4a4a4a\",\"hairStyle\":\"curto\",\"eyes\":\"#6a6a7a\",\"outfit\":\"#4a4d57\",\"trim\":\"#a8a8b8\",\"beard\":\"bigode\",\"age\":\"adulto\"}. Preserve the portrait costume details."
+    },
+    {
+      "id": "elenora",
+      "name": "Lady Elenora Valmont",
+      "reference": "assets/personagens/12_elenora_retrato.png",
+      "description": "Lady Elenora Valmont, Filha de Lorde Gaspard. Character description: {\"female\":true,\"skin\":\"#f3c9a8\",\"hair\":\"#e8c46a\",\"hairStyle\":\"ondulado\",\"eyes\":\"#3d7fd6\",\"outfit\":\"#1f3f9a\",\"trim\":\"#e8c45a\",\"head\":\"tiara\",\"age\":\"jovem\"}. Preserve the portrait costume details."
+    },
+    {
+      "id": "rhoswen",
+      "name": "Lady Rhoswen Drakon",
+      "reference": "assets/personagens/13_rhoswen_retrato.png",
+      "description": "Lady Rhoswen Drakon, Filha de Lorde Brandt. Character description: {\"female\":true,\"skin\":\"#d49a72\",\"hair\":\"#5a1a14\",\"hairStyle\":\"tranca\",\"eyes\":\"#8a5a2a\",\"outfit\":\"#8a1c24\",\"trim\":\"#c8c8d0\",\"armor\":true,\"age\":\"jovem\",\"accessory\":\"lanca\"}. Preserve portrait identity and costume; the reference takes precedence over simplified hex colors."
+    },
+    {
+      "id": "isolde",
+      "name": "Lady Isolde Véridian",
+      "reference": "assets/personagens/14_isolde_retrato.png",
+      "description": "Lady Isolde Véridian, Princesa de Véridian. Character description: {\"female\":true,\"skin\":\"#f3c9a8\",\"hair\":\"#1c1418\",\"hairStyle\":\"ondulado\",\"eyes\":\"#3a9a5a\",\"outfit\":\"#1c5a3a\",\"trim\":\"#e2c05a\",\"head\":\"diadema\",\"age\":\"jovem\",\"accessory\":\"leque\"}. Preserve portrait identity and costume; the reference takes precedence over simplified hex colors."
+    },
+    {
+      "id": "sigrid",
+      "name": "Princesa Sigrid",
+      "reference": "assets/personagens/15_sigrid_retrato.png",
+      "description": "Princesa Sigrid, Filha do Rei de Norhelm. Character description: {\"female\":true,\"skin\":\"#f3c9a8\",\"hair\":\"#f0e6c8\",\"hairStyle\":\"tranca\",\"eyes\":\"#8ac4e6\",\"outfit\":\"#3a4a6a\",\"trim\":\"#c8d8e8\",\"fur\":true,\"head\":\"diadema\",\"age\":\"jovem\"}. Preserve portrait identity and costume; the reference takes precedence over simplified hex colors."
+    },
+    {
+      "id": "haakon",
+      "name": "Jarl Haakon",
+      "reference": "assets/personagens/16_haakon_retrato.png",
+      "description": "Jarl Haakon, Emissário de Norhelm. Character description: {\"female\":false,\"skin\":\"#eab89a\",\"hair\":\"#c86a2a\",\"hairStyle\":\"tranca\",\"eyes\":\"#6a9ac4\",\"outfit\":\"#3a4a5a\",\"trim\":\"#8a8a9a\",\"beard\":\"cheia\",\"fur\":true,\"age\":\"adulto\"}. Preserve portrait identity and costume; the reference takes precedence over simplified hex colors."
+    },
+    {
+      "id": "tobias",
+      "name": "Mestre Tobias",
+      "reference": "assets/personagens/17_tobias_retrato.png",
+      "description": "Mestre Tobias, Guilda dos Mercadores. Character description: {\"female\":false,\"skin\":\"#d49a72\",\"hair\":\"#5a3a1a\",\"hairStyle\":\"curto\",\"eyes\":\"#3a2a1a\",\"outfit\":\"#6a4a1a\",\"trim\":\"#e2b64c\",\"beard\":\"curta\",\"age\":\"adulto\"}. Preserve portrait identity and costume; the reference takes precedence over simplified hex colors."
+    },
+    {
+      "id": "marta",
+      "name": "Marta, a Aldeã",
+      "reference": "assets/personagens/18_marta_retrato.png",
+      "description": "Marta, a Aldeã, Porta-voz do Povo. Character description: {\"female\":true,\"skin\":\"#a86e4c\",\"hair\":\"#3a2a1a\",\"hairStyle\":\"coque\",\"eyes\":\"#3a2a1a\",\"outfit\":\"#6a5a3a\",\"trim\":\"#9a8a6a\",\"head\":\"capuz\",\"age\":\"adulto\"}. Preserve portrait identity and costume; the reference takes precedence over simplified hex colors."
+    },
+    {
+      "id": "guarda",
+      "name": "Guarda Real",
+      "reference": "assets/personagens/19_guarda_retrato.png",
+      "description": "Guarda Real, Guarda do Castelo. Preserve the portrait identity, clothing, hat and palette exactly, extrapolating full body. Supporting traits: Royal guard with short upright spear held within cell margins. Natural adult/elderly age matching portrait."
+    },
+    {
+      "id": "campones",
+      "name": "Oswin, o Lavrador",
+      "reference": "assets/personagens/20_campones_retrato.png",
+      "description": "Oswin, o Lavrador, Camponês. Preserve the portrait identity, clothing, hat and palette exactly, extrapolating full body. Supporting traits: Povo, Terra, Trabalho. Natural adult/elderly age matching portrait."
+    },
+    {
+      "id": "camponesa",
+      "name": "Velha Berta",
+      "reference": "assets/personagens/21_camponesa_retrato.png",
+      "description": "Velha Berta, Camponesa. Preserve the portrait identity, clothing, hat and palette exactly, extrapolating full body. Supporting traits: Povo, Memória, Fé. Natural adult/elderly age matching portrait."
+    },
+    {
+      "id": "mensageiro",
+      "name": "Pip, o Mensageiro",
+      "reference": "assets/personagens/22_mensageiro_retrato.png",
+      "description": "Pip, o Mensageiro, Mensageiro Real. Preserve the portrait identity, clothing, hat and palette exactly, extrapolating full body. Supporting traits: Notícias, Estradas, Pressa. Natural adult/elderly age matching portrait."
+    },
+    {
+      "id": "cavaleiro",
+      "name": "Sir Edmund",
+      "reference": "assets/personagens/23_cavaleiro_retrato.png",
+      "description": "Sir Edmund, Cavaleiro Vassalo. Preserve the portrait identity, clothing, hat and palette exactly, extrapolating full body. Supporting traits: Honra, Juramento, Espada. Natural adult/elderly age matching portrait."
+    },
+    {
+      "id": "dama",
+      "name": "Lady Maren",
+      "reference": "assets/personagens/24_dama_retrato.png",
+      "description": "Lady Maren, Dama da Corte. Preserve the portrait identity, clothing, hat and palette exactly, extrapolating full body. Supporting traits: Corte, Fofocas, Etiqueta. Natural adult/elderly age matching portrait."
+    },
+    {
+      "id": "irma",
+      "name": "Irmã Hedda",
+      "reference": "assets/personagens/25_irma_retrato.png",
+      "description": "Irmã Hedda, Curandeira do Povo. Preserve the portrait identity, clothing, hat and palette exactly, extrapolating full body. Supporting traits: Cura, Fé, Povo. Natural adult/elderly age matching portrait."
+    },
+    {
+      "id": "sir_ferrao",
+      "name": "Sir Gerald Ferrão",
+      "reference": "assets/personagens/23_cavaleiro_retrato.png",
+      "description": "Sir Gerald Ferrão: adult black-haired male knight, silver plate armor with crimson Drakon tabard and cloak, small dragon heraldry, sword sheathed. Preserve base portrait face."
+    },
+    {
+      "id": "sir_picoalto",
+      "name": "Sir Aldo Picoalto",
+      "reference": "assets/personagens/23_cavaleiro_retrato.png",
+      "description": "Sir Aldo Picoalto: adult black-haired male knight, iron-gray tabard and steel armor, charcoal cloak with silver mountain brooch, a small old scar on cheek. Preserve base portrait face."
+    },
+    {
+      "id": "dama_brisamar",
+      "name": "Lady Coralie Brisamar",
+      "reference": "assets/personagens/24_dama_retrato.png",
+      "description": "Lady Coralie Brisamar: auburn-haired noblewoman with pearl hair net and earrings like portrait; royal-blue Valmont gown with gold and cream embroidery, wave motifs."
+    },
+    {
+      "id": "dama_carvalhal",
+      "name": "Lady Brígida Carvalhal",
+      "reference": "assets/personagens/24_dama_retrato.png",
+      "description": "Lady Brígida Carvalhal: auburn-haired noblewoman with pearl hair net and earrings like portrait; forest green Seren gown, ivory trim and delicate oak leaf embroidery."
+    },
+    {
+      "id": "clara",
+      "name": "Clara",
+      "reference": "assets/personagens/26_clara_retrato.png",
+      "description": "Clara the chambermaid: preserve reference exactly: dark brown skin, black tightly curled hair in elegant short updo, burgundy high-neck gown with copper-gold embroidery. Her identity is the supplied portrait, not a generic maid. Long matching skirt, discreet keys at belt."
+    },
+    {
+      "id": "bianca",
+      "name": "Bianca",
+      "reference": "assets/personagens/27_bianca_retrato.png",
+      "description": "Bianca the royal confectioner: preserve portrait identity: pale skin, long black hair with prominent WHITE streak at front, emerald green gown and gold filigree circlet. Matching long skirt; small cream apron tied at waist appropriate to pastry chef."
+    },
+    {
+      "id": "pimenta",
+      "name": "Pimenta",
+      "reference": "assets/personagens/28_pimenta_retrato.png",
+      "description": "Pimenta the court jester: preserve reference: adult man with spiky messy ginger hair, green eyes, angular face, purple and yellow jester tunic, small brass bells on shoulder tips, dark trousers, curled shoes. No cap."
+    },
+    {
+      "id": "kasim",
+      "name": "Kasim",
+      "reference": "assets/personagens/17_tobias_retrato.png",
+      "description": "Kasim the merchant from Véridian: base portrait adult bearded merchant face and warm tan skin, brown feathered cap, gold-ochre embroidered coat, deep emerald green shoulder cape replacing the red cape to distinguish this merchant, soft leather boots and spice pouch at belt."
+    },
+    {
+      "id": "sir_osric",
+      "name": "Sir Osric Âncora",
+      "reference": "assets/personagens/23_cavaleiro_retrato.png",
+      "description": "Sir Osric Âncora: adult black-haired male knight preserving base portrait face, silver plate and royal-blue Valmont tabard, navy cloak, small gold anchor brooch, sheathed sword."
+    },
+    {
+      "id": "viuva",
+      "name": "Viúva Greta",
+      "reference": "assets/personagens/21_camponesa_retrato.png",
+      "description": "Widow Greta: elderly woman preserving reference gray hair bun, warm weathered face and stooped stature, charcoal mourning shawl over dark muted olive dress, simple off-white apron. No weapons, no jewelry."
+    },
+    {
+      "id": "sombra",
+      "name": "A Sombra",
+      "reference": "assets/personagens/25_irma_retrato.png",
+      "description": "A Sombra: enigmatic older hooded court spy, preserve reference face and modest silhouette, charcoal hood and dark brown robe, rope belt, sealed letter partially tucked into belt. Hood shadows upper face but does not erase identity."
+    },
+    {
+      "id": "cedric",
+      "name": "Cedric de Lys",
+      "reference": "assets/personagens/29_cedric_retrato.png",
+      "description": "Cedric de Lys: preserve supplied portrait exactly: adult man tan skin, long wavy black hair, thin mustache and pointed goatee, burgundy leather shoulder armor with silver fleur-de-lis and chainmail underneath, black cloak, dark trousers and boots. No helmet."
+    },
+    {
+      "id": "lysandra",
+      "name": "Lady Lysandra Cinzel",
+      "reference": "assets/personagens/24_dama_retrato.png",
+      "description": "Lady Lysandra Cinzel: auburn hair in pearl-net bun like base portrait, cool gray Montclair court gown, silver embroidery and pearl necklace, composed expression."
+    },
+    {
+      "id": "morgana",
+      "name": "Lady Morgana Rocha-Negra",
+      "reference": "assets/personagens/24_dama_retrato.png",
+      "description": "Lady Morgana Rocha-Negra: auburn hair in pearl-net bun like base portrait, dark burgundy and black Drakon court gown, silver detailing, solemn expression."
+    },
+    {
+      "id": "florian",
+      "name": "Lorde Florian",
+      "reference": "assets/personagens/23_cavaleiro_retrato.png",
+      "description": "Lord Florian court poet: black-haired adult male face from base knight portrait, now wearing a purple velvet court doublet and flowing violet cape with silver trim, dark trousers, soft boots, small rolled poem tucked into belt. No plate armor; refined noble poet."
+    },
+    {
+      "id": "ragnar",
+      "name": "Príncipe Ragnar",
+      "reference": "assets/personagens/16_haakon_retrato.png",
+      "description": "Prince Ragnar of Norhelm: younger adult northern warrior with reference red hair in braids and ginger beard, somewhat shorter beard than Haakon, blue-gray wool and leather, white wolf-fur collar, silver belt, northern knotwork."
+    },
+    {
+      "id": "tomas",
+      "name": "Tomás",
+      "reference": "assets/personagens/20_campones_retrato.png",
+      "description": "Tomás the baker: adult bearded brown-haired man preserving base peasant portrait face, simple beige linen shirt, brown trousers, flour-dusted cream apron and linen baker cap replacing straw hat, sturdy boots."
+    },
+    {
+      "id": "bruna",
+      "name": "Bruna",
+      "reference": "assets/personagens/18_marta_retrato.png",
+      "description": "Bruna the blacksmith: brown-skinned strong adult woman preserving base portrait dark hair tied in bun and determined expression, cream rolled sleeves, dark leather smith apron over brown work clothes, small hammer at belt, soot marks on apron, no red shawl."
+    },
+    {
+      "id": "salvio",
+      "name": "Mestre Sálvio",
+      "reference": "assets/personagens/05_corvin_retrato.png",
+      "description": "Mestre Sálvio the head cook: bald middle-aged tan-skinned man with thick black mustache and round gold spectacles from reference. Cream chef tunic, white apron, brown trousers, soft white cook cap. Wooden spoon tucked at belt, no royal gold medallions."
+    },
+    {
+      "id": "frei_aske",
+      "name": "Frei Aske",
+      "reference": "assets/personagens/07_theodric_retrato.png",
+      "description": "Frei Aske the chronicler: old man preserving reference white hair and full white beard, simple gray-brown hooded monk robe tied with rope belt, worn leather chronicle under arm, simple wooden pendant. No ornate gold chain."
+    },
+    {
+      "id": "sir_bram",
+      "name": "Sir Bram Salgueiro",
+      "reference": "assets/personagens/23_cavaleiro_retrato.png",
+      "description": "Sir Bram Salgueiro: adult black-haired male knight preserving reference face, silver plate with forest-green Seren tabard, dark green cloak, oak-leaf brooch, bow slung neatly on back inside sprite cell."
+    }
+  ]
+}

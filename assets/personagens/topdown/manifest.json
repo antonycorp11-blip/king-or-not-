@@ -1,0 +1,380 @@
+{
+  "cellWidth": 128,
+  "cellHeight": 160,
+  "directions": [
+    "south",
+    "west",
+    "east",
+    "north"
+  ],
+  "characters": [
+    {
+      "id": "rei",
+      "file": "rei.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "isabelle",
+      "file": "isabelle.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "lucas",
+      "file": "lucas.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "aldric",
+      "file": "aldric.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "corvin",
+      "file": "corvin.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "aurelian",
+      "file": "aurelian.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "theodric",
+      "file": "theodric.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "gaspard",
+      "file": "gaspard.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "brandt",
+      "file": "brandt.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "aveline",
+      "file": "aveline.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "otho",
+      "file": "otho.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "elenora",
+      "file": "elenora.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "rhoswen",
+      "file": "rhoswen.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "isolde",
+      "file": "isolde.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "sigrid",
+      "file": "sigrid.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "haakon",
+      "file": "haakon.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "tobias",
+      "file": "tobias.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "marta",
+      "file": "marta.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "guarda",
+      "file": "guarda.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "campones",
+      "file": "campones.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "camponesa",
+      "file": "camponesa.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "mensageiro",
+      "file": "mensageiro.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "cavaleiro",
+      "file": "cavaleiro.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "dama",
+      "file": "dama.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "irma",
+      "file": "irma.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "sir_ferrao",
+      "file": "sir_ferrao.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "sir_picoalto",
+      "file": "sir_picoalto.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "dama_brisamar",
+      "file": "dama_brisamar.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "dama_carvalhal",
+      "file": "dama_carvalhal.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "clara",
+      "file": "clara.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "bianca",
+      "file": "bianca.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "pimenta",
+      "file": "pimenta.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "kasim",
+      "file": "kasim.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "sir_osric",
+      "file": "sir_osric.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "viuva",
+      "file": "viuva.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "sombra",
+      "file": "sombra.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "cedric",
+      "file": "cedric.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "lysandra",
+      "file": "lysandra.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "morgana",
+      "file": "morgana.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "florian",
+      "file": "florian.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "ragnar",
+      "file": "ragnar.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "tomas",
+      "file": "tomas.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "bruna",
+      "file": "bruna.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "salvio",
+      "file": "salvio.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "frei_aske",
+      "file": "frei_aske.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    },
+    {
+      "id": "sir_bram",
+      "file": "sir_bram.webp",
+      "frames": 12,
+      "width": 384,
+      "height": 640,
+      "foot": 148
+    }
+  ]
+}

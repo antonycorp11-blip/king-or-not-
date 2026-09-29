@@ -14,7 +14,6 @@ const SHEET_CELL_H = CELL_H * 2;
 const PORTRAIT_TILE = 256;
 
 export type Anim = 'walk' | 'idle' | 'talk' | 'bow' | 'kneel' | 'seated' | 'seatedTalk' | 'seatedThink';
-export type TopDownDir = 'south' | 'west' | 'east' | 'north';
 
 export interface Frame {
   src: CanvasImageSource;
@@ -31,7 +30,6 @@ export function frameCount(a: Anim) {
 // ---------- folhas geradas ----------
 const sheets = new Map<string, HTMLCanvasElement>();
 const portraitSheets = new Map<string, HTMLCanvasElement>();
-const topDownSheets = new Map<string, HTMLImageElement>();
 
 function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((res, rej) => {
@@ -83,32 +81,6 @@ export async function loadCharacterAssets(onUpdate: () => void) {
     tinted.clear();
     onUpdate();
   }
-}
-
-// Folhas da nova câmera top-down. Cada uma é uma grade 3×4:
-// sul, oeste, leste e norte; três poses de caminhada por direção.
-export async function loadTopDownAssets(onUpdate: () => void) {
-  try {
-    const entries = await Promise.all([
-      loadImage('assets/cenarios/trono/king-topdown.png').then((img) => topDownSheets.set('rei', img)),
-      loadImage('assets/cenarios/trono/courtier-topdown.png').then((img) => topDownSheets.set('courtier', img)),
-    ]);
-    void entries;
-    onUpdate();
-  } catch {
-    // A cena continua usando o sprite lateral até a arte top-down existir.
-  }
-}
-
-export function hasTopDown(id: string) {
-  return topDownSheets.has(id);
-}
-
-export function getTopDownFrame(id: string, dir: TopDownDir, frame: number): Frame | null {
-  const img = topDownSheets.get(id) ?? (id !== 'rei' ? topDownSheets.get('courtier') : undefined);
-  if (!img) return null;
-  const row = ({ south: 0, west: 1, east: 2, north: 3 } as const)[dir];
-  return { src: img, sx: (frame % 3) * (img.naturalWidth / 3), sy: row * (img.naturalHeight / 4), sw: img.naturalWidth / 3, sh: img.naturalHeight / 4 };
 }
 
 export function hasSheet(id: string) {

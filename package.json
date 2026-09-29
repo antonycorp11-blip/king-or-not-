@@ -8,7 +8,10 @@
     "build": "tsc --noEmit && node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "sim": "esbuild scripts/sim.ts --bundle --platform=node --outfile=build/sim.cjs --log-level=warning && node build/sim.cjs",
-    "pressure": "esbuild scripts/pressure.ts --bundle --platform=node --outfile=build/pressure.cjs --log-level=warning && node build/pressure.cjs"
+    "pressure": "esbuild scripts/pressure.ts --bundle --platform=node --outfile=build/pressure.cjs --log-level=warning && node build/pressure.cjs",
+    "topdown:prepare": "node scripts/topdown-catalog.mjs && python3 scripts/prepare_topdown.py",
+    "topdown:check": "node scripts/topdown-catalog.mjs && python3 scripts/check_topdown.py",
+    "topdown:test": "esbuild scripts/check_topdown_runtime.ts --bundle --platform=node --format=esm --outfile=build/check-topdown.mjs --log-level=warning && node build/check-topdown.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.25.12",

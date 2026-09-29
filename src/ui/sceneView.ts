@@ -1,4 +1,5 @@
-import { CELL_H, CELL_W, FOOT, frameCount, getFrame, getTopDownFrame, hasSheet, loadTopDownAssets, type Anim, type TopDownDir } from '../render/actors';
+import { CELL_H, CELL_W, FOOT, frameCount, getFrame, hasSheet, type Anim } from '../render/actors';
+import { getTopDownFrame, loadTopDownAssets, TOPDOWN_CELL_W, TOPDOWN_CELL_H, TOPDOWN_FOOT, type TopDownDir } from '../render/topdown';
 import { SH, SW, cityscape, library, throneRoom, type Room } from '../render/scenes';
 import { createThroneHall, drawHallLights, HALL_H, HALL_W, loadHallAtlas, type HallObject, type ThroneHall } from '../render/throneHall';
 
@@ -342,28 +343,27 @@ export class SceneView {
       const p = this.hallPosition(a);
       while (objectIndex < objects.length && objects[objectIndex].depth <= p.foot)
         this.hall!.drawObject(ctx, objects[objectIndex++]);
-      // As folhas laterais são reaproveitadas em escala menor durante a etapa de cenário.
-      const topDownId = this.isHall && (a.id === 'rei' || a.key === 'speaker' || a.key.startsWith('wait-')) ? (a.id === 'rei' ? 'rei' : 'courtier') : '';
-      const topDown = !!topDownId;
-      const fr = topDown ? getTopDownFrame(topDownId, a.dir ?? 'south', a.frame) : null;
-      const fallback = getFrame(a.id, this.isHall && a.key === 'rei' ? 'idle' : a.anim, a.frame);
-      // Aceita tanto as folhas atuais quanto as variantes de maior resolução.
-      const sourceW = fr ? fr.sw : fallback.sw;
-      const sourceH = fr ? fr.sh : fallback.sh;
-      const source = fr ?? fallback;
+      const source = this.isHall
+        ? getTopDownFrame(a.id, this.hallDirection(a), a.frame, a.anim)
+        : getFrame(a.id, a.anim, a.frame);
+      if (!source) continue;
+      const topDown = this.isHall;
+      const sourceW = source.sw, sourceH = source.sh;
       const k = p.scale;
-      const drawScale = topDown ? (a.scale ?? 1) : k;
-      const w = Math.round((topDown ? 72 : CELL_W) * drawScale), h = Math.round((topDown ? 108 : CELL_H) * drawScale);
+      // The packed sheets share a foot anchor and scale across the entire cast.
+      const drawScale = topDown ? .64 * (a.id === 'guarda' || a.id === 'rhoswen' ? 1.08 : 1) : k;
+      const w = Math.round((topDown ? TOPDOWN_CELL_W : CELL_W) * drawScale);
+      const h = Math.round((topDown ? TOPDOWN_CELL_H : CELL_H) * drawScale);
       const axis = (a.facing > 0 ? 31 : CELL_W - 31) * k;
       const dx = Math.round(p.x - (topDown ? w / 2 : axis));
-      const dy = Math.round(p.foot - (topDown ? h * .86 : FOOT * k));
+      const dy = Math.round(p.foot - (topDown ? TOPDOWN_FOOT * drawScale : FOOT * k));
       ctx.fillStyle = `rgba(10,6,16,${0.35 * k})`;
       ctx.beginPath();
       ctx.ellipse(Math.round(p.x), p.foot, 13 * k, 3 * k, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.save();
       if (a.dim) ctx.filter = `brightness(${1 - a.dim}) saturate(${1 - a.dim * 0.6})`;
-      if (a.facing < 0) {
+      if (!topDown && a.facing < 0) {
         ctx.translate(dx + w, dy);
         ctx.scale(-1, 1);
         ctx.drawImage(source.src, source.sx, source.sy, sourceW, sourceH, 0, 0, w, h);
@@ -372,6 +372,16 @@ export class SceneView {
     }
     while (objectIndex < objects.length) this.hall!.drawObject(ctx, objects[objectIndex++]);
     this.staticHallDrawn = this.isHall && this.actors.size === 0;
+  }
+
+  private hallDirection(a: ActorState): TopDownDir {
+    if (a.free) return a.dir ?? 'south';
+    if (a.key === 'rei') return 'south';
+    if (a.key.startsWith('comp-')) return 'west';
+    if (a.key.startsWith('guard')) return a.facing > 0 ? 'east' : 'west';
+    if (a.key.startsWith('wait-')) return 'north';
+    // Legacy audience X increases while the visitor advances UP the carpet.
+    return a.leaving || (a.tx !== undefined && a.tx < a.x) ? 'south' : 'north';
   }
 
   private get isHall() { return this.kind === 'trono' && !!this.hall; }

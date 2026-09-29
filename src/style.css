@@ -1125,3 +1125,25 @@ span.wm-label { pointer-events: none; }
 .m .hall-view .choice-text small { font-size: 11px; }
 .m .hall-view .infl-toggle, .m .hall-view .consult { width: 122px; font-size: 11px; }
 .m .hall-view .dialog-mini { left: 8px; right: 8px; bottom: 8px; }
+
+/* A galeria usa as mesmas folhas e seleção de quadros do jogo. */
+html.character-gallery-page { overflow: auto; height: auto; }
+body.character-gallery-page { overflow: auto; height: auto; min-height: 100vh; background: #11151c; }
+.character-gallery-page #app { position: relative; inset: auto; width: 100%; height: auto; min-height: 100vh; overflow: visible; }
+.character-gallery { max-width: 1380px; margin: auto; padding: 32px 24px; color: #e9dfc6; font-family: Georgia, serif; }
+.character-gallery header { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+.character-gallery header small { font: 12px system-ui; letter-spacing: .2em; color: #c2a366; }
+.character-gallery h1 { font-size: clamp(27px, 4vw, 42px); margin: 10px 0; }
+.character-gallery header p { color: #a7a59c; }
+.character-gallery nav { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 16px; background: #1b202af5; border: 1px solid #625338; border-radius: 8px; margin-bottom: 24px; font: 14px system-ui; }
+.character-gallery label { display: flex; align-items: center; gap: 8px; }
+.character-gallery button, .character-gallery select, .character-gallery input, .character-gallery header a { padding: 10px 14px; border: 1px solid #7c6a45; border-radius: 5px; background: #282d36; color: #eee1be; font: 14px system-ui; }
+.character-gallery [role=status] { font-size: 12px; color: #b1c3b0; }
+.character-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+.character-grid article { text-align: center; background: #242831; border: 1px solid #3b414b; border-radius: 8px; overflow: hidden; padding-bottom: 16px; }
+.character-grid article[hidden] { display: none; }
+.character-grid canvas { display: block; width: 160px; height: 176px; margin: 8px auto 0; }
+.character-grid h2 { font-size: 17px; margin: 6px 10px; }
+.character-grid p { font-size: 13px; color: #bbb5a5; min-height: 30px; margin: 6px 12px; }
+.character-grid small { font: 10px system-ui; letter-spacing: .12em; text-transform: uppercase; color: #bba36e; }
+@media (max-width: 560px) { .character-gallery { padding: 20px 12px; } .character-gallery header { align-items: flex-start; } .character-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .character-gallery nav { gap: 10px; } .character-gallery input { width: 180px; } }
