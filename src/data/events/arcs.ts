@@ -9,7 +9,9 @@ const sp = (s: GameState) => (s.spouse ? char(s.spouse).name : 'a rainha');
 const SPOUSE_HOUSE: Record<string, HouseId> = { elenora: 'valmont', rhoswen: 'drakon' };
 const noWar = (s: GameState) => !s.war || !!s.war.result;
 const evidence = (s: GameState) =>
-  Number(!!s.flags.testemunhaLysandra) + Number(!!s.flags.testemunhaBrandt) + Number(!!s.flags.assassinoVivo) + Number(!!s.flags.claraEspia) + Number(!!s.flags.amendoaCozinha);
+  Number(!!s.flags.testemunhaLysandra) + Number(!!s.flags.testemunhaBrandt) + Number(!!s.flags.assassinoVivo) + Number(!!s.flags.claraEspia) + Number(!!s.flags.amendoaCozinha) +
+  // provas colhidas depois (espião nas montanhas, a presa protegida, a armadilha do veneno)
+  Number(!!s.flags.provaOtho) + Number(!!s.flags.lysandraProtegida) + Number(!!s.flags.armadilhaVeneno);
 
 export const ARC_EVENTS: GameEvent[] = [
   // ======================= CONSPIRAÇÃO MONTCLAIR =======================

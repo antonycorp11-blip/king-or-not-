@@ -399,6 +399,7 @@ export interface GameState {
   nextUid: number;
   savedAt?: number;
   letters?: Letter[];
+  houses?: Record<HouseId, import('./engine/houses').HouseState>; // humor, tropas e exigências de cada casa
   summoned?: Record<string, number>; // último dia em que cada personagem foi convocado // quando foi salvo (para comparar com o save da nuvem)
   ended?: { kind: 'derrota' | 'fimAto'; title: string; text: string };
 }

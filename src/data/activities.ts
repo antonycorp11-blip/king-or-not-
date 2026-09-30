@@ -76,7 +76,7 @@ export const ACTIVITIES: ActivityDef[] = [
   // Masmorras
   { id: 'presos', room: 'masmorra', label: 'Visitar os presos', sub: '30 min · ouvir o que ninguém ouve', icon: 'cadeado', hours: 0.5, perDay: true, effects: { mood: { stress: 6 }, res: { influencia: 2 }, xp: 5 }, toast: 'Um preso jura inocência. Outro jura vingança. Um terceiro só pede água. Você manda dar água aos três.' },
   // Capela
-  { id: 'rezar', room: 'capela', label: 'Rezar em silêncio', sub: '30 min · alivia a angústia', icon: 'estrela', hours: 0.5, perDay: true, rest: true, effects: { mood: { stress: -18, joy: 4 } }, toast: 'Você não sabe bem para quem reza. Mas o peito aperta menos.' },
+  { id: 'rezar', room: 'capela', label: 'Rezar em silêncio', sub: '30 min · alivia a angústia', icon: 'estrela', hours: 0.5, perDay: true, rest: true, effects: { mood: { stress: -18, joy: 4 }, run: (s) => { s.flags.ultimaReza = s.day; } }, toast: 'Você não sabe bem para quem reza. Mas o peito aperta menos.' },
   { id: 'cripta', room: 'capela', label: 'Esconder ouro na cripta', sub: '−100 ouro · reserva secreta', icon: 'moedas', hours: 1, perDay: true, cond: (s) => s.res.ouro >= 100 && (insight(s) >= 20 || s.day >= 30), effects: { res: { ouro: -100 }, run: (s) => { s.conspiracy.prep.reservas = (s.conspiracy.prep.reservas ?? 0) + 100; } }, toast: 'Cem moedas descansam agora sob a lápide do seu bisavô. Ninguém viu. Você acha.' },
 ];
 

@@ -17,6 +17,7 @@ import { conspiracyDaily, trackOf } from './conspiracy';
 import { applyMood, moodHours, moodLabel, moodSleep, MOOD_NAMES } from './mood';
 import { bond } from './bonds';
 import { worldPoint } from '../data/castle';
+import { housesDaily } from './houses';
 
 // Avisos que a interface mostra assim que o tempo passa (compromissos perdidos etc.)
 export const notices: LogEntry[] = [];
@@ -99,7 +100,7 @@ export function startDay(s: GameState) {
   deliverLetters(s);
 
   // Desdobramentos vêm primeiro, para decisões antigas não se perderem no sorteio.
-  const followups = EVENTS.filter((e) => e.followup && AUDIENCE_KINDS.includes(e.kind) && eligible(s, e))
+  const followups = EVENTS.filter((e) => e.followup && (AUDIENCE_KINDS.includes(e.kind) || !!e.place) && eligible(s, e))
     .sort((a, b) => (s.flagOrigins?.[a.cause ?? '']?.day ?? 0) - (s.flagOrigins?.[b.cause ?? '']?.day ?? 0));
   for (const ev of followups.slice(0, 2)) addAudience(s, ev, DAY_START);
 
@@ -345,6 +346,9 @@ export function endDay(s: GameState): LogEntry[] {
   if (mood !== 'sereno') entries.push({ icon: 'coracao', title: 'O rei vai dormir ' + MOOD_NAMES[mood], text: s.mood.memo.filter((m) => m.day === s.day).map((m) => m.text).slice(-2).join('. ') || 'O dia deixou marcas.', tone: ['satisfeito', 'esperancoso'].includes(mood) ? 'bom' : 'neutro' });
   const baseline = (gov - 50) / 2 + (s.spouse ? (bond(s, s.spouse).amor - 50) / 4 : 0);
   moodSleep(s, baseline, s.mood.stress > 70);
+
+  // 8d. As casas reagem: exigências, ressentimento, tropas próprias e ciúmes
+  housesDaily(s, entries);
 
   // 9. Casas furiosas se rebelam; fim de jogo?
   checkRebellions(s);

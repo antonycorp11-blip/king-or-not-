@@ -18,7 +18,7 @@ function openWar(s: GameState) {
 // Pós-casamento: a rainha, a guerra do norte ou a rebelião.
 export const WAR_EVENTS: GameEvent[] = [
   {
-    id: 'invasao', speaker: 'aurelian', topic: 'Notícias urgentes das fronteiras', kind: 'urgente', day: 22, cond: (s) => !s.flags.pazNorhelm,
+    id: 'invasao', speaker: 'aurelian', topic: 'Notícias urgentes das fronteiras', kind: 'urgente', day: 22, cond: (s) => !s.flags.pazNorhelm && !(s.flags.passoTemido && (s.seed % 2 === 0)),
     nodes: {
       start: {
         text: 'Majestade! Notícias urgentes das fronteiras! As forças de Norhelm cruzaram o Passo Cinzento durante a noite. Várias aldeias foram incendiadas e nossos postos avançados resistem! Eles avançam em direção ao Vale Rubro!',

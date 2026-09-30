@@ -59,7 +59,7 @@ export const TIPS: Record<TipId, { title: string; text: string; pos?: 'center' |
   },
   corte: {
     title: 'A corte',
-    text: 'Aqui você vê a lealdade de cada casa, sua relação com cada pessoa e a <b>Governabilidade</b>. Casas com lealdade abaixo de −20 não mandam tropas na guerra.',
+    text: 'Cada casa tem <b>exigências com prazo</b>, um <b>humor</b> (ressentida demais, ela sonega impostos), <b>homens próprios</b> que arma quando está descontente e uma <b>rival</b> que se irrita quando a outra é favorecida. Casas com lealdade abaixo de −20 não mandam tropas na guerra.',
     pos: 'center',
   },
   guerra: {

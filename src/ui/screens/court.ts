@@ -3,6 +3,8 @@ import { CHARACTERS } from '../../data/characters';
 import { HOUSES, HOUSE_IDS, PROVINCES } from '../../data/realm';
 import { governabilidade, govLabel, influenceGain, relLabel, save } from '../../engine/core';
 import { levyUnits } from '../../engine/war';
+import { RIVAL, demandOf, house, houseTroops } from '../../engine/houses';
+import type { HouseId } from '../../types';
 import { answerLetter, defOf, letters } from '../../engine/letters';
 import { canSummon, summon, summonChance } from '../../engine/summon';
 import { iconImg } from '../../render/pixel';
@@ -35,6 +37,20 @@ function summonButton(app: App, id: string) {
   return `<button class="btn sm summon" data-act="summon" data-arg="${id}" title="Chance de atender: ${p}%">Convocar <small>${p}% de vir</small></button>`;
 }
 
+// O que a casa quer, o quanto está ressentida e com quantos homens próprios conta
+function houseLine(app: App, h: HouseId) {
+  const s = app.s;
+  const st = house(s, h);
+  const d = demandOf(s, h);
+  const g = Math.round(st.grievance);
+  const mood = g >= 70 ? 'furiosa · sonega impostos' : g >= 35 ? 'ressentida' : 'tranquila';
+  const troops = houseTroops(s, h) * 100, base = HOUSES[h].levy;
+  return `<div class="hc-dyn">
+    <small class="hc-demand ${d ? 'on' : ''}">${d ? `Exige: <b>${esc(d.def.title)}</b> · faltam ${Math.max(0, d.until - s.day)} dia(s)${d.promised ? ' · <em>o rei prometeu</em>' : ''}` : 'Nenhuma exigência no momento'}</small>
+    <small>Humor: <b class="${g >= 70 ? 'bad' : ''}">${mood}</b> (${g}) · Homens próprios: <b>${troops}</b>${troops > base ? ' <em class="bad">armando-se</em>' : ''} · Rival: ${HOUSES[RIVAL[h]].name}</small>
+  </div>`;
+}
+
 function peopleTab(app: App) {
   const s = app.s;
   const gov = governabilidade(s);
@@ -47,7 +63,8 @@ function peopleTab(app: App) {
       <div class="hc-body">
         <b>${H.name}</b><small>${esc(prov.name)} · "${esc(H.motto)}"</small>
         ${bar(v)}
-        <small>Lealdade <b>${v}</b> · ${relLabel(v)} · Tropas: ${levyUnits(s, h) * 100} · Impostos: ${s.taxes[h]}</small>
+        <small>Lealdade <b>${v}</b> · ${relLabel(v)} · Envia ao rei: ${levyUnits(s, h) * 100} · Impostos: ${s.taxes[h]}</small>
+        ${houseLine(app, h)}
       </div>
       <div class="hc-lord">${portrait(H.lord!, 'aud-portrait')}${summonButton(app, H.lord!)}</div>
     </div>`;

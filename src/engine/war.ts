@@ -20,7 +20,7 @@ export const warTurnHours = (s: GameState) => (hasSkill(s, 'vanguarda') ? 1 : WA
 
 export function levyUnits(s: GameState, house: 'valmont' | 'drakon' | 'seren' | 'montclair'): number {
   if (s.loyalty[house] < -20) return 0; // casas hostis não enviam tropas
-  let n = HOUSES[house].levy / 100;
+  let n = s.houses?.[house]?.troops ?? HOUSES[house].levy / 100; // o exército que a casa tem hoje
   if (house === 'drakon' && s.spouse === 'rhoswen') n *= 2;
   if (s.loyalty[house] >= 50) n += 2;
   return Math.floor(n);
@@ -37,19 +37,21 @@ export function startWar(s: GameState, enemy: 'norhelm' | HouseId) {
   const royal = Math.floor(s.res.exercito / 100);
   const levy = (h: HouseId) => (enemy === h ? 0 : levyUnits(s, h));
   t.push({ id: 'castelmar', owner: 'rei', units: u(royal) + (hasSkill(s, 'fortaleza') ? 2 : 0) });
-  t.push({ id: 'costa', owner: 'rei', units: u(levy('valmont') + (s.spouse === 'isolde' ? 8 : 0)) });
+  // a frota Valmont cedida à coroa defende a costa
+  t.push({ id: 'costa', owner: 'rei', units: u(levy('valmont') + (s.spouse === 'isolde' ? 8 : 0) + (s.flags.frotaReal ? 4 : 0)) });
   t.push({ id: 'bosques', owner: 'rei', units: u(levy('seren')) });
   t.push({ id: 'montanhas', owner: 'rei', units: u(levy('montclair')) });
   t.push({ id: 'vale', owner: 'rei', units: u(levy('drakon')) });
   if (enemy === 'norhelm') {
     t.push({ id: 'hjalmgard', owner: 'inimigo', units: 14 });
     t.push({ id: 'fiorde', owner: 'inimigo', units: 10 });
-    t.push({ id: 'passo', owner: 'inimigo', units: 12 });
+    // o espião virado mandou números falsos: Ragnar vem confiante e mal preparado
+    t.push({ id: 'passo', owner: 'inimigo', units: s.flags.armadilhaPasso ? 8 : 12 });
   } else {
     // a casa rebelde toma a própria província com todas as suas tropas
     const seat = t.find((x) => x.id === HOUSE_SEAT[enemy])!;
     seat.owner = 'inimigo';
-    seat.units = 10 + Math.floor(HOUSES[enemy].levy / 100) + Math.max(0, Math.floor(-s.loyalty[enemy] / 20));
+    seat.units = 10 + Math.floor(s.houses?.[enemy]?.troops ?? HOUSES[enemy].levy / 100) + Math.max(0, Math.floor(-s.loyalty[enemy] / 20));
   }
   // o exército real luta de onde está acampado (a capital fica com uma guarnição)
   const camp = (s.flags.armyAt as ProvinceId) || 'castelmar';

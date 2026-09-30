@@ -140,6 +140,7 @@ export function computeEconomy(s: GameState): Economy {
     if (hasSkill(s, 'contas')) t *= 1.1;
     if (hasSkill(s, 'banqueiro')) t *= 1.15;
     if (key !== 'coroa' && s.loyalty[key] < -30) t *= 0.5; // casas hostis sonegam
+    if (key !== 'coroa' && s.houses?.[key]?.withholding) t *= 0.6; // casas ressentidas seguram o imposto
     if (s.war && s.war.territories.find((w) => w.id === p)?.owner === 'inimigo') t = 0;
     taxes[p] = Math.round(t);
     taxTotal += taxes[p];
