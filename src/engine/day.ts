@@ -66,9 +66,9 @@ export function pushAudience(s: GameState, eventId: string, arrive: number) {
 }
 
 // Noite: às vezes alguém aborda o rei quando ele encerra o dia
-export function pickNight(s: GameState): GameEvent | null {
+export function pickNight(s: GameState, wake?: boolean): GameEvent | null {
   if (rand(s) > 0.5) return null;
-  const pool = EVENTS.filter((e) => e.kind === 'noite' && e.weight && eligible(s, e));
+  const pool = EVENTS.filter((e) => e.kind === 'noite' && e.weight && (wake === undefined || !!e.wake === wake) && eligible(s, e));
   if (!pool.length) return null;
   const total = pool.reduce((a, e) => a + e.weight!, 0);
   let r = rand(s) * total;
@@ -95,7 +95,7 @@ export function startDay(s: GameState) {
     if (ev && (!ev.cond || ev.cond(s)) && !s.audiences.some((a) => a.eventId === ev.id)) addAudience(s, ev, DAY_START, d.origin);
   }
   // roteiro do dia
-  for (const ev of EVENTS) if (ev.day === s.day && AUDIENCE_KINDS.includes(ev.kind) && eligible(s, ev)) addAudience(s, ev);
+  for (const ev of EVENTS) if (ev.day === s.day && (AUDIENCE_KINDS.includes(ev.kind) || ev.place) && eligible(s, ev)) addAudience(s, ev);
 
   deliverLetters(s);
 
@@ -146,6 +146,12 @@ export function visibleAudiences(s: GameState) {
 }
 
 export const isQueued = (ev: GameEvent | undefined) => !!ev && !ev.place && (AUDIENCE_KINDS.includes(ev.kind) || ev.kind === 'noite');
+
+// Grandes acontecimentos que ainda vão chegar (dia fixo), dos mais próximos aos mais distantes
+export function upcomingBig(s: GameState, within = 5): { ev: GameEvent; day: number }[] {
+  return EVENTS.filter((e) => e.big && e.day && e.day > s.day && e.day - s.day <= within && (!e.cond || e.cond(s)) && s.seen[e.id] === undefined)
+    .map((e) => ({ ev: e, day: e.day! })).sort((a, b) => a.day - b.day);
+}
 
 export function currentObjective(s: GameState): { title: string; text: string } {
   if (s.war && !s.war.result) return { title: 'Vencer a guerra', text: `Contra ${enemyLabel(s.war.enemy)} · turno ${s.war.turn}` };
@@ -328,7 +334,13 @@ export function endDay(s: GameState): LogEntry[] {
   if (!s.spouse && !s.flags.noiva && [17, 13, 9, 5, 3, 2, 1].includes(left))
     entries.push({ icon: 'ampulheta', title: 'O conselho lembra', text: `O Chanceler Aldric deixa um bilhete: "Faltam ${left} dia(s) para o prazo do casamento, Majestade."`, tone: 'neutro' });
 
-  // 9. Rumores para o dia seguinte
+  // 9. O que vem por aí: os grandes dias são anunciados com antecedência
+  for (const b of upcomingBig(s, 3)) {
+    const d = b.day - (s.day + 1);
+    const line = b.ev.big!.teaser[Math.max(0, b.ev.big!.teaser.length - 1 - d)];
+    entries.push({ icon: 'estrela', title: d === 0 ? `Amanhã: ${b.ev.big!.title}` : `Em ${d + 1} dias: ${b.ev.big!.title}`, text: line, tone: 'rumor' });
+  }
+  // 9b. Rumores para o dia seguinte
   const rumor = pickRumor(s);
   if (rumor) entries.push(rumor);
 

@@ -1,9 +1,10 @@
+import { inPortal } from '../engine/cloud';
 import type { Resources, ScreenId } from '../types';
 import type { App } from './app';
 import type { Expr } from '../render/actors';
-import { governabilidade, govLabel, influenceGain } from '../engine/core';
+import { MARRIAGE_DEADLINE, governabilidade, govLabel, influenceGain } from '../engine/core';
 import { computeEconomy } from '../engine/economy';
-import { currentObjective, visibleAudiences } from '../engine/day';
+import { currentObjective, upcomingBig, visibleAudiences } from '../engine/day';
 import { unreadCount } from '../engine/letters';
 import { moodLabel, MOOD_LOOK, MOOD_NAMES } from '../engine/mood';
 import { iconImg } from '../render/pixel';
@@ -50,6 +51,7 @@ export function renderHud(app: App): string {
       <span class="hud-time"><b>Dia ${s.day}</b><em>${night ? '21:00' : fmtHour(s.hour)}</em><small>${MOOD_NAMES[mood]}</small></span>
       <span class="candle" aria-label="Horas restantes"><i style="height:${Math.round(left * 100)}%"></i><u></u></span>
     </button>
+    ${countdown(app)}
     <div class="hud-res">
       ${chip('ouro', 'moedas', String(s.res.ouro), `${eco.net >= 0 ? '+' : ''}${eco.net}/dia`, 'Tesouro real e saldo diário', s.res.ouro < 0)}
       ${chip('influencia', 'flor', String(s.res.influencia), `+${influenceGain(s)}/dia`, 'Influência: moeda política')}
@@ -60,9 +62,34 @@ export function renderHud(app: App): string {
       <button class="bell ${unseen > 0 ? 'ring' : ''}" data-act="feed" title="Avisos e mensagens">${iconImg('selo', 'ico-lg')}${unseen > 0 ? `<em>${Math.min(unseen, 9)}</em>` : ''}</button>
       <button class="nav-toggle" data-act="navToggle" aria-expanded="${app.ui.navOpen}">${iconImg('estrela', 'ico-lg')}</button>
       <nav class="nav ${app.ui.navOpen ? 'open' : ''}">${nav.map(([id, icon, label]) => `<button class="medal ${app.ui.screen === id ? 'on' : ''} ${id === 'corte' && unreadCount(s) ? 'blink' : ''}" data-act="go" data-arg="${id}" title="${label}" ${night ? 'disabled' : ''}>${iconImg(icon, 'ico-lg')}${badge(id)}<span>${label}</span></button>`).join('')}
-        <button class="medal help-btn" data-act="help" title="Como jogar" ${night ? 'disabled' : ''}>${iconImg('balao', 'ico-lg')}<span>Ajuda</span></button></nav>
+        <button class="medal help-btn" data-act="ajustes" title="Ajustes, ajuda e sair">${iconImg('engrenagem', 'ico-lg')}<span>Ajustes</span></button></nav>
     </div>
   </div>`;
+}
+
+// O que vem por aí: o próximo grande dia e o prazo do casamento
+function countdown(app: App): string {
+  const s = app.s;
+  const items: string[] = [];
+  const big = upcomingBig(s, 4)[0];
+  if (big) { const d = big.day - s.day; items.push(`<span class="cd-big">${iconImg('estrela')} ${esc(big.ev.big!.title)} · ${d === 1 ? 'amanhã' : `em ${d} dias`}</span>`); }
+  if (!s.spouse && s.day < MARRIAGE_DEADLINE) { const d = MARRIAGE_DEADLINE - s.day; items.push(`<span class="cd-wed ${d <= 5 ? 'hot' : ''}">${iconImg('coroa')} Casamento ${s.flags.noiva ? 'marcado' : 'sem noiva'} · ${d} dia${d > 1 ? 's' : ''}</span>`); }
+  return items.length ? `<div class="hud-countdown">${items.join('')}</div>` : '';
+}
+
+// Ajustes: ajuda, dicas e sair do jogo (dentro do portal, o jogo tem o próprio botão de sair)
+export function renderAjustes(app: App): string {
+  return `<div class="modal-back castle-modal-back"><div class="parchment modal castle-modal ajustes-modal">
+    <button class="modal-x" data-act="closeFeed" aria-label="Fechar">×</button>
+    <h2>Ajustes</h2>
+    <div class="ajustes-list">
+      <button class="btn" data-act="help">${iconImg('balao')} Como jogar</button>
+      <button class="btn" data-act="tipsToggle">${iconImg('pergaminho')} Dicas: ${app.tipsOff() ? 'desligadas' : 'ligadas'}</button>
+      <button class="btn" data-act="toTitle">${iconImg('coroa')} Voltar ao menu inicial</button>
+      ${inPortal() ? `<button class="btn primary" data-act="exitGame">${iconImg('seta')} Sair do jogo</button>` : ''}
+    </div>
+    <p class="sub">O jogo salva sozinho a cada ação.</p>
+  </div></div>`;
 }
 
 // Pergaminho "Estado do Reino": todos os números, com o que cada um significa

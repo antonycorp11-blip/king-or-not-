@@ -241,6 +241,8 @@ export interface GameEvent {
   council?: { lead: CouncilSeatId; positions: Partial<Record<CouncilSeatId, CouncilPosition>> };
   // encontro marcado: acontece num lugar e hora, não na fila do salão
   place?: { room: RoomId; hour: number; spot?: string; duration?: number; title?: string };
+  big?: { title: string; teaser: string[] };
+  wake?: boolean; // noite: acontece com o rei já deitado (acorda) // grande acontecimento: anunciado nos dias anteriores
   talk?: boolean; // conversa aberta: dá para voltar às outras perguntas se a tensão estiver baixa
 }
 

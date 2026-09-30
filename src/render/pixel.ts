@@ -123,6 +123,7 @@ const ICONS: Record<string, string[]> = {
   estrela: ['....Y....', '....Y....', '..YYYYY..', 'YYYYYYYYY', '..YYYYY..', '.YY...YY.', 'Y.......Y'],
   castelo: ['w.w...w.w', 'www...www', 'www.w.www', 'wwwwwwwww', 'wwwwKwwww', 'wwwKKKwww', 'gggKKKggg'],
   seta: ['....Y....', '....YY...', '.YYYYYY..', '.YYYYYYY.', '.YYYYYY..', '....YY...', '....Y....'],
+  engrenagem: ['....g....', '.g.gwg.g.', '..gwwwg..', 'ggwwKwwgg', '..gwwwg..', '.g.gwg.g.', '....g....'],
   sol: ['....Y....', '.Y..Y..Y.', '..YYYYY..', 'YYYyyyYYY', '..YYYYY..', '.Y..Y..Y.', '....Y....'],
 };
 

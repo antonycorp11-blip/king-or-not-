@@ -1,6 +1,6 @@
 import type { CouncilSeatId, GameState, Good, LogEntry, RoomId, ScreenId } from '../types';
 import { applyEffect as applyEffectSafe, load, newGame, save, clearSave, storeLocal } from '../engine/core';
-import { athgGameStarted, athgReady, cloudLoad, inPortal } from '../engine/cloud';
+import { athgExit, athgGameStarted, athgOwnExit, athgReady, cloudLoad, inPortal } from '../engine/cloud';
 import { computeEconomy } from '../engine/economy';
 import { endDay, eventOf, isQueued, notices, pickNight, pushAudience, spendHours, startDay, visibleAudiences } from '../engine/day';
 import { arrival, startInline } from '../engine/castle';
@@ -11,7 +11,7 @@ import { ROOMS, WALK_HOURS, roomAt, worldPoint } from '../data/castle';
 import { EVENT_MAP } from '../data/events';
 import { char } from '../data/characters';
 import { renderCastleModal, handleCastleModal, type CastleModal } from './castleModals';
-import { floatDeltas, renderEstado, renderFeed, renderHud, type FeedItem } from './hud';
+import { floatDeltas, renderEstado, renderFeed, renderAjustes, renderHud, type FeedItem } from './hud';
 import { loadCharacterAssets, setCrowned, type Expr } from '../render/actors';
 import { companionsFor } from '../data/companions';
 import { companionLine, guardLine, waitingLine } from '../data/banter';
@@ -43,6 +43,7 @@ export interface Dialog {
   taken?: string[]; // ramos já explorados
   rounds?: number; // quantas vezes voltou à conversa
   final?: boolean; // a última escolha fechou o assunto
+  prefix?: string; // reação de quem ouve, antes da próxima pergunta
 }
 
 export interface UIState {
@@ -67,10 +68,11 @@ export interface UIState {
   dialogCollapsed: boolean;
   castleModal: CastleModal;
   seatPick: CouncilSeatId | null;
-  panel: 'estado' | 'feed' | null; // pergaminhos do HUD
+  panel: 'estado' | 'feed' | 'ajustes' | null; // pergaminhos do HUD
   navOpen: boolean;
   ring: boolean; // menu de ações do rei
   hotMenu: [number, number, string[]] | null; // menu de um móvel-lugar (posição no mundo e atividades)
+  sleeping?: boolean; // o rei está deitado (a noite passa)
   readWith: string | null; // quem lê junto com o rei
 }
 
@@ -155,6 +157,7 @@ export class App {
     // Portal ATHG: avisa que carregou e busca o save da conta (vale o mais recente)
     document.documentElement.classList.toggle('embedded', inPortal());
     athgReady();
+    athgOwnExit(); // o jogo tem o próprio botão de sair (Ajustes): o portal esconde o X dele
     void cloudLoad().then((cloud) => {
       if (!cloud) {
         const local = load();
@@ -281,7 +284,22 @@ export class App {
   }
 
   // ---------- fim do dia ----------
+  // Dormir é ir até a cama: o caminho pelo castelo à noite tem seus próprios encontros
   requestEndDay() {
+    const s = this.s;
+    if (this.ui.sleeping) return;
+    const bed = this.scene.hotspotStand('dormir');
+    const k = this.scene.kingPos();
+    if (bed && k && (s.castle.room !== 'quarto' || Math.hypot(k.x - bed[0], k.y - bed[1]) > 150)) {
+      if (this.ui.dialog && !this.ui.dialog.reply) return this.toast('Termine a conversa antes de ir dormir.');
+      if (this.ui.dialog) { Throne.dismissSpeaker(this); this.ui.dialog = null; }
+      this.ui.ring = false; this.ui.hotMenu = null; this.ui.castleModal = null; this.ui.panel = null;
+      this.ui.screen = 'trono'; s.castle.seated = false;
+      this.render();
+      this.toast('O rei segue para o quarto.');
+      this.scene.moveTo('rei', bed[0], bed[1], () => { if (!this.ui.dialog && !this.ui.castleModal) this.requestEndDay(); }, 240);
+      return;
+    }
     const pending = visibleAudiences(this.s).filter((a) => a.expires <= this.s.day).length;
     if (pending && !this.ui.confirmEnd) {
       this.ui.confirmEnd = true;
@@ -291,27 +309,50 @@ export class App {
     this.doEndDay();
   }
 
+  // O rei se deita. A noite passa na tela; às vezes batem à porta e ele acorda.
   doEndDay() {
     this.ui.confirmEnd = false;
     const s = this.s;
+    if (this.ui.dialog) Throne.dismissSpeaker(this);
+    this.ui.dialog = null;
+    s.flags.nightPending = false;
+    this.ui.sleeping = true;
+    const bed = this.scene.hotspotStand('dormir');
+    if (bed) this.scene.place('rei', bed[0], bed[1] - 70);
+    this.scene.setHidden('rei', true);
+    this.render();
+    this.scene.say('rei', 'Zzz…', 1500);
+    window.setTimeout(() => this.ui.sleeping && this.scene.say('rei', 'Zzz… zzz…', 1600), 1500);
+    window.setTimeout(() => this.afterSleep(), 3200);
+  }
+
+  private afterSleep() {
+    const s = this.s;
+    const wake = () => {
+      this.ui.sleeping = false;
+      this.scene.setHidden('rei', false);
+      const bed = this.scene.hotspotStand('dormir');
+      if (bed) { this.scene.place('rei', bed[0], bed[1]); s.castle.x = bed[0]; s.castle.y = bed[1]; }
+    };
     if (s.flags.nightDay !== s.day) {
       s.flags.nightDay = s.day;
-      const night = pickNight(s);
+      const night = pickNight(s, true);
       if (night) {
         pushAudience(s, night.id, 21);
         const a = s.audiences.find((x) => x.eventId === night.id && !x.done);
         if (a) {
+          wake();
           s.flags.nightPending = true;
           this.ui.screen = 'trono';
-          this.toast('Antes de dormir, alguém o aborda no corredor...');
+          this.toast('Batidas na porta! O rei acorda.');
           return Throne.openAudience(this, a.uid);
         }
       }
     }
     s.flags.nightPending = false;
-    this.ui.dialog = null;
-    const day = this.s.day;
-    const entries = endDay(this.s);
+    const day = s.day;
+    const entries = endDay(s);
+    wake();
     this.ui.summary = entries;
     this.ui.summaryDay = day;
     this.render();
@@ -415,9 +456,10 @@ export class App {
     const mod = SCREENS[screen];
     this.scene.setMovementEnabled(screen === 'trono' && !ui.dialog && !ui.summary && !s.ended && !this.needsCompanion() && !ui.castleModal);
     if (screen !== 'trono') { this.scene.setMarkers([]); this.scene.sync(Throne.worldActors(this)); }
-    const modal = ui.panel === 'estado' ? renderEstado(this) : ui.panel === 'feed' ? renderFeed(this) : screen === 'trono' ? renderCastleModal(this) : '';
+    const modal = ui.panel === 'estado' ? renderEstado(this) : ui.panel === 'feed' ? renderFeed(this) : ui.panel === 'ajustes' ? renderAjustes(this) : screen === 'trono' ? renderCastleModal(this) : '';
     const close = screen !== 'trono' ? `<button class="screen-close" data-act="go" data-arg="trono" title="Voltar ao castelo (Esc)">${iconImg('castelo')} Voltar ao castelo</button>` : '';
-    this.root.innerHTML = this.topbar() + `<div class="screen screen-${screen} room-${s.castle.room}">${mod.render(this)}</div>` + close + this.confirmModal() + (modal || (this.needsCompanion() ? this.companionModal() : this.tipHtml()));
+    if (ui.sleeping) { this.scene.setHour(23); this.scene.setMovementEnabled(false); }
+    this.root.innerHTML = (ui.sleeping ? `<div class="sleep-veil"><p>O rei dorme…</p></div>` : '') + this.topbar() + `<div class="screen screen-${screen} room-${s.castle.room}">${mod.render(this)}</div>` + close + this.confirmModal() + (modal || (this.needsCompanion() ? this.companionModal() : this.tipHtml()));
     mod.after?.(this);
     this.prevRes = floatDeltas(this, this.prevRes);
   }
@@ -559,6 +601,16 @@ export class App {
   // Chegou: compromisso marcado, encontro ou gente esperando
   private onArrive() {
     const s = this.s;
+    // à noite, no caminho para a cama, alguém pode abordar o rei
+    if (s.hour >= 18.5 && s.flags.corridorDay !== s.day && s.castle.room !== 'quarto' && !dueHere(s, s.castle.room) && Math.random() < 0.5) {
+      const night = pickNight(s, false);
+      if (night) {
+        s.flags.corridorDay = s.day;
+        this.scene.halt('rei');
+        this.toast('No corredor escuro, alguém o aborda...');
+        return this.openInline(night.id);
+      }
+    }
     const a = arrival(s);
     if (a.appointment?.meal) spendHours(s, 0.75, 'descanso'); // sentar, comer, ouvir a mesa
     save(s);
@@ -655,11 +707,11 @@ export class App {
         return this.newGame(inp?.value.trim() ?? '');
       }
       case 'continue': return this.continueGame();
-      case 'toTitle': this.ui.screen = 'titulo'; return this.render();
+      case 'toTitle': this.ui.screen = 'titulo'; this.ui.panel = null; return this.render();
       case 'tipOk': this.s.flags[`tip_${arg}`] = true; save(this.s); return this.render();
       case 'tipsOff': this.s.flags.tipsOff = true; save(this.s); return this.render();
       case 'tipsToggle': this.s.flags.tipsOff = !this.s.flags.tipsOff; save(this.s); return this.render();
-      case 'help': this.ui.help = true; return this.render();
+      case 'help': this.ui.help = true; this.ui.panel = null; return this.render();
       case 'pickCompanion':
         this.s.flags.companion = arg;
         this.s.flags.compDay = this.s.day;
@@ -669,6 +721,8 @@ export class App {
       case 'closeHelp': this.ui.help = false; return this.render();
       case 'estado': this.ui.panel = this.ui.panel === 'estado' ? null : 'estado'; return this.render();
       case 'closeEstado': case 'closeFeed': this.ui.panel = null; return this.render();
+      case 'ajustes': this.ui.panel = this.ui.panel === 'ajustes' ? null : 'ajustes'; return this.render();
+      case 'exitGame': save(this.s); athgExit(); return;
       case 'feed': this.ui.panel = 'feed'; this.feedSeen = this.feed.length; return this.render();
       case 'navToggle': this.ui.navOpen = !this.ui.navOpen; return this.render();
       case 'ring': this.ui.ring = !this.ui.ring; this.ui.hotMenu = null; return this.render();

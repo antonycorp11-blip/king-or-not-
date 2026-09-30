@@ -183,6 +183,11 @@ export class SceneView {
   }
 
   halt(key: string) { const a = this.actors.get(key); if (a) { a.path = []; a.onArrive = undefined; a.anim = 'idle'; } }
+  // o rei deitado: some da cena (a cama já é o desenho) e o balão fica sobre ela
+  private hidden = new Set<string>();
+  setHidden(key: string, on: boolean) { if (on) this.hidden.add(key); else this.hidden.delete(key); }
+  place(key: string, x: number, y: number) { const a = this.actors.get(key); if (a) { a.x = x; a.foot = y; a.path = []; } }
+  hotspotStand(act: string): [number, number] | null { return this.world?.hotspots.find((h) => h.acts.includes(act))?.stand ?? null; }
   setAnim(key: string, anim: Anim) { const a = this.actors.get(key); if (a && !a.path.length) a.anim = anim; }
 
   // Caminho pela grade do castelo (contorna móveis, passa pelas portas)
@@ -321,6 +326,7 @@ export class SceneView {
   }
 
   private drawActor(a: ActorState) {
+    if (this.hidden.has(a.key)) return;
     const src = getTopDownFrame(a.id, a.dir, a.frame, a.anim);
     if (!src) return;
     const c = this.ctx;

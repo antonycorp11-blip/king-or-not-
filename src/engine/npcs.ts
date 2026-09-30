@@ -18,6 +18,7 @@ const ABSENT: Record<string, (s: GameState) => boolean> = {
   otho: (s) => !!s.flags.othoExilado || !!s.flags.othoDeposto,
   clara: (s) => !!s.flags.claraFim && !s.flags.casoClara,
   bianca: (s) => s.flags.bianca === false,
+  sigrid: (s) => !!s.flags.sigridDevolvida,
   cedric: (s) => ['embaixador', 'fugiu', 'cacado', 'duelo'].includes(String(s.flags.cedricResolvido)),
 };
 

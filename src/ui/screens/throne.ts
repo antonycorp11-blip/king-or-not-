@@ -224,7 +224,7 @@ function roomHud(app: App): string {
       <button class="dock-btn" data-act="castleMap" title="Ir a um lugar · Onde está alguém">${iconImg('castelo', 'ico-lg')}<span>Castelo</span></button>
       <button class="dock-btn" data-act="ring" title="O que dá para fazer aqui">${iconImg('estrela', 'ico-lg')}<span>Ações</span></button>
       ${s.hour < DAY_END ? `<button class="dock-btn" data-act="waitHour">${iconImg('ampulheta', 'ico-lg')}<span>${s.hour < 8 ? 'Esperar as 8h' : 'Esperar 1h'}</span></button>` : ''}
-      <button class="dock-btn end" data-act="endDay">${iconImg('selo', 'ico-lg')}<span>Dormir</span></button>
+      <button class="dock-btn end ${s.hour >= 19 ? 'late' : ''}" data-act="endDay" title="O rei vai até a cama e dorme">${iconImg('selo', 'ico-lg')}<span>Ir dormir</span></button>
     </div>
     <div class="zoom-ctl"><button data-act="zoom" data-arg="in" title="Aproximar">+</button><button data-act="zoom" data-arg="out" title="Afastar">−</button></div>
     ${away && vis.length ? `<button class="hall-call ${urgent ? 'urgent' : ''}" data-act="travel" data-arg="salao">${urgent ? `${portrait(eventOf(urgent).speaker, 'q-portrait')}<span><b>Urgente no salão</b><small>${esc(char(eventOf(urgent).speaker).name)}</small></span>` : `${iconImg('povo', 'ico-lg')}<span><b>${vis.length} no salão</b><small>Ir até lá</small></span>`}</button>` : ''}`;
@@ -325,6 +325,7 @@ export function render(app: App): string {
         ${ev.kind === 'urgente' ? `<span class="alert">${iconImg('selo', 'ico-lg')}</span>` : ''}
         <h3>${esc(ev.kind === 'reuniao' ? ev.topic : c.name)} <small>${esc(ev.kind === 'reuniao' ? `Conduzida por ${c.name}` : c.title)}${c.ageYears && ev.kind !== 'reuniao' ? ` · ${c.ageYears} anos` : ''} · ${KIND_LABEL[ev.kind]}</small></h3>
         ${d.said ? `<div class="king-said">${portrait('rei', 'said-portrait')}<p>${esc(d.said)}</p></div>` : ''}
+        ${d.prefix && !d.reply ? `<p class="d-prefix">${esc(d.prefix)}</p>` : ''}
         <p>${esc(text)}</p>
         ${table}
         ${d.advice && !d.reply ? `<div class="whisper">${portrait(d.advice.who, 'whisper-portrait')}<p>${esc(d.advice.text)}</p></div>` : ''}
@@ -403,6 +404,7 @@ export function handle(app: App, act: string, arg: string) {
       if (cost) spendHours(s, cost, 'trabalho');
     }
     if (d.node === 'start') d.root = ch.label;
+    d.prefix = undefined;
     d.said = kingLine(s, ev, ch);
     d.final = !!(ch.effects?.flags && ('noiva' in ch.effects.flags || 'spouse' in ch.effects.flags)) || !!ch.effects?.law;
     const who = speakerOf(s, ev);
@@ -422,6 +424,7 @@ export function handle(app: App, act: string, arg: string) {
     app.ui.useInfluence = false;
     if (ch.goto) {
       save(s);
+      d.prefix = txt(ch.reply, s) || undefined;
       d.node = ch.goto;
       return app.render();
     }
@@ -452,7 +455,7 @@ export function handle(app: App, act: string, arg: string) {
     dismissSpeaker(app);
     app.ui.dialog = null;
     save(s);
-    if (ev.kind === 'noite') return app.doEndDay(); // depois do encontro noturno, o dia acaba
+    if (ev.kind === 'noite' && s.flags.nightPending) return app.doEndDay(); // acordou na cama: volta a dormir
     app.render();
     if (s.war && ev.id === 'invasao') app.toast('A guerra começou! Abra a tela de Guerra para comandar.');
     app.autoOpenUrgent();

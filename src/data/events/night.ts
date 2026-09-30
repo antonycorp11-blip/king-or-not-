@@ -10,7 +10,7 @@ const notWar = (s: GameState) => !s.war || !!s.war.result;
 
 function spouseNight(id: string, text: string, a: [string, string, string], b: [string, string, string], c: [string, string, string]): GameEvent {
   return {
-    id: `noite_${id}`, speaker: id, topic: 'No quarto real', kind: 'noite', weight: 4, repeat: 5, cond: (s) => s.spouse === id,
+    id: `noite_${id}`, speaker: id, topic: 'No quarto real', kind: 'noite', wake: true, weight: 4, repeat: 5, cond: (s) => s.spouse === id,
     nodes: {
       start: {
         text,
@@ -97,7 +97,7 @@ export const NIGHT_EVENTS: GameEvent[] = [
   },
   // ---------- O fantasma do rei (é o Pimenta) ----------
   {
-    id: 'noite_fantasma', speaker: 'pimenta', topic: 'O fantasma do rei morto', kind: 'noite', weight: 3, minDay: 3,
+    id: 'noite_fantasma', speaker: 'pimenta', topic: 'O fantasma do rei morto', kind: 'noite', wake: true, weight: 3, minDay: 3,
     nodes: {
       start: {
         text: 'Um lençol com dois buracos flutua pelo corredor gemendo: "Filhoooo... você está cobrando impostos demaaaais... e seu irmão pegou minhas botaaaas..." Dá para ver os sapatos com guizos do Pimenta, o bobo da corte, por baixo do lençol.',
@@ -191,7 +191,7 @@ export const NIGHT_EVENTS: GameEvent[] = [
   },
   // ---------- Carta debaixo do travesseiro ----------
   {
-    id: 'noite_travesseiro', speaker: 'sombra', topic: 'Alguém no seu quarto', kind: 'noite', weight: 3, minDay: 7, repeat: 12,
+    id: 'noite_travesseiro', speaker: 'sombra', topic: 'Alguém no seu quarto', kind: 'noite', wake: true, weight: 3, minDay: 7, repeat: 12,
     nodes: {
       start: {
         text: (s) => `Ao entrar no quarto, uma figura de capuz está sentada na sua cama, comendo suas uvas. "Os guardas da porta dormem ${s.flags.guardaQuarto ? 'em turnos, pelo menos. Progresso' : 'como bebês. Bebês bêbados'}, Majestade. Eu sou A Sombra. Vendo segredos. Hoje tenho três. Escolha um."`,

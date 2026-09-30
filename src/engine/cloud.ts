@@ -26,6 +26,20 @@ export function athgReady() {
   sdk()?.ready();
 }
 
+// Avisa o portal que o jogo tem o próprio botão de sair (o portal esconde o X que cobria o HUD)
+function postPortal(type: string) {
+  if (!inPortal()) return;
+  try { window.parent.postMessage({ source: 'athg-game', version: 1, type }, '*'); } catch { /* sem portal */ }
+}
+export function athgOwnExit() {
+  const A = sdk() as (AthgSdk & { ownExitButton?: () => void }) | undefined;
+  if (A?.ownExitButton) A.ownExitButton(); else postPortal('OWN_EXIT_BUTTON');
+}
+export function athgExit() {
+  const A = sdk() as (AthgSdk & { exit?: () => void }) | undefined;
+  if (A?.exit) A.exit(); else postPortal('EXIT_REQUEST');
+}
+
 export function athgGameStarted() {
   sdk()?.gameStarted();
 }
