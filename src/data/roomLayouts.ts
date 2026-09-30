@@ -87,7 +87,7 @@ export const ROOM_LAYOUTS: Partial<Record<RoomId, RoomLayout>> = {
     O('mesa_conselho', 500, 620, 460, { base: 0.62, hot: ['cadeiras', 'mesa_chaves'] }),
     O('armario_documentos', 910, 340, 80),
     O('estandarte_pe', 150, 600, 44), O('estandarte_pe', 850, 600, 44),
-    O('mesa_mapa', 220, 900, 240, { light: 60, hot: ['mapa'] }),
+    O('mesa_mapa', 220, 900, 240, { light: 60, hot: ['provincias', 'mapa'] }),
     O('globo', 800, 880, 60), O('candelabro_alto', 90, 780, 42, { light: 120 }), O('candelabro_alto', 930, 780, 42, { light: 120 }),
     O('planta_vaso', 930, 960, 54),
     O('armadura', 290, 290, 42), O('armadura', 710, 290, 42, { flip: true }),

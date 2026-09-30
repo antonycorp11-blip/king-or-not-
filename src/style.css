@@ -1652,6 +1652,10 @@ body.character-gallery-page { overflow: auto; height: auto; min-height: 100vh; b
 .guide-bubble::before { content: ''; position: absolute; left: calc(var(--ax) - 12px); border: 12px solid transparent; }
 .guide-bubble.below::before { top: -24px; border-bottom-color: #8a6a2a; }
 .guide-bubble.above::before { bottom: -24px; border-top-color: #8a6a2a; }
+.guide-bubble.left::before, .guide-bubble.right::before { left: auto; top: calc(var(--ay) - 12px); }
+.guide-bubble.right::before { left: -24px; border-right-color: #8a6a2a; }
+.guide-bubble.left::before { right: -24px; border-left-color: #8a6a2a; }
+.guide-bubble.free::before { display: none; }
 .guide-bubble small { color: #8a6a2a; font-size: 13px; }
 .guide-bubble b { display: block; font-family: var(--sc); font-size: 22px; color: #1c2c6a; margin: 2px 0 4px; }
 .guide-bubble p { margin: 0 0 8px; font-size: 17px; line-height: 1.3; }

@@ -354,10 +354,36 @@ export class SceneView {
         while (placed.some(([x, y]) => Math.abs(x - mx) < 64 && Math.abs(y - my) < 20)) my -= 22;
         placed.push([mx, my]);
       }
+      if (m.kind === 'acao') return; // menus de ação: empilhados em pixels logo abaixo
       const [px, py] = toPct(mx, my);
       el.style.left = `${px}%`; el.style.top = `${py}%`;
       el.style.display = px < -5 || px > 105 || py < -5 || py > 105 ? 'none' : '';
     });
+    // Menus de ação: a coluna é montada em pixels de tela (o zoom do celular
+    // não pode apertar os botões uns sobre os outros) e nunca sai da tela.
+    const LW = this.markerLayer.offsetWidth || 1, LH = this.markerLayer.offsetHeight || 1;
+    const groups = new Map<string, number[]>();
+    this.markers.forEach((m, i) => { if (m.kind === 'acao') { const g = m.key.split('-')[0]; groups.set(g, [...(groups.get(g) ?? []), i]); } });
+    for (const idx of groups.values()) {
+      const els = idx.map((i) => this.markerEls[i]).filter(Boolean);
+      if (!els.length) continue;
+      const hs = els.map((e) => e.offsetHeight || 30);
+      const gap = 6;
+      const total = hs.reduce((a, b) => a + b + gap, -gap);
+      const ws = Math.max(...els.map((e) => e.offsetWidth || 120));
+      const first = this.markers[idx[0]];
+      const [px, py] = toPct(first.x, first.y);
+      let top = (py / 100) * LH - hs[0] / 2;
+      let cx = (px / 100) * LW;
+      const bottomSafe = LH - 64; // a barra de baixo (Agenda, Castelo, Ações…)
+      top = Math.max(56, Math.min(top, bottomSafe - total));
+      cx = Math.max(ws / 2 + 8, Math.min(LW - ws / 2 - 8, cx));
+      let y = top;
+      els.forEach((el, k) => {
+        el.style.left = `${cx}px`; el.style.top = `${y + hs[k] / 2}px`; el.style.display = '';
+        y += hs[k] + gap;
+      });
+    }
     const now = performance.now();
     for (const [key, b] of this.bubbles) {
       const a = this.actors.get(key);

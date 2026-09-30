@@ -90,6 +90,9 @@ export class Guide {
     if (app.ui.dialog || app.ui.castleModal || app.ui.summary || app.cinema.active) return this.hide();
     const target = this.target(step.sel);
     if (!target) return this.hide();
+    // alvo dentro de um painel rolável: traz para a vista antes de medir
+    const vr = target.getBoundingClientRect(), sr = app.stage.getBoundingClientRect();
+    if (vr.top < sr.top || vr.bottom > sr.bottom || vr.left < sr.left || vr.right > sr.right) target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     this.draw(target, step, t.i, tour.steps.length);
   }
 
@@ -112,21 +115,36 @@ export class Guide {
     let x = (r.left - sr.left) / k - pad, y = (r.top - sr.top) / k - pad, w = r.width / k + pad * 2, h = r.height / k + pad * 2;
     // alvos enormes (a cena inteira): destaque menor no meio
     if (w > stage.offsetWidth * 0.8) { x = stage.offsetWidth * 0.3; w = stage.offsetWidth * 0.4; y = stage.offsetHeight * 0.3; h = stage.offsetHeight * 0.35; }
-    const below = y + h + 230 < stage.offsetHeight;
-    const bw = Math.min(460, stage.offsetWidth - 32);
-    const bx = Math.max(16, Math.min(stage.offsetWidth - bw - 16, x + w / 2 - bw / 2));
-    const by = below ? y + h + 18 : Math.max(16, y - 18);
-    const ax = Math.max(24, Math.min(bw - 24, x + w / 2 - bx));
-    this.el.className = 'guide on';
     const SW = stage.offsetWidth, SH = stage.offsetHeight;
+    const bw = Math.min(SW < 1000 ? 360 : 460, SW - 32);
+    this.el.className = 'guide on';
     // quatro faixas escuras em volta do destaque
     const shade = [[0, 0, SW, y], [0, y + h, SW, SH - y - h], [0, y, x, h], [x + w, y, SW - x - w, h]]
       .map(([l, t, ww, hh]) => `<i class="guide-shade" style="left:${l}px;top:${t}px;width:${Math.max(0, ww)}px;height:${Math.max(0, hh)}px"></i>`).join('');
     this.el.innerHTML = `${shade}<div class="guide-hole" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px"></div>
-      <div class="guide-bubble ${below ? 'below' : 'above'}" style="left:${bx}px;${below ? `top:${by}px` : `bottom:${stage.offsetHeight - by}px`};width:${bw}px;--ax:${ax}px">
+      <div class="guide-bubble" style="left:0;top:0;width:${bw}px;visibility:hidden">
         <small>${i + 1} de ${n}</small><b>${step.title}</b><p>${step.text}</p>
         <div class="row"><button class="btn sm" data-act="guideSkip">Pular tutorial</button>${step.wait ? '<em>Toque no destaque</em>' : `<button class="btn primary sm" data-act="guideNext">${i + 1 < n ? 'Próximo' : 'Entendi'}</button>`}</div>
       </div>`;
+    // Mede o balão de verdade e escolhe onde ele cabe: embaixo, em cima, ao
+    // lado do destaque, ou (último caso) preso dentro da tela.
+    const b = this.el.querySelector<HTMLElement>('.guide-bubble')!;
+    const bh = b.offsetHeight;
+    const M = 10, A = 18; // margem da tela e espaço da setinha
+    const clampX = (v: number) => Math.max(M, Math.min(SW - bw - M, v));
+    const clampY = (v: number) => Math.max(M, Math.min(SH - bh - M, v));
+    let side: 'below' | 'above' | 'left' | 'right' | 'free';
+    let bx: number, by: number;
+    if (y + h + A + bh + M <= SH) { side = 'below'; bx = clampX(x + w / 2 - bw / 2); by = y + h + A; }
+    else if (y - A - bh >= M) { side = 'above'; bx = clampX(x + w / 2 - bw / 2); by = y - A - bh; }
+    else if (x + w + A + bw + M <= SW) { side = 'right'; bx = x + w + A; by = clampY(y + h / 2 - bh / 2); }
+    else if (x - A - bw >= M) { side = 'left'; bx = x - A - bw; by = clampY(y + h / 2 - bh / 2); }
+    else { side = 'free'; bx = clampX(x + w / 2 - bw / 2); by = clampY(y + h + A); }
+    bx = clampX(bx); by = clampY(by); // nunca fora da tela
+    const ax = side === 'below' || side === 'above' ? Math.max(24, Math.min(bw - 24, x + w / 2 - bx)) : 0;
+    const ay = side === 'left' || side === 'right' ? Math.max(20, Math.min(bh - 20, y + h / 2 - by)) : 0;
+    b.className = `guide-bubble ${side}`;
+    b.style.cssText = `left:${bx}px;top:${by}px;width:${bw}px;--ax:${ax}px;--ay:${ay}px`;
   }
 
   private hide() { this.el.className = 'guide'; this.el.innerHTML = ''; }
