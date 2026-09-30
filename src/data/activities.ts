@@ -56,6 +56,7 @@ export const ACTIVITIES: ActivityDef[] = [
   // Pátio
   { id: 'treinar', room: 'patio', label: 'Treinar com a guarda', sub: '1 hora · descarrega a raiva', icon: 'espadas', hours: 1, perDay: true, event: series('treino_') },
   { id: 'cacar', room: 'patio', label: 'Sair para caçar', sub: '3 horas', icon: 'lobo', hours: 3, perDay: true, event: series('caca_'), cond: (s) => s.hour <= 15 && (!s.war || !!s.war.result) },
+  { id: 'praca', room: 'patio', label: 'Falar ao povo na Praça da Coroa', sub: 'A varanda sobre os portões', icon: 'povo', hours: 0, cond: (s) => s.hour <= 19, screen: 'praca' },
   { id: 'cidade', room: 'patio', label: 'Descer à cidade disfarçado', sub: '2 horas', icon: 'povo', hours: 2, perDay: true, event: series('cidade_'), cond: (s) => s.hour <= 17 },
   { id: 'inspecionar', room: 'patio', label: 'Inspecionar o quartel', sub: '1 hora · moral', icon: 'escudo', hours: 1, perDay: true, effects: { res: { moral: 3 }, mood: { fatigue: 6 } }, toast: 'Você passa pelas fileiras, lembra dois nomes e elogia uma bota. A moral sobe.' },
   // Biblioteca e arquivos

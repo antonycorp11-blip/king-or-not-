@@ -1807,3 +1807,60 @@ body.character-gallery-page { overflow: auto; height: auto; min-height: 100vh; b
 .m .inv-col h4 { font-size: 9px; } .m .inv-ev b { font-size: 10px; } .m .inv-ev small, .m .inv-ev span { font-size: 8px; }
 .m .inv-tabs button { font-size: 11px; padding: 5px 2px; } .m .inv-pane { font-size: 12px; padding: 6px; }
 .m .inv-detail h3 { font-size: 16px; } .m .inv-wits { grid-template-columns: 1fr; } .m .inv-hint { display: none; }
+
+/* ===================== PRAÇA DA COROA ===================== */
+.sq { position: absolute; left: 14px; right: 14px; top: 96px; bottom: 14px; display: grid; grid-template-columns: 1fr 360px; gap: 10px; }
+.sq-stage { position: relative; min-height: 0; border: 4px solid #3a2a18; border-radius: 6px; overflow: hidden; background: #0d0a08; box-shadow: 0 6px 24px rgba(0, 0, 0, .6); }
+.sq-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; image-rendering: auto; }
+.sq-hud { position: absolute; left: 8px; top: 8px; display: flex; gap: 6px; flex-wrap: wrap; pointer-events: none; }
+.sq-hud .chip { background: rgba(20, 14, 8, .82); color: #f0e0c0; border: 1px solid #6a4a28; border-radius: 12px; padding: 3px 9px; font-size: 13px; display: inline-flex; align-items: center; gap: 4px; }
+.sq-hud .chip img { width: 14px; height: 14px; }
+.sq-hud .chip.warn, .sq-hud .m-hostil, .sq-hud .m-furiosa { background: rgba(120, 20, 14, .88); border-color: #d05040; }
+.sq-hud .m-celebrando, .sq-hud .m-emocionada { background: rgba(120, 90, 14, .88); border-color: #e8c860; }
+.sq-said { position: absolute; left: 50%; top: 4%; transform: translateX(-50%); max-width: min(560px, 86%); background: rgba(250, 240, 215, .96); color: #2a1a0a; border: 2px solid #8a6a3a; border-radius: 10px; padding: 8px 12px; font-size: 14px; line-height: 1.35; font-style: italic; box-shadow: 0 4px 14px rgba(0, 0, 0, .5); animation: sqSaid .4s ease-out; pointer-events: none; }
+@keyframes sqSaid { from { opacity: 0; transform: translate(-50%, -8px); } }
+.sq > .sq-panel { position: relative; left: auto; top: auto; right: auto; bottom: auto; width: auto; transform: none; margin: 0; }
+.sq-panel { min-height: 0; overflow-y: auto; padding: 12px 14px 52px; display: flex; flex-direction: column; gap: 8px; }
+.sq-panel h2 { margin: 0; font-size: 20px; }
+.sq-step { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #d8b04a; }
+.sq-prompt { margin: 0; font-size: 15px; }
+.sq-react { margin: 0; font-size: 12.5px; color: #e8d8b8; }
+.sq-react span { white-space: nowrap; }
+.sq-opts, .sq-kinds { display: flex; flex-direction: column; gap: 6px; }
+.sq-opt, .sq-kind { text-align: left; background: linear-gradient(#3a2a18, #2a1c10); color: #f4e8d0; border: 1px solid #6a4a28; border-radius: 6px; padding: 8px 10px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; font: inherit; }
+.sq-opt:hover, .sq-kind:hover { border-color: #e8c860; background: linear-gradient(#4a3620, #34240f); }
+.sq-kind:disabled { opacity: .5; cursor: default; }
+.sq-kind.due { border-color: #d8b04a; box-shadow: inset 0 0 0 1px rgba(232, 200, 96, .35); }
+.sq-kind small { color: #c8b898; font-size: 12px; }
+.sq-kind b img { width: 14px; height: 14px; vertical-align: -2px; }
+.sq-opt small { display: flex; gap: 4px; flex-wrap: wrap; }
+.tone { font-style: normal; font-size: 11px; padding: 1px 6px; border-radius: 8px; background: #4a3a2a; color: #f0e0c0; }
+.t-autoritario, .t-militarista { background: #6a1f1a; }
+.t-populista { background: #7a5a14; }
+.t-religioso { background: #5a5a78; }
+.t-honesto, .t-conciliador { background: #1f5a3a; }
+.t-manipulador { background: #4a2a5a; }
+.t-inspirador { background: #2a4a8a; }
+.sq-groups { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
+.sq-g { display: grid; grid-template-columns: 124px 1fr; align-items: center; gap: 6px; font-size: 12.5px; }
+.sq-g span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.sq-g span img { width: 14px; height: 14px; }
+.sq-bar { position: relative; height: 10px; background: #1a120a; border: 1px solid #4a3a2a; border-radius: 5px; overflow: visible; }
+.sq-bar i { display: block; height: 100%; border-radius: 4px; transition: width .6s ease; }
+.sq-bar b { position: absolute; right: -2px; top: -15px; font-size: 11px; }
+.sq-bar b.up { color: #8ae08a; } .sq-bar b.down { color: #f08a7a; }
+.sq-verdict { border-radius: 8px; padding: 10px 12px; text-align: center; border: 2px solid #6a4a28; }
+.sq-verdict b { font-size: 22px; letter-spacing: .12em; }
+.sq-verdict p { margin: 4px 0 0; }
+.v-triunfo { background: linear-gradient(#7a5a14, #4a3408); border-color: #e8c860; }
+.v-bom { background: linear-gradient(#2a5a3a, #173a24); }
+.v-morno { background: #3a3024; }
+.v-fracasso { background: linear-gradient(#5a2a1a, #3a180e); }
+.v-desastre { background: linear-gradient(#7a1a14, #4a0e0a); border-color: #d05040; }
+.sq-warn { margin: 0; color: #f0b0a0; font-size: 13px; }
+.m .sq { left: 6px; right: 6px; top: 64px; bottom: 6px; grid-template-columns: 1fr minmax(250px, 40%); gap: 6px; }
+.m .sq-panel { padding: 8px 10px 44px; gap: 6px; }
+.m .sq-panel h2 { font-size: 17px; }
+.m .sq-said { font-size: 12.5px; padding: 6px 9px; top: 2%; }
+.m .sq-g { grid-template-columns: 104px 1fr; font-size: 11.5px; }
+.m .sq-opt, .m .sq-kind { padding: 6px 8px; }

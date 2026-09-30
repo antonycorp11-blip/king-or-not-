@@ -186,7 +186,7 @@ export const ROOM_LAYOUTS: Partial<Record<RoomId, RoomLayout>> = {
     O('forja', 900, 580, 140, { light: 90 }),
     O('carroca', 700, 710, 110), O('bebedouro', 350, 712, 120), O('fardos_feno', 1040, 712, 80),
     O('mastro', 80, 700, 50),
-    O('portaria', 560, 766, 220, { solid: false, hot: ['cidade'] }),
+    O('portaria', 560, 766, 220, { solid: false, hot: ['praca', 'cidade'] }),
   ] },
   capela: { floor: 'tex_marmore', tile: 150, wall: 'tex_parede', places: [
     W('vitral', 140, 4, 62, 130), W('vitral', 420, 4, 62, 130),

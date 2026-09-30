@@ -508,6 +508,7 @@ export function handle(app: App, act: string, arg: string) {
     app.ui.dialog = null;
     save(s);
     if (ev.kind === 'noite' && s.flags.nightPending) return app.doEndDay(); // acordou na cama: volta a dormir
+    if (s.crowd?.live && s.crowd.live.day === s.day && !s.crowd.live.picks.length) return app.go('praca'); // o rei sobe à varanda
     app.render();
     if (s.war && ev.id === 'invasao') app.toast('A guerra começou! Abra a tela de Guerra para comandar.');
     app.autoOpenUrgent();

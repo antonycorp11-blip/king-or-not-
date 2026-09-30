@@ -1,3 +1,4 @@
+import { crowdDaily } from './crowd';
 import type { Audience, DecisionOrigin, GameEvent, GameState, LogEntry, Resources } from '../types';
 import { AUDIENCE_KINDS, EVENTS, EVENT_MAP } from '../data/events';
 import { HOUSE_IDS, HOUSES, PROVINCES, GOODS } from '../data/realm';
@@ -382,6 +383,9 @@ export function endDay(s: GameState): LogEntry[] {
 
   // 8c2. O caso da morte de Odran vive sozinho: reações, perigo, vazamento
   investigationDaily(s, entries);
+
+  // 8c3. A praça: opinião pública, anúncios pendentes e multidões
+  crowdDaily(s, entries);
 
   // 8d. As casas reagem: exigências, ressentimento, tropas próprias e ciúmes
   housesDaily(s, entries);

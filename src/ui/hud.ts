@@ -36,6 +36,7 @@ export function renderHud(app: App): string {
     ['rei', 'estrela', 'O Rei'], ['corte', 'povo', 'Casas'], ['guerra', 'espadas', 'Guerra'],
     // o caso da morte de Odran aparece depois que Pimenta planta a dúvida
     ...(s.investigation?.open ? [['investigacao', 'olho', 'O Caso'] as [ScreenId, string, string]] : []),
+    ...(s.crowd?.pending?.length || (s.speeches?.length ?? 0) > 0 ? [['praca', 'povo', 'A Praça'] as [ScreenId, string, string]] : []),
   ];
   const badge = (id: ScreenId) => {
     if (id === 'rei' && s.skillPoints > 0) return `<em>${s.skillPoints}</em>`;
