@@ -177,7 +177,7 @@ export function currentObjective(s: GameState): { title: string; text: string } 
   if (!s.spouse && s.flags.noiva) return { title: 'O casamento real', text: `Cerimônia no Dia ${MARRIAGE_DEADLINE}` };
   if (s.day < 22) return { title: 'Consolidar o reino', text: 'O norte está quieto demais...' };
   if (s.day <= 30) return { title: 'Sobreviver ao primeiro mês', text: 'O inverno se aproxima...' };
-  return { title: 'O primeiro inverno', text: `Fim do Ato II no Dia ${ACT_END}` };
+  return { title: 'O primeiro inverno', text: `Fim da Parte 1 no Dia ${ACT_END}` };
 }
 
 export function canSpend(s: GameState, hours: number) {
@@ -397,7 +397,7 @@ export function endDay(s: GameState): LogEntry[] {
   s.history.push({ day: s.day, entries });
   s.day++;
   if (!s.ended && s.day > ACT_END) {
-    s.ended = { kind: 'fimAto', title: 'Fim do Ato II', text: epilogue(s) };
+    s.ended = { kind: 'fimAto', title: 'Fim da Parte 1', text: epilogue(s) };
   }
   if (!s.ended) startDay(s);
   else save(s);
@@ -441,7 +441,7 @@ function epilogue(s: GameState): string {
   const worst = [...HOUSE_IDS].sort((a, b) => s.loyalty[a] - s.loyalty[b])[0];
   return `${ACT_END} dias depois da coroação, o rei ${s.kingName} está casado com ${spouse}, ${war} e governa um reino ${govLabel2(gov)}. ` +
     `A ${HOUSES[worst].name} é quem mais o despreza (${s.loyalty[worst]}). Leis aprovadas: ${s.laws.length ? s.laws.join('; ') : 'nenhuma'}. ` +
-    `A história continua no Ato III.`;
+    `Mas o Pacto das Cinco Chaves ainda se move no escuro, e a verdade sobre a morte do rei Odran ainda não veio à tona.`;
 }
 
 export { DAY_END, DAY_START };

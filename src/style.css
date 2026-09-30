@@ -1868,3 +1868,10 @@ body.character-gallery-page { overflow: auto; height: auto; min-height: 100vh; b
 .m .sq-said { font-size: 12.5px; padding: 6px 9px; top: 2%; }
 .m .sq-g { grid-template-columns: 104px 1fr; font-size: 11.5px; }
 .m .sq-opt, .m .sq-kind { padding: 6px 8px; }
+
+/* fim da Parte 1: aviso da Parte 2 */
+.part2 { margin: 10px auto 4px; max-width: 520px; padding: 10px 14px; border: 2px solid #8a6a2a; border-radius: 8px; background: linear-gradient(#2a3f8f, #1a2860); color: #f4e8c8; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 4px 14px rgba(0, 0, 0, .35); }
+.part2 b { font-family: var(--sc); font-size: 20px; color: #f0d070; letter-spacing: .04em; }
+.part2 span { font-size: 14px; line-height: 1.35; }
+.m .part2 b { font-size: 16px; }
+.m .part2 span { font-size: 12px; }

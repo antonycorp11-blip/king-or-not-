@@ -61,6 +61,7 @@ export function renderEnd(app: App): string {
       <h1>${esc(e.title)}</h1>
       <p class="tagline">${esc(e.text)}</p>
       <p class="sub">Dia ${app.s.day - (e.kind === 'fimAto' ? 1 : 0)} do reinado de ${esc(app.s.kingName)}.</p>
+      ${e.kind === 'fimAto' ? `<div class="part2"><b>A Parte 2 será lançada em breve</b><span>A Queda: o golpe do Pacto, a verdade sobre Odran e o destino da coroa. Seu reinado fica salvo: para continuar de onde parou na Parte 2, não comece um novo reinado.</span></div>` : ''}
       <div class="row"><button class="btn primary" data-act="toTitle">Voltar ao início</button></div>
     </div>
   </div>`;
