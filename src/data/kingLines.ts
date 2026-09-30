@@ -1,7 +1,11 @@
 // O que o rei diz, por extenso, em cada resposta. Chave: evento → rótulo da escolha.
 // (Escolhas também podem trazer a fala direto no campo `say`.)
 // A resposta curta do botão é a intenção; aqui está a frase que ele realmente fala.
-export const KING_LINES: Record<string, Record<string, string>> = {
+import { LINES as AUD1 } from './kingLines/audiencias1';
+import { LINES as AUD2 } from './kingLines/audiencias2';
+import { LINES as AUD3 } from './kingLines/audiencias3';
+
+const MARRIAGE_LINES: Record<string, Record<string, string>> = {
   // ---------------- Elenora Valmont ----------------
   elenora_1: {
     'Apoiar a aliança': 'Uma aliança com a Costa Serena faria bem ao reino, Lady Elenora. Mas eu não recebo contratos no meu salão. Recebo pessoas. Fale-me de você.',
@@ -184,3 +188,11 @@ export const KING_LINES: Record<string, Record<string, string>> = {
     'Você vai se defender sozinha': 'Você vai se defender sozinha, e melhor do que eu. Mas vou estar do seu lado quando fizer isso.',
   },
 };
+
+// todas as falas, por evento (os arquivos em kingLines/ trazem o resto do jogo)
+export const KING_LINES: Record<string, Record<string, string>> = Object.assign({}, MARRIAGE_LINES, AUD1, AUD2, AUD3);
+
+// Fala para uma escolha: do evento, da família do evento (revolta_*, front_*...) ou genérica pelo rótulo
+export function kingLineFor(eventId: string, label: string): string | undefined {
+  return KING_LINES[eventId]?.[label] ?? KING_LINES[`${eventId.split('_')[0]}_*`]?.[label] ?? KING_LINES['*']?.[label];
+}

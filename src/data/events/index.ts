@@ -20,7 +20,7 @@ import { ROUTINE_EVENTS } from './routines';
 import { MEAL_EVENTS } from './meals';
 import { CONSEQUENCE_EVENTS } from './consequences';
 
-export const EVENTS: GameEvent[] = [...COURT_EVENTS, ...MARRIAGE_EVENTS, ...PEOPLE_EVENTS, ...WAR_EVENTS, ...ARMY_EVENTS, ...SUMMON_EVENTS, ...CRISIS_EVENTS, ...NIGHT_EVENTS, ...ARC_EVENTS, ...HUMOR_EVENTS, ...ECHO_EVENTS, ...ROUTINE_EVENTS, ...COUNCIL_EVENTS, ...CASTLE_LIFE_EVENTS, ...ENCOUNTER_EVENTS, ...TALK_EVENTS, ...COMMERCE_EVENTS, ...CAMPAIGN_EVENTS, ...MEAL_EVENTS, ...CONSEQUENCE_EVENTS, ...HOUSE_EVENTS, ...BIG_EVENTS, ...NIGHT_ALARMS];
+export const EVENTS: GameEvent[] = [...COURT_EVENTS, ...MARRIAGE_EVENTS, ...PEOPLE_EVENTS, ...WAR_EVENTS, ...ARMY_EVENTS, ...SUMMON_EVENTS, ...CRISIS_EVENTS, ...NIGHT_EVENTS, ...ARC_EVENTS, ...HUMOR_EVENTS, ...ECHO_EVENTS, ...ROUTINE_EVENTS, ...COUNCIL_EVENTS, ...CASTLE_LIFE_EVENTS, ...ENCOUNTER_EVENTS, ...TALK_EVENTS, ...COMMERCE_EVENTS, ...CAMPAIGN_EVENTS, ...MEAL_EVENTS, ...CONSEQUENCE_EVENTS, ...HOUSE_EVENTS, ...BIG_EVENTS, ...NIGHT_ALARMS, ...ROMANCE_EVENTS];
 
 export const EVENT_MAP: Record<string, GameEvent> = Object.fromEntries(EVENTS.map((e) => [e.id, e]));
 
@@ -31,6 +31,7 @@ import { demandChoices } from '../../engine/houses';
 import { HOUSE_EVENTS } from './houses';
 import { BIG_EVENTS, bailChoices } from './bigEvents';
 import { NIGHT_ALARMS } from './nightAlarms';
+import { ROMANCE_EVENTS } from './romance';
 
 export function dynamicChoices(eventId: string, s: GameState, node = 'start'): Choice[] | null {
   if (eventId === 'baile_pretendentes' && node === 'start') return bailChoices(s);

@@ -18,7 +18,7 @@ import { effectTags, esc, portrait, reqCheck, shortName, txt } from '../common';
 import { genericAdvice } from '../../data/companions';
 import { BOOKS } from '../../data/progression';
 import { readQuality } from './library';
-import { KING_LINES } from '../../data/kingLines';
+import { kingLineFor } from '../../data/kingLines';
 
 const KIND_LABEL: Record<string, string> = {
   audiencia: 'Audiência', urgente: 'Urgente', familia: 'Família', conselho: 'Conselho', casamento: 'Casamento', noite: 'Noite',
@@ -49,8 +49,9 @@ function canReturn(app: App, ev: GameEvent): boolean {
 
 // O que o rei diz ao escolher: a fala escrita, ou a intenção, quando ainda não há fala
 function kingLine(s: GameState, ev: GameEvent, ch: Choice): string {
-  const line = txt(ch.say, s) || KING_LINES[ev.id]?.[ch.label];
-  if (line) return `“${line}”`;
+  const line = txt(ch.say, s) || kingLineFor(ev.id, ch.label);
+  // gestos entre parênteses ficam sem aspas; a fala que vem depois deles, com aspas
+  if (line) { const m = /^(\([^)]*\))\s*(.*)$/.exec(line); return m ? (m[2] ? `${m[1]} “${m[2]}”` : m[1]) : `“${line}”`; }
   return `(${ch.label}. ${ch.sub}.)`;
 }
 
