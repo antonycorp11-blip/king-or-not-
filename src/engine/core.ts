@@ -186,7 +186,8 @@ export function applyEffect(s: GameState, e: Effect | undefined, opts: { soften?
       for (const key of Object.keys(e.flags)) s.flagOrigins[key] = opts.origin;
     }
   }
-  if (e.schedule) for (const sc of e.schedule) s.scheduled.push({ id: sc.id, day: s.day + sc.in, origin: opts.origin });
+  // um mesmo desdobramento só é marcado uma vez (conversas que voltam não o duplicam)
+  if (e.schedule) for (const sc of e.schedule) if (!s.scheduled.some((x) => x.id === sc.id)) s.scheduled.push({ id: sc.id, day: s.day + sc.in, origin: opts.origin });
   if (e.law && !s.laws.includes(e.law)) {
     s.laws.push(e.law);
     log(s, { icon: 'pergaminho', title: 'Lei aprovada', text: e.law, tone: 'lei' });

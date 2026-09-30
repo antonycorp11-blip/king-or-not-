@@ -29,6 +29,7 @@ export const MARRIAGE_TERMS: Record<Suitor, { bonus: string[]; onus: string[] }>
 export function marry(s: GameState, id: Suitor, hasty = false) {
   if (s.day < MARRIAGE_DEADLINE) throw new Error('O casamento real só pode acontecer a partir do Dia 20.');
   s.spouse = id;
+  s.flags.casamentoDia = s.day;
   s.flags.casado = true;
   s.flags.noiva = id;
   s.flags.companion = id;
@@ -135,6 +136,7 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
   },
   {
     id: 'elenora_2', speaker: 'elenora', topic: 'Um passeio nos jardins', kind: 'casamento', lasts: 3,
+    place: { room: 'jardim', hour: 16, spot: 'roseiras', title: 'Passeio com Elenora nos jardins' },
     nodes: {
       start: {
         text: (s) => `${s.flags.elenoraCondicoes ? 'Ainda penso nas suas condições, Majestade. ' : ''}Os jardins de Castelmar são lindos no outono. Na Costa Serena só temos o mar... e as ambições do meu pai. Posso ser franca? Temo que os Drakon nunca aceitem uma rainha Valmont.`,
@@ -241,6 +243,7 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
   },
   {
     id: 'rhoswen_2', speaker: 'rhoswen', topic: 'Relatório da fronteira', kind: 'casamento', lasts: 3,
+    place: { room: 'conselho', hour: 15, spot: 'mapa', title: 'Rhoswen na mesa de mapas do conselho' },
     nodes: {
       start: {
         text: 'Trouxe notícias do Vale Rubro. Batedores de Norhelm rondam o Passo Cinzento. Meu pai quer levar mil homens para a fronteira, mas precisa de ouro. Eu digo: dê-me cem cavaleiros e eu vigio o passo.',
@@ -266,7 +269,7 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
         ],
       },
     },
-    ignored: { text: 'Rhoswen partiu para a fronteira sem sua resposta.', rel: { rhoswen: -8 }, loyalty: { drakon: -4 }, schedule: [{ id: 'cortejo_rhoswen', in: 4 }] },
+    ignored: { text: 'Rhoswen esperou na mesa de mapas até o fim da tarde e partiu para a fronteira sem sua resposta.', rel: { rhoswen: -8 }, loyalty: { drakon: -4 }, schedule: [{ id: 'cortejo_rhoswen', in: 4 }] },
   },
   {
     id: 'pedido_rhoswen', speaker: 'rhoswen', topic: 'Uma pergunta direta', kind: 'casamento', lasts: 3, cond: (s) => !s.flags.noiva,
@@ -352,6 +355,7 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
   },
   {
     id: 'isolde_2', speaker: 'isolde', topic: 'Segredos do sul', kind: 'casamento', lasts: 3,
+    place: { room: 'biblioteca', hour: 14, spot: 'leitura', title: 'Isolde pediu para vê-lo na biblioteca' },
     nodes: {
       start: {
         text: 'Meu irmão, o rei de Véridian, não quer apenas um casamento. Ele quer que Norhelm sangre. Se nos casarmos, nossa frota ataca o norte pelo mar. Mas já espalham na corte que sou herege.',
@@ -371,7 +375,7 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
         ],
       },
     },
-    ignored: { text: 'Isolde escreveu ao irmão que o rei de Castelmar é indeciso.', rel: { isolde: -10 }, schedule: [{ id: 'cortejo_isolde', in: 4 }] },
+    ignored: { text: 'Isolde esperou na biblioteca entre livros que não lia. À noite, escreveu ao irmão que o rei de Castelmar é indeciso.', rel: { isolde: -10 }, schedule: [{ id: 'cortejo_isolde', in: 4 }] },
   },
   {
     id: 'pedido_isolde', speaker: 'isolde', topic: 'O jogo final', kind: 'casamento', lasts: 3, cond: (s) => !s.flags.noiva,
@@ -491,7 +495,8 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
 
   // ================= CORTEJOS PRIVADOS =================
   {
-    id: 'cortejo_elenora', speaker: 'elenora', topic: 'Um jantar sem etiqueta', kind: 'casamento', lasts: 3,
+    id: 'cortejo_elenora', speaker: 'elenora', topic: 'Uma torta roubada', kind: 'casamento', lasts: 3,
+    place: { room: 'cozinha', hour: 17, spot: 'mesa', title: 'Elenora espera na cozinha (em segredo)' },
     cond: (s) => !s.flags.noiva,
     nodes: {
       start: {
@@ -523,6 +528,7 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
   },
   {
     id: 'cortejo_rhoswen', speaker: 'rhoswen', topic: 'Treino ao amanhecer', kind: 'casamento', lasts: 3,
+    place: { room: 'patio', hour: 8, spot: 'treino', title: 'Treino com Rhoswen no pátio' },
     cond: (s) => !s.flags.noiva,
     nodes: {
       start: {
@@ -554,6 +560,7 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
   },
   {
     id: 'cortejo_isolde', speaker: 'isolde', topic: 'Baile de máscaras', kind: 'casamento', lasts: 3,
+    place: { room: 'banquete', hour: 17, spot: 'mesa2', title: 'Baile de máscaras no Salão de Banquetes' },
     cond: (s) => !s.flags.noiva,
     nodes: {
       start: {
@@ -584,11 +591,12 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
     ignored: { text: 'Isolde dançou com o embaixador de Véridian e chamou o rei de audiência vazia.', rel: { isolde: -7 }, schedule: [{ id: 'pedido_isolde', in: 3 }] },
   },
   {
-    id: 'cortejo_sigrid', speaker: 'sigrid', topic: 'Neve no observatório', kind: 'casamento', lasts: 3,
+    id: 'cortejo_sigrid', speaker: 'sigrid', topic: 'Neve no jardim', kind: 'casamento', lasts: 3,
+    place: { room: 'jardim', hour: 17, spot: 'lago', title: 'Encontro secreto com Sigrid junto ao lago' },
     cond: (s) => !s.flags.noiva,
     nodes: {
       start: {
-        text: (s) => `Sigrid o encontra no observatório com um mapa aberto e uma carta molhada de neve. "Meu irmão Ragnar escreveu. Diz que Castelmar me amoleceu." ${s.flags.infoNorhelm ? 'Você sabe que a colheita do norte falhou; ela sabe que você sabe.' : 'Ela fecha a carta antes que você leia.'} "O que é pior: ele ter razão ou eu desejar que tenha?"`,
+        text: (s) => `Sigrid o espera junto ao lago do jardim, com um mapa aberto e uma carta molhada de neve. "Meu irmão Ragnar escreveu. Diz que Castelmar me amoleceu." ${s.flags.infoNorhelm ? 'Você sabe que a colheita do norte falhou; ela sabe que você sabe.' : 'Ela fecha a carta antes que você leia.'} "O que é pior: ele ter razão ou eu desejar que tenha?"`,
         choices: [
           { label: 'O que você deseja?', sub: 'Perguntar sem negociar', color: 'verde', icon: 'coracao', goto: 'desejo', tension: -8 },
           { label: 'Mostrar o mapa da fome', sub: 'Paz exige verdade', color: 'azul', icon: 'livro', goto: 'mapa', tension: 8 },
@@ -596,7 +604,7 @@ export const MARRIAGE_EVENTS: GameEvent[] = [
         ],
       },
       desejo: {
-        text: '"Quero que meu povo sobreviva. E quero um lugar em que não precise pedir desculpas por ser filha do inimigo." Ela encara a neve que derrete no parapeito. "Também quero descobrir como é ser desejada por mim, não como preço da paz."',
+        text: '"Quero que meu povo sobreviva. E quero um lugar em que não precise pedir desculpas por ser filha do inimigo." Ela encara a neve que derrete na borda do lago. "Também quero descobrir como é ser desejada por mim, não como preço da paz."',
         choices: [
           { label: 'Escolho você, se me escolher', sub: 'Sem reféns nem promessas falsas', color: 'verde', icon: 'coracao', effects: { rel: { sigrid: 22 }, flags: { sigridEscolha: true }, schedule: [{ id: 'pedido_sigrid', in: 2 }], xp: 15 }, reply: '"Então fico esta noite." Ela se aproxima e segura sua mão sob a mesa, onde ninguém verá. O silêncio entre vocês deixa de ser hostil.' },
           { label: 'Posso beijar você?', sub: 'Primeira escolha sem tratados', color: 'roxo', icon: 'coracao', effects: { rel: { sigrid: 24 }, flags: { sigridBeijo: true, sigridEscolha: true }, schedule: [{ id: 'pedido_sigrid', in: 2 }], xp: 15 }, reply: '"Pode." Ela beija você devagar, como quem confere se há gelo sob os pés. Depois sorri, breve e sem testemunhas.' },

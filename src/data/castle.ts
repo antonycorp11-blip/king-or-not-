@@ -5,10 +5,11 @@ import type { FloorId, RoomId } from '../types';
 // a câmera o acompanha. Coordenadas em pixels do mundo (personagem ≈ 100 px de altura).
 //
 //   ┌───────────┬──────────────┬───────────┐ ┌───────┐
-//   │ Biblioteca│              │           │ │       │
-//   ├───────────┤ Salão do     │ Conselho  │ │       │
-//   │ Arquivos  │ Trono        │           │ │ Jardim│
-//   ├───────────┴──────┬───────┴───────────┤ │       │
+//   │ Biblioteca│              │           │ │Salão de│
+//   ├───────────┤ Salão do     │ Conselho  ├─┤Banque-│
+//   │ Arquivos  │ Trono        │           │ │ tes   │
+//   ├───────────┴──────┬───────┴───────────┤ ├───────┤
+//   │                                      │ │ Jardim│
 //   │        Galeria Real (tapete vermelho)│ │       │
 //   ├───────┬──────┬───┴──┬───────┬────────┤ │       │
 //   │Cozinha│Tesour│Entrad│Quarto │Aposent.│ │       │
@@ -80,9 +81,12 @@ export const ROOMS: Record<RoomId, RoomDef> = {
   capela: { id: 'capela', name: 'Capela Real', floor: 'exterior', ready: true, ambience: 'capela', rect: [2600, 2200, 560, 760], face: 140,
     desc: 'Velas, bancos gastos e a estátua da Senhora dos Carvalhos. Aqui a corte finge rezar e realmente conversa.',
     spots: { altar: [280, 330], bancos: [280, 520], nicho: [470, 320], confessionario: [90, 330] } },
-  jardim: { id: 'jardim', name: 'Jardim Interno', floor: 'exterior', ready: true, ambience: 'jardim', rect: [3240, 40, 920, 2920], face: 0, exterior: true,
+  banquete: { id: 'banquete', name: 'Salão de Banquetes', floor: 'superior', ready: true, ambience: 'salao', rect: [3240, 40, 920, 1000], face: 150,
+    desc: 'Onde a corte almoça e janta. Quem senta perto do rei, quem senta longe: tudo aqui é recado.',
+    spots: { rei: [500, 450], mesa1: [240, 560], mesa2: [680, 560], mesa3: [240, 760], mesa4: [680, 760], servico: [820, 330], porta: [470, 930] } },
+  jardim: { id: 'jardim', name: 'Jardim Interno', floor: 'exterior', ready: true, ambience: 'jardim', rect: [3240, 1080, 920, 1880], face: 0, exterior: true,
     desc: 'Sebes, uma fonte com cisnes e encontros que ninguém devia ver.',
-    spots: { fonte: [460, 1500], bancos: [300, 1300], roseiras: [620, 800], lago: [620, 2300], topo: [460, 400] } },
+    spots: { fonte: [460, 470], bancos: [300, 640], roseiras: [640, 330], lago: [600, 1180], topo: [460, 120], sebes: [700, 1000] } },
 };
 
 // Portas: vãos na parede entre dois cômodos (retângulo no mundo)
@@ -94,7 +98,8 @@ export const DOORS: DoorDef[] = [
   { a: 'salao', b: 'galeria', rect: [1500, 1040, 200, 40] },
   { a: 'salao', b: 'conselho', rect: [2120, 440, 40, 130] },
   { a: 'conselho', b: 'galeria', rect: [2600, 1040, 130, 40] },
-  { a: 'conselho', b: 'jardim', rect: [3160, 560, 80, 130] },
+  { a: 'conselho', b: 'banquete', rect: [3160, 560, 80, 130] },
+  { a: 'banquete', b: 'jardim', rect: [3620, 1040, 180, 40] },
   { a: 'galeria', b: 'jardim', rect: [3160, 1180, 80, 130] },
   { a: 'galeria', b: 'cozinha', rect: [360, 1360, 130, 40] },
   { a: 'galeria', b: 'tesouro', rect: [1060, 1360, 130, 40] },
@@ -118,7 +123,8 @@ export function worldPoint(room: RoomId, spot?: string, index = 0): [number, num
   const R = ROOMS[room];
   const [x, y, w, h] = R.rect;
   const p = spot ? R.spots[spot] : undefined;
-  if (p) return [x + p[0] + (index % 2 ? 42 : 0), y + p[1] + (index > 1 ? 34 : 0)];
+  // várias pessoas no mesmo lugar: lado a lado, depois uma fileira atrás
+  if (p) return [x + p[0] + [0, 46, -46, 92, -92][index % 5], y + p[1] + Math.floor(index / 5) * 36];
   const cols = [0.3, 0.7, 0.45, 0.6, 0.2, 0.8];
   return [Math.round(x + w * cols[index % cols.length]), Math.round(y + Math.max(R.face + 60, h * (index % 2 ? 0.7 : 0.55)))];
 }

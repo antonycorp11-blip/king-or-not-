@@ -22,6 +22,9 @@ export interface ClueDef {
 }
 
 export const CLUES: Record<string, ClueDef> = {
+  taca_otho: { title: 'O instante de Otho', weight: 4, points: ['otho'], text: 'Pedi a Otho que bebesse primeiro da minha taça. Ele bebeu. Mas antes hesitou, e a corte inteira viu. Homens inocentes não hesitam diante do próprio vinho.' },
+  adivinha_pimenta: { title: 'A adivinha do bobo', weight: 5, text: 'Pimenta, no almoço: "Cinco chaves, nenhuma porta." Depois, baixinho: "Conte quantas cadeiras estão do seu lado." Bobos dizem a verdade porque ninguém os leva a sério.' },
+  cancao_taverna: { title: 'A canção paga', weight: 4, points: ['otho'], text: 'Um homem de botas de montanha pagou bebida nas tavernas para quem aprendesse uma canção sobre o rei com a coroa grande demais. Alguém está preparando o povo para rir de mim.' },
   cartas_lysandra: { title: 'O R inclinado', weight: 7, points: ['otho'], text: 'As cartas anônimas têm o mesmo R inclinado das cartas de Lady Lysandra Cinzel. Ela serve aos Montclair.' },
   otho_norte: { title: 'Cartas para o norte', weight: 6, points: ['otho'], text: 'Minha mãe diz que Otho Montclair troca cartas com alguém do norte. Meu pai sabia e nunca fez nada. Por quê?' },
   lei_chaves: { title: 'A Lei das Cinco Chaves', weight: 12, text: 'Se os cinco guardiões do conselho girarem juntos as suas chaves, o rei é declarado incapaz. A lei nunca foi usada. Alguém anda estudando o texto dela nos arquivos.' },

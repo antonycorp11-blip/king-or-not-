@@ -38,6 +38,7 @@ export class CastleWorld {
   objects: WorldObject[] = [];
   hotspots: Hotspot[] = [];
   lights: WorldLight[] = [];
+  private beams: { x: number; y: number; w: number; len: number }[] = []; // luz do dia pelas janelas
   private floorPlaces: { room: RoomId; draw: (c: CanvasRenderingContext2D) => void; rect: [number, number, number, number] }[] = [];
   private wallPlaces: { draw: (c: CanvasRenderingContext2D) => void; rect: [number, number, number, number] }[] = [];
   private patterns = new Map<string, CanvasPattern>();
@@ -126,6 +127,7 @@ export class CastleWorld {
     if (p.wall) {
       const x = rx + p.x - w / 2, y = ry + p.y;
       this.wallPlaces.push({ rect: [x, y, w, h], draw: (c) => this.blit(c, p.p, x, y, w, h, p.flip) });
+      if (/janela|vitral|window/.test(p.p)) this.beams.push({ x: rx + p.x, y: ry + ROOMS[room].face, w: w * 1.1, len: Math.min(420, ROOMS[room].rect[3] * 0.55) });
       if (p.light) this.lights.push({ x: rx + p.x, y: y + h * 0.35, r: p.light });
       return;
     }
@@ -133,7 +135,10 @@ export class CastleWorld {
     const base = Math.min(h, h * (p.base ?? 0.45));
     this.objects.push({ x, y, w, h, depth: foot, solid: p.solid !== false, hit: [x + 6, foot - base, w - 12, base],
       draw: (c) => {
-        c.fillStyle = '#0a0c1430'; c.beginPath(); c.ellipse(x + w / 2, foot - 3, w * 0.46, Math.min(9, w * 0.1), 0, 0, Math.PI * 2); c.fill();
+        // sombra projetada: o sol (ou a vela) vem do alto à esquerda
+        const sw = w * 0.5, sh = Math.max(6, Math.min(16, h * 0.1));
+        c.fillStyle = 'rgba(10,8,20,.16)'; c.beginPath(); c.ellipse(x + w / 2 + w * 0.1, foot - 2, sw * 1.12, sh * 1.3, 0, 0, Math.PI * 2); c.fill();
+        c.fillStyle = 'rgba(10,8,20,.24)'; c.beginPath(); c.ellipse(x + w / 2 + w * 0.05, foot - 3, sw * 0.9, sh, 0, 0, Math.PI * 2); c.fill();
         this.blit(c, p.p, x, y, w, h, p.flip);
       } });
     if (p.light) this.lights.push({ x: rx + p.x, y: foot - h * 0.78, r: p.light });
@@ -247,16 +252,40 @@ export class CastleWorld {
     }
   }
 
+  // Luz: de dia, fachos pelas janelas; à noite, o castelo escurece e velas e tochas acendem de verdade
   drawLights(c: CanvasRenderingContext2D, cam: Camera, time: number, night: number) {
+    const day = Math.max(0, 1 - night * 1.4);
+    c.save();
+    if (day > 0) {
+      c.globalCompositeOperation = 'screen';
+      for (const b of this.beams) {
+        if (b.x + b.w * 2 < cam.x || b.x - b.w * 2 > cam.x + cam.vw || b.y > cam.y + cam.vh || b.y + b.len < cam.y) continue;
+        const g = c.createLinearGradient(0, b.y, 0, b.y + b.len);
+        g.addColorStop(0, `rgba(255,236,190,${0.22 * day})`); g.addColorStop(1, 'rgba(255,236,190,0)');
+        c.fillStyle = g;
+        c.beginPath();
+        c.moveTo(b.x - b.w / 2, b.y); c.lineTo(b.x + b.w / 2, b.y);
+        c.lineTo(b.x + b.w * 0.9 + b.len * 0.18, b.y + b.len); c.lineTo(b.x - b.w * 0.9 + b.len * 0.18, b.y + b.len);
+        c.closePath(); c.fill();
+      }
+    }
+    if (night > 0) {
+      c.globalCompositeOperation = 'source-over';
+      c.fillStyle = `rgba(10,14,38,${night * 0.58})`;
+      c.fillRect(cam.x - 10, cam.y - 10, cam.vw + 20, cam.vh + 20);
+    }
+    c.globalCompositeOperation = 'lighter';
     for (const [i, L] of this.lights.entries()) {
-      if (L.x < cam.x - L.r || L.x > cam.x + cam.vw + L.r || L.y < cam.y - L.r || L.y > cam.y + cam.vh + L.r) continue;
-      const f = 1 + Math.sin(time / 211 + i * 2.7) * 0.035;
-      const r = L.r * f;
+      if (L.x < cam.x - L.r * 2 || L.x > cam.x + cam.vw + L.r * 2 || L.y < cam.y - L.r * 2 || L.y > cam.y + cam.vh + L.r * 2) continue;
+      const f = 1 + Math.sin(time / 211 + i * 2.7) * 0.04;
+      const r = L.r * f * (1 + night * 0.7);
+      const a = 0.07 + night * 0.3;
       const g = c.createRadialGradient(L.x, L.y, 0, L.x, L.y, r);
-      g.addColorStop(0, `rgba(255,195,100,${0.18 + night * 0.14})`);
-      g.addColorStop(0.4, 'rgba(247,163,63,.07)'); g.addColorStop(1, 'rgba(244,137,35,0)');
+      g.addColorStop(0, `rgba(255,190,110,${a})`);
+      g.addColorStop(0.45, `rgba(240,150,60,${a * 0.35})`); g.addColorStop(1, 'rgba(240,130,40,0)');
       c.fillStyle = g; c.fillRect(L.x - r, L.y - r, r * 2, r * 2);
     }
+    c.restore();
   }
 
   hotspotAt(x: number, y: number): Hotspot | null {

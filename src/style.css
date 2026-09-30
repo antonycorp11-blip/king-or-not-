@@ -1474,3 +1474,15 @@ body.character-gallery-page { overflow: auto; height: auto; min-height: 100vh; b
 /* a dica fica no alto à direita, longe do diálogo, da fila e do dock */
 .tip, .tip-center, .tip-right, .tip-left, .tip-top { left: auto !important; right: 76px !important; top: 110px !important; bottom: auto !important; }
 .m .tip, .m .tip-center, .m .tip-right, .m .tip-left, .m .tip-top { right: 64px !important; top: 74px !important; bottom: auto !important; width: 300px; font-size: 13px; }
+
+/* A fala do rei: aparece antes da resposta de quem ouve */
+.king-said { display: flex; gap: 10px; align-items: flex-start; margin: 2px 0 8px; padding: 6px 10px; background: rgba(42, 63, 143, .08); border-left: 3px solid #2a3f8f; border-radius: 4px; }
+.king-said .said-portrait { width: 40px; height: 40px; flex: none; border-radius: 4px; }
+.king-said p { margin: 0; font-style: italic; color: #1c2c6a; line-height: 1.3; }
+.m .king-said .said-portrait { width: 30px; height: 30px; }
+
+/* Luz do castelo contínuo: o canvas faz a noite e as velas; o CSS só dá o tom do entardecer */
+:root { --dusk: 0; --dawn: 0; --day: 1; }
+.scene.world .tint::before { background: #ff9a50; mix-blend-mode: soft-light; opacity: calc(var(--dusk) * .5 + var(--dawn) * .25); }
+.scene.world .tint::after { opacity: 0; }
+.scene.world .vignette { background: radial-gradient(ellipse at 50% 48%, transparent 62%, rgba(8, 10, 20, .28) 100%); }

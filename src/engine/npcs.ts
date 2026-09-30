@@ -37,10 +37,10 @@ export function whereIs(s: GameState, id: string, hour = s.hour): Whereabouts | 
   const ap = s.agenda.find((a) => a.state !== 'faltou' && a.state !== 'cancelado' && a.kind !== 'audiencia' && a.kind !== 'diplomacia' && a.who.includes(id) && hour >= a.hour - 0.25 && hour < a.hour + a.duration);
   if (ap) {
     const seat = ap.kind === 'conselho' ? Object.entries(s.council.seats).find(([, w]) => w === id)?.[0] : undefined;
-    return { room: ap.room, spot: seat ?? '', activity: `em compromisso: ${ap.title.toLowerCase()}`, why: 'compromisso' };
+    return { room: ap.room, spot: seat ?? ap.spot ?? '', activity: ap.kind === 'encontro' ? `esperando o rei (${ap.title.toLowerCase()})` : ap.meal ? 'à mesa do Salão de Banquetes' : `em compromisso: ${ap.title.toLowerCase()}`, why: 'compromisso' };
   }
   // Esperando para ser recebido
-  const waiting = s.audiences.find((a) => !a.done && (a.arrive ?? 8) <= hour && EVENT_MAP[a.eventId]?.speaker === id && QUEUE_KINDS.includes(EVENT_MAP[a.eventId]!.kind));
+  const waiting = s.audiences.find((a) => !a.done && (a.arrive ?? 8) <= hour && EVENT_MAP[a.eventId]?.speaker === id && !EVENT_MAP[a.eventId]!.place && QUEUE_KINDS.includes(EVENT_MAP[a.eventId]!.kind));
   if (waiting) return { room: 'salao', spot: 'fila', activity: 'esperando audiência no salão', why: 'audiencia' };
   const r = ROUTINE_MAP[id];
   if (!r || (r.cond && !r.cond(s))) return null;

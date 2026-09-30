@@ -11,7 +11,7 @@ import { checkRebellions } from '../data/events/crisis';
 import { companion } from '../data/companions';
 import { computeEconomy, marketDaily, taxKey, tradeDaily, treasurerRoutes } from './economy';
 import { holder } from './council';
-import { buildAgenda, tickAgenda } from './agenda';
+import { buildAgenda, placeAppointment, reminders, tickAgenda } from './agenda';
 import { captures, delegate } from './council';
 import { conspiracyDaily, trackOf } from './conspiracy';
 import { applyMood, moodHours, moodLabel, moodSleep, MOOD_NAMES } from './mood';
@@ -37,8 +37,24 @@ function eligible(s: GameState, ev: GameEvent): boolean {
 }
 
 function addAudience(s: GameState, ev: GameEvent, arrive = DAY_START, origin?: DecisionOrigin) {
-  s.audiences.push({ uid: s.nextUid++, eventId: ev.id, expires: s.day + (ev.lasts ?? 1) - 1, done: false, arrive, origin: origin ?? (ev.cause ? s.flagOrigins?.[ev.cause] : undefined) });
+  // encontro marcado: vale só para hoje, no lugar e na hora combinados
+  const placed = !!ev.place;
+  s.audiences.push({ uid: s.nextUid++, eventId: ev.id, expires: placed ? s.day : s.day + (ev.lasts ?? 1) - 1, done: false, arrive: placed ? ev.place!.hour : arrive, origin: origin ?? (ev.cause ? s.flagOrigins?.[ev.cause] : undefined) });
   s.seen[ev.id] = s.day;
+}
+
+// Encontros combinados para hoje mesmo (numa conversa, "às 17h no jardim")
+export function placeDue(s: GameState) {
+  const due = s.scheduled.filter((x) => x.day <= s.day && EVENT_MAP[x.id]?.place);
+  if (!due.length) return;
+  s.scheduled = s.scheduled.filter((x) => !due.includes(x));
+  for (const d of due) {
+    const ev = EVENT_MAP[d.id];
+    if (!ev || (ev.cond && !ev.cond(s)) || s.audiences.some((a) => a.eventId === ev.id && !a.done)) continue;
+    if (ev.place!.hour + (ev.place!.duration ?? 1) <= s.hour) { s.scheduled.push({ ...d, day: s.day + 1 }); continue; } // já passou da hora: fica para amanhã
+    addAudience(s, ev, DAY_START, d.origin);
+    placeAppointment(s, s.audiences[s.audiences.length - 1]);
+  }
 }
 
 // Coloca alguém na fila de audiências (usado por convocações e pelas noites)
@@ -114,7 +130,7 @@ export function startDay(s: GameState) {
   // Conselheiros muito poderosos atendem pedidos antes que cheguem ao rei.
   for (const a of s.audiences) {
     const ev = eventOf(a);
-    if (a.done || !captures(s, ev, () => rand(s))) continue;
+    if (a.done || ev.place || !captures(s, ev, () => rand(s))) continue;
     if (delegate(s, ev, () => rand(s), 'Chegou ao conselheiro antes de chegar ao rei')) a.done = true;
   }
   // urgentes primeiro
@@ -128,7 +144,7 @@ export function visibleAudiences(s: GameState) {
   return s.audiences.filter((a) => !a.done && (a.arrive ?? DAY_START) <= s.hour && isQueued(eventOf(a)));
 }
 
-export const isQueued = (ev: GameEvent | undefined) => !!ev && (AUDIENCE_KINDS.includes(ev.kind) || ev.kind === 'noite');
+export const isQueued = (ev: GameEvent | undefined) => !!ev && !ev.place && (AUDIENCE_KINDS.includes(ev.kind) || ev.kind === 'noite');
 
 export function currentObjective(s: GameState): { title: string; text: string } {
   if (s.war && !s.war.result) return { title: 'Vencer a guerra', text: `Contra ${enemyLabel(s.war.enemy)} · turno ${s.war.turn}` };
@@ -150,6 +166,8 @@ export function spendHours(s: GameState, hours: number, activity: 'trabalho' | '
   const missed = tickAgenda(s);
   s.log.push(...missed);
   notices.push(...missed);
+  placeDue(s);
+  notices.push(...reminders(s));
   return missed;
 }
 

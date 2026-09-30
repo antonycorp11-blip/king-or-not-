@@ -79,7 +79,7 @@ export interface Effect {
 // Castelo
 export type RoomId =
   | 'quarto' | 'aposentos' | 'salao' | 'conselho' | 'patio' | 'capela'
-  | 'tesouro' | 'masmorra' | 'cozinha' | 'arquivos' | 'jardim' | 'estabulos' | 'biblioteca' | 'galeria' | 'entrada';
+  | 'tesouro' | 'masmorra' | 'cozinha' | 'arquivos' | 'jardim' | 'estabulos' | 'biblioteca' | 'galeria' | 'entrada' | 'banquete';
 export type FloorId = 'superior' | 'principal' | 'inferior' | 'exterior';
 
 export interface CastleState {
@@ -93,7 +93,7 @@ export interface CastleState {
 }
 
 // Agenda
-export type AppointmentKind = 'conselho' | 'audiencia' | 'julgamento' | 'diplomacia' | 'jantar' | 'banquete' | 'treino' | 'religioso' | 'familia' | 'investigacao' | 'viagem';
+export type AppointmentKind = 'conselho' | 'audiencia' | 'julgamento' | 'diplomacia' | 'jantar' | 'banquete' | 'treino' | 'religioso' | 'familia' | 'investigacao' | 'viagem' | 'encontro' | 'refeicao';
 export type AppointmentState = 'pendente' | 'feito' | 'atrasado' | 'faltou' | 'cancelado';
 
 export interface Appointment {
@@ -110,6 +110,9 @@ export interface Appointment {
   matterId?: string; // reunião do conselho
   state: AppointmentState;
   note?: string; // o que acontece se faltar
+  spot?: string; // onde a pessoa espera dentro do cômodo
+  reminded?: boolean; // o pajem já avisou
+  meal?: 'almoco' | 'jantar'; // refeição do dia
 }
 
 // Conselho
@@ -193,6 +196,7 @@ export interface Choice {
   who?: string; // quem propôs esta saída (retrato no botão: conselheiro, acompanhante)
   seat?: CouncilSeatId; // posição de uma cadeira do conselho
   outburst?: boolean; // resposta nascida do humor do rei
+  say?: Txt; // o que o rei diz, por extenso, ao escolher
 }
 
 export type Txt = string | ((s: GameState) => string);
@@ -235,6 +239,9 @@ export interface GameEvent {
   hoursWindow?: [number, number]; // encontros: entre que horas
   present?: string[]; // encontros: quem mais aparece em cena
   council?: { lead: CouncilSeatId; positions: Partial<Record<CouncilSeatId, CouncilPosition>> };
+  // encontro marcado: acontece num lugar e hora, não na fila do salão
+  place?: { room: RoomId; hour: number; spot?: string; duration?: number; title?: string };
+  talk?: boolean; // conversa aberta: dá para voltar às outras perguntas se a tensão estiver baixa
 }
 
 export interface CouncilPosition {

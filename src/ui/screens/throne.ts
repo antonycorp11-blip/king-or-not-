@@ -9,7 +9,7 @@ import { ROUTINES } from '../../data/routines';
 import { SEATS } from '../../data/council';
 import { ACTIVITIES, activitiesIn } from '../../data/activities';
 import { DAY_END, applyEffect, hasSkill, save, softenCost } from '../../engine/core';
-import { canSpend, eventOf, isQueued, spendHours, visibleAudiences } from '../../engine/day';
+import { canSpend, eventOf, isQueued, placeDue, spendHours, visibleAudiences } from '../../engine/day';
 import { councilChoices, holder, recordVote } from '../../engine/council';
 import { moodAdjust, moodAfterAudience, moodLabel, MOOD_LOOK } from '../../engine/mood';
 import { whereIs } from '../../engine/npcs';
@@ -18,6 +18,7 @@ import { effectTags, esc, portrait, reqCheck, shortName, txt } from '../common';
 import { genericAdvice } from '../../data/companions';
 import { BOOKS } from '../../data/progression';
 import { readQuality } from './library';
+import { KING_LINES } from '../../data/kingLines';
 
 const KIND_LABEL: Record<string, string> = {
   audiencia: 'Audiência', urgente: 'Urgente', familia: 'Família', conselho: 'Conselho', casamento: 'Casamento', noite: 'Noite',
@@ -27,7 +28,30 @@ export function choicesFor(app: App, ev: GameEvent, node: string): Choice[] {
   const s = app.s;
   let list = dynamicChoices(ev.id, s, node) ?? ev.nodes[node].choices;
   if (ev.council && node === 'start') list = [...councilChoices(s, ev), ...list];
+  // ao voltar à conversa, os assuntos já tratados saem da lista
+  const taken = app.ui.dialog?.taken;
+  if (node === 'start' && taken?.length) list = list.filter((c) => !taken.includes(c.label));
   return moodAdjust(s, ev, list);
+}
+
+// Conversas abertas: com a tensão baixa, dá para voltar e tratar de outro assunto
+const TALK_KINDS = ['casamento', 'conversa', 'encontro'];
+function canReturn(app: App, ev: GameEvent): boolean {
+  const d = app.ui.dialog;
+  if (!d || !d.reply || d.final || ev.council || ev.id.startsWith('pedido_')) return false;
+  if (!(ev.talk ?? TALK_KINDS.includes(ev.kind))) return false;
+  if (d.tension >= 55 || (d.rounds ?? 0) >= 2) return false;
+  // só conversas que se ramificam (há perguntas que levam a outros assuntos)
+  if (!ev.talk && !ev.nodes.start.choices.some((c) => c.goto)) return false;
+  const taken = [...(d.taken ?? []), ...(d.root ? [d.root] : [])];
+  return (dynamicChoices(ev.id, app.s, 'start') ?? ev.nodes.start.choices).some((c) => !taken.includes(c.label) && reqCheck(app.s, c.req).ok);
+}
+
+// O que o rei diz ao escolher: a fala escrita, ou a intenção, quando ainda não há fala
+function kingLine(s: GameState, ev: GameEvent, ch: Choice): string {
+  const line = txt(ch.say, s) || KING_LINES[ev.id]?.[ch.label];
+  if (line) return `“${line}”`;
+  return `(${ch.label}. ${ch.sub}.)`;
 }
 
 // Quem conduz a conversa (numa reunião, quem ocupa a cadeira que lidera o assunto)
@@ -129,7 +153,7 @@ export function worldActors(app: App): ActorSpec[] {
   const fila = waiting(app);
   fila.slice(0, 6).forEach((a, i) => {
     const id = eventOf(a).speaker;
-    if (id === queued?.speaker) return;
+    if (id === queued?.speaker || id === inlineSpeaker) return;
     const [x, y] = worldPoint('salao', i % 2 ? 'fila2' : 'fila1');
     list.push({ key: `wait-${a.uid}`, id, x: x + (i > 1 ? (i % 2 ? 50 : -50) * Math.floor(i / 2) : 0), foot: y - Math.floor(i / 2) * 20, anim: 'idle', dir: 'north' });
     seen.add(id);
@@ -151,7 +175,8 @@ export function worldActors(app: App): ActorSpec[] {
     if (seen.has(id)) continue;
     const w = whereIs(s, id);
     if (!w || w.why !== 'compromisso') continue;
-    const [x, y] = worldPoint(w.room, w.spot, 3);
+    const n = perRoom.get(w.room) ?? 0; perRoom.set(w.room, n + 1);
+    const [x, y] = worldPoint(w.room, w.spot, n);
     seen.add(id);
     list.push({ key: `npc-${id}`, id, x, foot: y, anim: 'idle', dir: 'south', speed: 70 });
   }
@@ -299,6 +324,7 @@ export function render(app: App): string {
         </div>`}
         ${ev.kind === 'urgente' ? `<span class="alert">${iconImg('selo', 'ico-lg')}</span>` : ''}
         <h3>${esc(ev.kind === 'reuniao' ? ev.topic : c.name)} <small>${esc(ev.kind === 'reuniao' ? `Conduzida por ${c.name}` : c.title)}${c.ageYears && ev.kind !== 'reuniao' ? ` · ${c.ageYears} anos` : ''} · ${KIND_LABEL[ev.kind]}</small></h3>
+        ${d.said ? `<div class="king-said">${portrait('rei', 'said-portrait')}<p>${esc(d.said)}</p></div>` : ''}
         <p>${esc(text)}</p>
         ${table}
         ${d.advice && !d.reply ? `<div class="whisper">${portrait(d.advice.who, 'whisper-portrait')}<p>${esc(d.advice.text)}</p></div>` : ''}
@@ -306,7 +332,8 @@ export function render(app: App): string {
         ${d.reply ? '' : `<button class="infl-toggle ${app.ui.useInfluence ? 'on' : ''}" data-act="toggleInfl" title="Gaste Influência para reduzir as penalidades políticas da sua escolha">${iconImg('flor')} Usar Influência <b>${s.res.influencia}</b></button>`}
       </div>
       <div class="choices ${choices.length > 5 ? 'many' : ''}">
-        ${d.reply ? `<button class="choice c-dourado wide" data-act="finish">${iconImg('seta', 'ico-xl')}<span class="choice-text"><b>Continuar</b><small>${ev.kind === 'reuniao' ? 'A reunião termina' : isInline(s, ev) ? 'Seguir pelo castelo' : 'A audiência termina'}</small></span></button>` : choiceHtml}
+        ${d.reply && canReturn(app, ev) ? `<button class="choice c-azul" data-act="talkMore">${iconImg('balao', 'ico-xl')}<span class="choice-text"><b>Falar de outra coisa</b><small>Voltar à conversa (15 min)</small></span></button>` : ''}
+        ${d.reply ? `<button class="choice c-dourado ${canReturn(app, ev) ? '' : 'wide'}" data-act="finish">${iconImg('seta', 'ico-xl')}<span class="choice-text"><b>Continuar</b><small>${ev.kind === 'reuniao' ? 'A reunião termina' : isInline(s, ev) ? 'Seguir pelo castelo' : 'A audiência termina'}</small></span></button>` : choiceHtml}
       </div>
     </div>`;
 }
@@ -375,12 +402,16 @@ export function handle(app: App, act: string, arg: string) {
       const cost = ev.kind === 'noite' || ev.kind === 'atividade' ? 0 : ev.hours ?? 1;
       if (cost) spendHours(s, cost, 'trabalho');
     }
+    if (d.node === 'start') d.root = ch.label;
+    d.said = kingLine(s, ev, ch);
+    d.final = !!(ch.effects?.flags && ('noiva' in ch.effects.flags || 'spouse' in ch.effects.flags)) || !!ch.effects?.law;
     const who = speakerOf(s, ev);
     const realm = char(who).realm;
     const mood = () => (s.rel[who] ?? 0) + (realm in s.loyalty ? s.loyalty[realm as keyof typeof s.loyalty] : 0);
     const before = mood();
     applyEffect(s, ch.effects, { soften, origin: { day: s.day, event: ev.topic, decision: ch.label } });
     if (ev.council && first) recordVote(s, ev, ch.seat ?? null);
+    placeDue(s); // "às 17h no jardim": o encontro entra na agenda de hoje
     // seguir (ou ignorar) o conselho mexe com quem aconselhou
     if (d.advice) applyEffect(s, { rel: { [d.advice.who]: isAdv ? (hasSkill(s, 'confidente') ? 6 : 3) : -2 } });
     d.advice = null;
@@ -405,6 +436,16 @@ export function handle(app: App, act: string, arg: string) {
     }
     save(s);
     d.reply = (txt(ch.reply, s) || defaultReply(ch)) + cite;
+    return app.render();
+  }
+  if (act === 'talkMore') {
+    if (!canReturn(app, ev)) return;
+    d.taken = [...(d.taken ?? []), ...(d.root ? [d.root] : [])];
+    d.rounds = (d.rounds ?? 0) + 1;
+    d.node = 'start'; d.reply = undefined; d.said = undefined; d.root = undefined;
+    d.tension = Math.min(100, d.tension + 6);
+    spendHours(s, 0.25, 'trabalho');
+    save(s);
     return app.render();
   }
   if (act === 'finish') {

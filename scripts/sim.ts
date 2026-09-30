@@ -14,6 +14,7 @@ import { keysForPact, insight } from '../src/engine/conspiracy';
 import { moodLabel, moodAdjust } from '../src/engine/mood';
 import { ACTIVITIES } from '../src/data/activities';
 import { pickEncounter } from '../src/engine/castle';
+import { attend } from '../src/engine/agenda';
 import type { GameEvent } from '../src/types';
 
 // Joga um acontecimento inteiro com escolhas aleatórias (mesma regra da interface)
@@ -64,11 +65,11 @@ for (let run = 0; run < 300; run++) {
     if (Math.random() < 0.15) marchArmy(s, KINGDOM_PROVINCES[Math.floor(Math.random() * KINGDOM_PROVINCES.length)]);
     // o castelo: reuniões (metade das vezes), atividades e encontros
     for (const ap of s.agenda) {
-      if (ap.state !== 'pendente' || !ap.eventId || Math.random() < 0.5) continue;
+      if (ap.state !== 'pendente' || !ap.eventId || Math.random() < (ap.meal ? 0.25 : 0.5)) continue;
       const ev = EVENT_MAP[ap.eventId];
       if (!ev) throw new Error('compromisso sem evento ' + ap.eventId);
       if (s.hour < ap.hour) s.hour = ap.hour;
-      ap.state = 'feito';
+      attend(s, ap);
       play(s, ev);
       if (ev.kind === 'reuniao') stats.council++;
     }

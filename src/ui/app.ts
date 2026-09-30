@@ -4,10 +4,10 @@ import { athgGameStarted, athgReady, cloudLoad, inPortal } from '../engine/cloud
 import { computeEconomy } from '../engine/economy';
 import { endDay, eventOf, isQueued, notices, pickNight, pushAudience, spendHours, startDay, visibleAudiences } from '../engine/day';
 import { arrival, startInline } from '../engine/castle';
-import { pickMatter } from '../engine/agenda';
+import { dueHere, pickMatter } from '../engine/agenda';
 import { moodRemark } from '../engine/mood';
 import { ACTIVITIES } from '../data/activities';
-import { ROOMS, WALK_HOURS, worldPoint } from '../data/castle';
+import { ROOMS, WALK_HOURS, roomAt, worldPoint } from '../data/castle';
 import { EVENT_MAP } from '../data/events';
 import { char } from '../data/characters';
 import { renderCastleModal, handleCastleModal, type CastleModal } from './castleModals';
@@ -20,6 +20,7 @@ import { iconImg } from '../render/pixel';
 import { SceneView } from './sceneView';
 import { WorldMap, type Lens } from './worldMap';
 import { TIPS, HOW_TO_PLAY, type TipId } from './tips';
+import { barkFor } from '../data/barks';
 import * as Throne from './screens/throne';
 import * as Library from './screens/library';
 import * as King from './screens/king';
@@ -37,6 +38,11 @@ export interface Dialog {
   expr?: Expr;
   advice?: { who: string; text: string; choice: import('../types').Choice } | null;
   consulted?: boolean;
+  said?: string; // o que o rei acabou de dizer
+  root?: string; // a primeira resposta desta rodada (o ramo da conversa)
+  taken?: string[]; // ramos já explorados
+  rounds?: number; // quantas vezes voltou à conversa
+  final?: boolean; // a última escolha fechou o assunto
 }
 
 export interface UIState {
@@ -264,6 +270,8 @@ export class App {
     const t = document.createElement('div');
     t.className = 'toast';
     t.textContent = msg;
+    // no máximo três avisos na tela; o resto fica no sino
+    while (box.children.length >= 3) box.firstElementChild?.remove();
     box.appendChild(t);
     requestAnimationFrame(() => t.classList.add('show'));
     window.setTimeout(() => {
@@ -391,6 +399,7 @@ export class App {
     }
     this.checkArrivals();
     this.drainNotices();
+    this.checkHere();
     // Ao acordar, a agenda do dia aparece sobre a cama
     if (ui.screen === 'trono' && s.flags.agendaDay !== s.day && !s.flags.nightPending && !ui.dialog) {
       s.flags.agendaDay = s.day;
@@ -423,10 +432,10 @@ export class App {
     if (--this.lifeClock > 0) return;
     this.lifeClock = 8 + Math.floor(Math.random() * 7);
     const r = Math.random();
-    const npcs = this.scene.keys('npc-');
+    const npcs = this.npcsIn(s.castle.room);
     if (npcs.length && r < 0.45) {
       const k = npcs[Math.floor(Math.random() * npcs.length)];
-      const line = Math.random() < 0.4 ? moodRemark(s) : null;
+      const line = Math.random() < 0.3 ? moodRemark(s) : barkFor(s, k.slice(4), s.castle.room);
       if (line) this.scene.say(k, line);
       return;
     }
@@ -505,7 +514,9 @@ export class App {
     this.ui.screen = 'trono';
     this.s.castle.seated = false;
     this.render();
-    const [x, y] = worldPoint(to, to === 'salao' ? 'fala' : undefined);
+    // se há algo marcado lá, vai direto ao lugar combinado
+    const ap = this.s.agenda.find((a) => a.room === to && a.state === 'pendente' && a.spot && this.s.hour >= a.hour - 1 && this.s.hour < a.hour + a.duration);
+    const [x, y] = worldPoint(to, to === 'salao' ? 'fala' : ap?.spot);
     this.scene.moveTo('rei', x, y, () => { if (to === 'salao') this.doActivity('sentar'); }, 300);
   }
 
@@ -528,19 +539,49 @@ export class App {
     if (pos) { s.castle.x = pos.x; s.castle.y = pos.y; }
     this.render();
     this.onArrive();
+    if (!this.ui.dialog) this.greet(room);
+  }
+
+  // Quem está no cômodo repara no rei e comenta
+  private greet(room: RoomId) {
+    const here = this.npcsIn(room).sort(() => Math.random() - 0.5).slice(0, 2);
+    here.forEach((k, i) => window.setTimeout(() => {
+      if (this.ui.dialog || this.s.castle.room !== room) return;
+      const line = barkFor(this.s, k.slice(4), room);
+      if (line) this.scene.say(k, line, 4200);
+    }, 500 + i * 1900));
+  }
+
+  private npcsIn(room: RoomId) {
+    return this.scene.keys('npc-').filter((k) => { const p = this.scene.pos(k); return !!p && roomAt(p[0], p[1]) === room && !this.scene.walking(k); });
   }
 
   // Chegou: compromisso marcado, encontro ou gente esperando
   private onArrive() {
     const s = this.s;
     const a = arrival(s);
+    if (a.appointment?.meal) spendHours(s, 0.75, 'descanso'); // sentar, comer, ouvir a mesa
     save(s);
-    if (a.appointment) this.toast(a.late ? `Você chega atrasado: ${a.appointment.title}.` : `Você chega para: ${a.appointment.title}.`);
+    if (a.appointment) this.toast(a.late ? `Você chega atrasado: ${a.appointment.title}.` : a.appointment.meal && !a.event ? `${a.appointment.title}: você come com a corte.` : `Você chega para: ${a.appointment.title}.`);
     if (a.event) {
       if (a.event.kind === 'encontro') this.toast(`${ROOMS[s.castle.room].name}: ${a.event.topic}.`);
-      return this.openInline(a.event.id);
+      // o rei para de andar e vai até quem o espera
+      this.scene.halt('rei');
+      const id = a.event.id, key = `npc-${a.event.speaker}`;
+      if (this.scene.has(key)) return this.approach(key, () => this.openInline(id));
+      return this.openInline(id);
     }
     this.autoOpenUrgent();
+  }
+
+  // O tempo passou com o rei parado aqui: chegou a hora de algo marcado neste lugar?
+  private hereTimer = 0;
+  private checkHere() {
+    const s = this.s;
+    if (this.ui.screen !== 'trono' || this.ui.dialog || this.ui.castleModal || this.ui.summary || s.ended || s.flags.nightPending) return;
+    if (!dueHere(s, s.castle.room)) return;
+    window.clearTimeout(this.hereTimer);
+    this.hereTimer = window.setTimeout(() => { if (!this.ui.dialog && dueHere(this.s, this.s.castle.room)) this.onArrive(); }, 400);
   }
 
   afterModal() {

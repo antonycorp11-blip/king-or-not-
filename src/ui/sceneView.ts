@@ -87,10 +87,15 @@ export class SceneView {
   prefetch(_k: string) {}
   get roomKind() { return 'castelo'; }
 
+  // Dia claro das 8h às 17h; entardecer dourado até as 19h; noite depois disso
   setHour(hour: number) {
-    const n = hour >= 19 ? Math.min(1, (hour - 18) / 2) : hour < 8 ? 0.5 : hour >= 17 ? (hour - 17) * 0.3 : 0;
-    this.night = n;
-    this.el.style.setProperty('--night', String(n));
+    const night = hour >= 19 ? Math.min(1, 0.35 + (hour - 19) / 1.6) : hour >= 18 ? (hour - 18) * 0.35 : hour < 7.9 ? 0.25 : 0;
+    const dusk = hour >= 16.5 && hour < 20 ? Math.max(0, 1 - Math.abs(hour - 18.2) / 1.7) : 0;
+    const dawn = hour < 8.5 ? Math.min(1, (8.5 - hour) * 1.2) : 0;
+    this.night = night;
+    this.el.style.setProperty('--night', String(night));
+    this.el.style.setProperty('--dusk', String(dusk));
+    this.el.style.setProperty('--dawn', String(dawn));
   }
   setMode(mode: 'full' | 'dim') { this.el.classList.toggle('dim', mode === 'dim'); }
   setMovementEnabled(enabled: boolean) { this.movementEnabled = enabled; this.el.classList.toggle('move-enabled', enabled); }
@@ -126,7 +131,9 @@ export class SceneView {
       const [tx, ty] = cur.target ?? [cur.x, cur.foot];
       if (Math.hypot(tx - s.x, ty - s.foot) > 24) {
         cur.target = [s.x, s.foot];
-        this.moveTo(s.key, s.x, s.foot, undefined, s.speed ?? 80);
+        // quem está longe apressa o passo (atravessar o castelo não pode levar um minuto)
+        const far = Math.hypot(cur.x - s.x, cur.foot - s.foot);
+        this.moveTo(s.key, s.x, s.foot, undefined, Math.max(s.speed ?? 80, Math.min(240, far / 7)));
       } else if (!cur.path.length && s.dir) cur.dir = s.dir;
     }
   }
@@ -175,6 +182,7 @@ export class SceneView {
     }
   }
 
+  halt(key: string) { const a = this.actors.get(key); if (a) { a.path = []; a.onArrive = undefined; a.anim = 'idle'; } }
   setAnim(key: string, anim: Anim) { const a = this.actors.get(key); if (a && !a.path.length) a.anim = anim; }
 
   // Caminho pela grade do castelo (contorna móveis, passa pelas portas)
