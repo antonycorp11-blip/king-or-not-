@@ -1,3 +1,4 @@
+import { sound } from '../../audio/sound';
 import type { App } from '../app';
 import { GROUPS, GROUP_INFO, REASONS, SPEECH_NAME, TONE_NAME, type Group, type Reaction, type SpeechKind } from '../../data/speeches';
 import { availableKinds, crowd, crowdSize, finishSpeech, groupReaction, liveStage, moodOf, MOOD_NAME, opinion, optionImpact, pickStage, spokeToday, startSpeech, type SpeechResult } from '../../engine/crowd';
@@ -130,10 +131,15 @@ export function handle(app: App, act: string, arg: string) {
       reacts = GROUPS.map((g) => ({ g, r: groupReaction(g, r.impact[g], mood, r.option.react) }));
       squareView.speak();
       for (const x of reacts) if (x.r !== 'silencio') squareView.reactGroup(x.g, x.r);
+      // o som vem do povo (a maioria); os soldados batem nos escudos por cima
+      const size = Math.min(1, crowdSize(s) / 500);
+      sound.crowd(reacts.find((x) => x.g === 'povo')!.r, size);
+      if (reacts.some((x) => x.g === 'soldados' && x.r === 'escudos')) window.setTimeout(() => sound.crowd('escudos', size), 400);
       const after2 = liveStage(s);
       if (after2 && !after2.stage) {
         const kind = after2.live.kind;
         result = { ...finishSpeech(s), kind };
+        window.setTimeout(() => { sound.crowd(result!.score >= 8 ? 'gritos' : result!.score < -8 ? 'vaias' : 'murmurios', 1); if (result!.verdict === 'triunfo') sound.play('crown'); }, 900);
       }
       save(s);
       return app.render();

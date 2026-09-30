@@ -1,3 +1,4 @@
+import { sound } from '../../audio/sound';
 import type { Choice, CouncilSeatId, GameEvent, GameState } from '../../types';
 import type { App } from '../app';
 import type { ActorSpec, SceneMarker } from '../sceneView';
@@ -109,6 +110,8 @@ function waiting(app: App) {
   return visibleAudiences(app.s).filter((a) => a.uid !== d?.uid);
 }
 
+export function eventOfAudience(a: import('../../types').Audience) { return eventOf(a); }
+
 export function openAudience(app: App, uid: number) {
   const s = app.s;
   if (app.ui.dialog) return;
@@ -130,6 +133,7 @@ export function openAudience(app: App, uid: number) {
     s.castle.x = x; s.castle.y = y; // o rei preside da cabeceira
   }
   app.ui.dialog = { uid, node: 'start', phase: inline ? 'talk' : 'entering', tension: initialTension, expr: ev.kind === 'urgente' ? 'preocupado' : 'neutro' };
+  sound.play(ev.kind === 'urgente' || ev.wake ? 'sting' : ev.big ? 'bell' : 'door');
   app.ui.dialogCollapsed = false;
   app.ui.useInfluence = false;
   app.ui.ring = false;
@@ -455,7 +459,11 @@ export function handle(app: App, act: string, arg: string) {
     const realm = char(who).realm;
     const mood = () => (s.rel[who] ?? 0) + (realm in s.loyalty ? s.loyalty[realm as keyof typeof s.loyalty] : 0);
     const before = mood();
+    const resBefore = { ...s.res };
     applyEffect(s, ch.effects, { soften, origin: { day: s.day, event: ev.topic, decision: ch.label } });
+    // o som do resultado: moedas entrando, algo bom, algo que custou caro
+    const gain = (s.res.povo - resBefore.povo) + (s.res.prestigio - resBefore.prestigio) + (s.res.moral - resBefore.moral) / 2;
+    window.setTimeout(() => sound.play(s.res.ouro - resBefore.ouro >= 40 ? 'coin' : gain >= 4 ? 'good' : gain <= -4 ? 'bad' : 'page'), 350);
     if (ev.council && first) recordVote(s, ev, ch.seat ?? null);
     placeDue(s); // "às 17h no jardim": o encontro entra na agenda de hoje
     // seguir (ou ignorar) o conselho mexe com quem aconselhou

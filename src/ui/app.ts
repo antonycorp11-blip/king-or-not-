@@ -1,3 +1,5 @@
+import { sound, type MusicMood } from '../audio/sound';
+import { playPrologue } from './prologue';
 import type { CouncilSeatId, GameState, Good, LogEntry, RoomId, ScreenId } from '../types';
 import { applyEffect as applyEffectSafe, load, newGame, save, clearSave, storeLocal } from '../engine/core';
 import { athgExit, athgGameStarted, athgOwnExit, athgReady, cloudLoad, inPortal } from '../engine/cloud';
@@ -77,6 +79,8 @@ export interface UIState {
   ring: boolean; // menu de ações do rei
   hotMenu: [number, number, string[]] | null; // menu de um móvel-lugar (posição no mundo e atividades)
   sleeping?: boolean; // o rei está deitado (a noite passa)
+  objCollapsed?: boolean; // a faixa de objetivos recolhida
+  prologue?: boolean; // o velório e a coroação (primeiro minuto de um reinado novo)
   cineExit?: boolean; // a cena de cinema está saindo
   tour?: { id: string; i: number } | null; // tutorial guiado em andamento
   fwdOpen?: boolean; fwdLog?: boolean; // agenda: encaminhados ao conselho
@@ -233,6 +237,7 @@ export class App {
     athgGameStarted();
     this.ui.screen = 'trono';
     this.ui.dialog = null;
+    if (!this.s.flags.prologo) { void playPrologue(this); return; }
     this.render();
     this.autoOpenUrgent();
   }
@@ -244,7 +249,8 @@ export class App {
     if (!s.dayStart) startDay(s);
     this.ui.screen = 'trono';
     // algo acontecia pelo castelo quando o jogo foi fechado: retoma de onde parou
-    const open = s.audiences.find((a) => !a.done && a.expires === s.day && !isQueued(eventOf(a)));
+    // (encontros marcados num lugar e hora não contam: acontecem quando o rei chega lá)
+    const open = s.audiences.find((a) => !a.done && a.expires === s.day && !isQueued(eventOf(a)) && !eventOf(a)?.place);
     if (open && !s.flags.nightPending) {
       s.flags.agendaDay = s.day;
       this.render();
@@ -373,6 +379,7 @@ export class App {
   }
 
   closeSummary() {
+    sound.play('bell'); // amanhece em Castelmar
     this.ui.summary = null;
     this.ui.screen = 'trono';
     save(this.s);
@@ -427,9 +434,35 @@ export class App {
   }
 
   // ---------- render ----------
+  // a trilha acompanha o momento: dia, noite, tensão, festa ou luto
+  private musicMood(): MusicMood {
+    const s = this.s, ui = this.ui;
+    if (ui.prologue) return 'luto';
+    if (ui.screen === 'titulo') return 'noite';
+    if (s.ended) return s.ended.kind === 'derrota' ? 'luto' : 'festa';
+    const d = ui.dialog;
+    const ev = d ? s.audiences.find((a) => a.uid === d.uid) : undefined;
+    if (ev && Throne.eventOfAudience(ev)?.kind === 'urgente') return 'tensao';
+    if (ui.screen === 'investigacao') return 'tensao';
+    if (ui.screen === 'guerra' && s.war && !s.war.result) return 'tensao';
+    if (ui.screen === 'praca') {
+      const m = s.crowd?.spont && !s.crowd.spont.handled ? 'x' : '';
+      return m ? 'tensao' : 'festa';
+    }
+    if (s.flags.nightPending || s.hour >= 19 || ui.summary) return 'noite';
+    return 'dia';
+  }
+
   render() {
     const s = this.s;
     const ui = this.ui;
+    if (s || ui.screen === 'titulo') sound.setMood(this.musicMood());
+    if (ui.prologue) {
+      // o prólogo ocupa a tela inteira: nada do castelo por baixo
+      this.stage.classList.add('cinema-on');
+      this.root.innerHTML = '';
+      return;
+    }
     // o tutorial se posiciona depois que a tela nova foi montada
     window.clearTimeout(this.guideTimer);
     this.guideTimer = window.setTimeout(() => this.guide.place(), 40);
@@ -717,6 +750,7 @@ export class App {
     if (!el || el.hasAttribute('disabled')) return;
     const act = el.dataset.act!;
     const arg = el.dataset.arg ?? '';
+    sound.play(act === 'choose' || act === 'sqPick' ? 'choose' : act === 'go' || act === 'estado' || act === 'agenda' ? 'page' : 'click');
     if (this.guide.handle(act)) return;
     switch (act) {
       case 'go': return this.go(arg as ScreenId);
@@ -743,6 +777,9 @@ export class App {
       case 'estado': this.ui.panel = this.ui.panel === 'estado' ? null : 'estado'; return this.render();
       case 'closeEstado': case 'closeFeed': this.ui.panel = null; return this.render();
       case 'ajustes': this.ui.panel = this.ui.panel === 'ajustes' ? null : 'ajustes'; return this.render();
+      case 'objToggle': this.ui.objCollapsed = !this.ui.objCollapsed; return this.render();
+      case 'musicToggle': sound.toggleMusic(); return this.render();
+      case 'sfxToggle': sound.toggleSfx(); return this.render();
       case 'exitGame': save(this.s); athgExit(); return;
       case 'feed': this.ui.panel = 'feed'; this.feedSeen = this.feed.length; return this.render();
       case 'navToggle': this.ui.navOpen = !this.ui.navOpen; return this.render();

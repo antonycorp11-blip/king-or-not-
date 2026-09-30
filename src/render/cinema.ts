@@ -82,7 +82,8 @@ const SETS: Partial<Record<RoomId, SetDef>> & { padrao: SetDef } = {
 };
 SETS.galeria = SETS.padrao; SETS.entrada = SETS.padrao;
 
-interface Actor { id: string; x: number; to: number; flip: boolean; anim: Anim; frame: number; acc: number; speed: number; scale: number; dim: number; hold?: number; onArrive?: () => void }
+interface Actor { id: string; x: number; to: number; flip: boolean; anim: Anim; frame: number; acc: number; speed: number; scale: number; dim: number; hold?: number; onArrive?: () => void; tag?: string; rest?: Anim }
+export interface Cast { id: string; x: number; flip?: boolean; scale?: number; dim?: number; anim?: Anim }
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; kind: 'heart' | 'dust' | 'spark' }
 
 export interface CinemaPlay {
@@ -144,6 +145,42 @@ export class Cinema {
     cancelAnimationFrame(this.raf);
     this.raf = requestAnimationFrame(this.loop);
   }
+
+  // ---------- roteiro (prólogo e cenas dirigidas) ----------
+  // Monta o palco com um elenco livre; o resto é conduzido passo a passo.
+  stageScene(p: { room: RoomId; hour: number; title: string; sub: string; focus: string }, cast: Cast[]) {
+    this.play_ = { room: p.room, hour: p.hour, npc: p.focus, title: p.title, sub: p.sub, kingEnters: true };
+    this.active = true;
+    this.el.classList.add('on');
+    this.fade = 1; this.fadeTo = 0;
+    this.parts = []; this.warm = 0; this.expr = 'neutro'; this.closeUp = null; this.endCb = null;
+    this.t0 = this.last = performance.now();
+    this.actors = cast.map((c, i) => ({ id: c.id, x: c.x, to: c.x, flip: !!c.flip, anim: c.anim ?? 'idle', rest: c.anim ?? 'idle', frame: i, acc: 0, speed: 260, scale: c.scale ?? 1, dim: c.dim ?? 0 }));
+    for (let i = 0; i < 26; i++) this.parts.push(this.dust());
+    cancelAnimationFrame(this.raf);
+    this.raf = requestAnimationFrame(this.loop);
+  }
+  private who(id: string) { return this.actors.find((a) => a.id === id); }
+  moveActor(id: string, to: number, speed = 260, onArrive?: () => void) {
+    const a = this.who(id);
+    if (!a) return onArrive?.();
+    a.to = to; a.speed = speed; a.anim = 'walk'; a.flip = to < a.x; a.onArrive = onArrive;
+  }
+  poseActor(id: string, anim: Anim, hold?: number) {
+    const a = this.who(id);
+    if (!a) return;
+    a.anim = anim; a.hold = hold;
+    if (hold === undefined) a.rest = anim;
+  }
+  faceActor(id: string, left: boolean) { const a = this.who(id); if (a) a.flip = left; }
+  showCloseUp(id: string, expr: Expr, ms = 2600) { this.closeUp = { id, expr, from: performance.now(), until: performance.now() + ms }; }
+  tagActors(tags: Record<string, string | undefined>) { for (const a of this.actors) a.tag = tags[a.id]; }
+  burst(id: string, kind: 'spark' | 'heart' = 'spark', n = 12) {
+    const a = this.who(id);
+    if (!a) return;
+    for (let i = 0; i < n; i++) this.parts.push(kind === 'heart' ? this.heart(a.x) : this.spark(a.x, FEET - 470));
+  }
+  fadeOut(cb: () => void) { this.endCb = cb; this.fadeTo = 1; }
 
   // pula a entrada (botão Pular)
   skip() {
@@ -210,10 +247,10 @@ export class Cinema {
       if (a.x !== a.to) {
         a.anim = 'walk';
         const d = a.to - a.x, st = a.speed * dt;
-        if (Math.abs(d) <= st) { a.x = a.to; a.anim = a.id === 'rei' && this.play_?.kingSeated ? 'seated' : 'idle'; const cb = a.onArrive; a.onArrive = undefined; cb?.(); }
+        if (Math.abs(d) <= st) { a.x = a.to; a.anim = a.rest ?? (a.id === 'rei' && this.play_?.kingSeated ? 'seated' : 'idle'); const cb = a.onArrive; a.onArrive = undefined; cb?.(); }
         else { a.x += Math.sign(d) * st; if (a.id === 'rei' || a.scale === 1) a.flip = d < 0; }
       }
-      if (a.hold !== undefined) { a.hold -= dt; if (a.hold <= 0) { a.hold = undefined; if (a.x === a.to) a.anim = a.id === 'rei' && this.play_?.kingSeated ? 'seated' : 'idle'; } }
+      if (a.hold !== undefined) { a.hold -= dt; if (a.hold <= 0) { a.hold = undefined; if (a.x === a.to) a.anim = a.rest ?? (a.id === 'rei' && this.play_?.kingSeated ? 'seated' : 'idle'); } }
       a.acc += dt * (a.anim === 'walk' ? 9 : a.anim === 'talk' || a.anim === 'seatedTalk' ? 4 : 1.2);
       if (a.acc >= 1) { a.acc -= 1; a.frame++; }
     }
@@ -356,6 +393,17 @@ export class Cinema {
     if (a.flip) { c.translate(x + dw / 2, y); c.scale(-1, 1); c.drawImage(f.src, f.sx, f.sy, f.sw, f.sh, 0, 0, dw, dh); }
     else c.drawImage(f.src, f.sx, f.sy, f.sw, f.sh, x - dw / 2, y, dw, dh);
     c.restore();
+    if (a.tag) {
+      // etiqueta sobre a cabeça (os suspeitos no prólogo)
+      const ty = y + 40 * a.scale;
+      c.save();
+      c.font = '700 30px "Alegreya SC", serif'; c.textAlign = 'center';
+      const tw = c.measureText(a.tag).width + 28;
+      c.fillStyle = 'rgba(90,10,10,.88)'; c.fillRect(x - tw / 2, ty - 34, tw, 44);
+      c.strokeStyle = '#e8a060'; c.lineWidth = 2; c.strokeRect(x - tw / 2, ty - 34, tw, 44);
+      c.fillStyle = '#ffe2c0'; c.fillText(a.tag, x, ty);
+      c.restore();
+    }
   }
 
   private particle(c: CanvasRenderingContext2D, q: Particle) {

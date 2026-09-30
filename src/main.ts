@@ -1,3 +1,4 @@
+import { sound } from './audio/sound';
 import './style.css';
 import { showCharacterGallery } from './ui/characterGallery';
 import { App } from './ui/app';
@@ -49,5 +50,5 @@ if (new URLSearchParams(location.search).get('personagens') === 'topdown') {
 } else {
   const app = new App(host);
   // acesso pelo console para depuração: game.s (estado), debug.startWar(game.s, 'norhelm')
-  Object.assign(window, { game: app, debug: { startWar, endDay } });
+  Object.assign(window, { game: app, debug: { startWar, endDay, sound } });
 }

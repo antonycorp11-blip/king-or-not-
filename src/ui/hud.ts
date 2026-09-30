@@ -1,14 +1,16 @@
 import { inPortal } from '../engine/cloud';
+import { sound } from '../audio/sound';
 import type { Resources, ScreenId } from '../types';
 import type { App } from './app';
 import type { Expr } from '../render/actors';
-import { MARRIAGE_DEADLINE, governabilidade, govLabel, influenceGain } from '../engine/core';
+import { governabilidade, govLabel, influenceGain } from '../engine/core';
 import { computeEconomy } from '../engine/economy';
-import { currentObjective, upcomingBig, visibleAudiences } from '../engine/day';
+import { currentObjective, visibleAudiences } from '../engine/day';
 import { unreadCount } from '../engine/letters';
 import { moodLabel, MOOD_LOOK, MOOD_NAMES } from '../engine/mood';
 import { iconImg } from '../render/pixel';
 import { esc, portrait } from './common';
+import { renderObjectives } from './objectives';
 
 // HUD do reino: o relógio de vela com o rosto do rei, só três números sempre à vista,
 // o resto num pergaminho. Mudanças aparecem como números que sobem e somem.
@@ -54,7 +56,7 @@ export function renderHud(app: App): string {
       <span class="hud-time"><b>Dia ${s.day}</b><em>${night ? '21:00' : fmtHour(s.hour)}</em><small>${MOOD_NAMES[mood]}</small></span>
       <span class="candle" aria-label="Horas restantes"><i style="height:${Math.round(left * 100)}%"></i><u></u></span>
     </button>
-    ${countdown(app)}
+    ${renderObjectives(app)}
     <div class="hud-res">
       ${chip('ouro', 'moedas', String(s.res.ouro), `${eco.net >= 0 ? '+' : ''}${eco.net}/dia`, 'Tesouro real e saldo diário', s.res.ouro < 0)}
       ${chip('influencia', 'flor', String(s.res.influencia), `+${influenceGain(s)}/dia`, 'Influência: moeda política')}
@@ -70,22 +72,14 @@ export function renderHud(app: App): string {
   </div>`;
 }
 
-// O que vem por aí: o próximo grande dia e o prazo do casamento
-function countdown(app: App): string {
-  const s = app.s;
-  const items: string[] = [];
-  const big = upcomingBig(s, 4)[0];
-  if (big) { const d = big.day - s.day; items.push(`<span class="cd-big">${iconImg('estrela')} ${esc(big.ev.big!.title)} · ${d === 1 ? 'amanhã' : `em ${d} dias`}</span>`); }
-  if (!s.spouse && s.day < MARRIAGE_DEADLINE) { const d = MARRIAGE_DEADLINE - s.day; items.push(`<span class="cd-wed ${d <= 5 ? 'hot' : ''}">${iconImg('coroa')} Casamento ${s.flags.noiva ? 'marcado' : 'sem noiva'} · ${d} dia${d > 1 ? 's' : ''}</span>`); }
-  return items.length ? `<div class="hud-countdown">${items.join('')}</div>` : '';
-}
-
 // Ajustes: ajuda, dicas e sair do jogo (dentro do portal, o jogo tem o próprio botão de sair)
 export function renderAjustes(app: App): string {
   return `<div class="modal-back castle-modal-back"><div class="parchment modal castle-modal ajustes-modal">
     <button class="modal-x" data-act="closeFeed" aria-label="Fechar">×</button>
     <h2>Ajustes</h2>
     <div class="ajustes-list">
+      <button class="btn" data-act="musicToggle">${iconImg('estrela')} Música: ${sound.musicOn ? 'ligada' : 'desligada'}</button>
+      <button class="btn" data-act="sfxToggle">${iconImg('selo')} Efeitos sonoros: ${sound.sfxOn ? 'ligados' : 'desligados'}</button>
       <button class="btn" data-act="help">${iconImg('balao')} Como jogar</button>
       <button class="btn" data-act="tipsToggle">${iconImg('pergaminho')} Dicas: ${app.tipsOff() ? 'desligadas' : 'ligadas'}</button>
       <button class="btn" data-act="guideReset">${iconImg('estrela')} Refazer os tutoriais guiados</button>

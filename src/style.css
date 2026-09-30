@@ -1875,3 +1875,49 @@ body.character-gallery-page { overflow: auto; height: auto; min-height: 100vh; b
 .part2 span { font-size: 14px; line-height: 1.35; }
 .m .part2 b { font-size: 16px; }
 .m .part2 span { font-size: 12px; }
+
+/* ===================== PRÓLOGO ===================== */
+.prologue { position: absolute; inset: 0; z-index: 60; pointer-events: auto; }
+.prologue.out { opacity: 0; transition: opacity .8s; }
+.pro-skip { position: absolute; right: 24px; top: 22px; z-index: 2; font: 600 18px var(--font); color: #e8dcc0; background: rgba(0, 0, 0, .55); border: 1px solid #8a6a2a; border-radius: 16px; padding: 6px 16px; cursor: pointer; }
+.pro-skip:hover { color: #fff; border-color: #f2d27a; }
+.pro-cap { position: absolute; left: 50%; bottom: 90px; transform: translateX(-50%); width: min(1100px, 86%); text-align: center; opacity: 0; transition: opacity .5s; cursor: pointer; }
+.pro-cap.on { opacity: 1; animation: proIn .6s ease-out; }
+@keyframes proIn { from { opacity: 0; transform: translate(-50%, 10px); } }
+.pro-cap b { display: block; font-family: var(--sc); font-size: 26px; color: #f2d27a; margin-bottom: 4px; text-shadow: 0 2px 6px #000; }
+.pro-cap p { margin: 0; font-size: 34px; line-height: 1.3; color: #fff4e0; text-shadow: 0 2px 8px #000, 0 0 2px #000; font-style: italic; }
+.pro-choices .pro-q { flex-basis: 100%; margin: 0 0 4px; text-align: center; font-family: var(--sc); color: #f2d27a; font-size: 38px; text-shadow: 0 2px 8px #000; }
+.pro-cap small { display: block; margin-top: 8px; font-size: 15px; color: rgba(232, 220, 192, .55); }
+.pro-choices { position: absolute; left: 50%; bottom: 70px; transform: translateX(-50%); display: none; flex-wrap: wrap; gap: 14px; width: min(1320px, 92%); justify-content: center; }
+.pro-choices.on { display: flex; animation: proIn .5s ease-out; }
+.pro-choices button { flex: 1; max-width: 420px; text-align: left; cursor: pointer; font: inherit; padding: 14px 18px; background: linear-gradient(#f8ecd0, #e6d0a0); color: #2a1a0a; border: 3px solid #8a6a2a; border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, .6); display: flex; flex-direction: column; gap: 4px; }
+.pro-choices button:hover { transform: translateY(-3px); border-color: #c8962a; }
+.pro-choices b { font-size: 24px; font-family: var(--sc); color: #1c2c6a; }
+.pro-choices small { font-size: 16px; color: #5a3a1a; }
+.pro-title { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; background: radial-gradient(ellipse at center, rgba(0, 0, 0, .35), rgba(0, 0, 0, .75)); transition: opacity 1s; }
+.pro-title.on { opacity: 1; }
+.pro-title h1 { margin: 0; font-family: var(--title, var(--sc)); font-size: 120px; color: #f2d27a; text-shadow: 0 6px 0 #5a3a0a, 0 10px 30px #000; letter-spacing: .04em; }
+.pro-title p { margin: 10px 0 0; font-size: 30px; color: #fff0d8; text-shadow: 0 2px 8px #000; font-style: italic; }
+.m .pro-cap { bottom: 60px; width: 92%; }
+.m .pro-cap p { font-size: 30px; }
+.m .pro-choices { bottom: 40px; gap: 10px; }
+.m .pro-choices b { font-size: 22px; }
+.m .pro-choices small { font-size: 15px; }
+
+/* ===================== OBJETIVOS ===================== */
+.objectives { position: absolute; left: 50%; transform: translateX(-50%); top: 158px; z-index: 5; display: flex; align-items: center; gap: 6px; max-width: calc(100% - 200px); flex-wrap: wrap; justify-content: center; }
+.objectives .obj-head, .objectives .obj { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; font: 600 15px/1.2 var(--font); color: #f4e6c8; background: rgba(18, 12, 22, .82); border: 1px solid #8a6a2a; border-radius: 14px; cursor: pointer; white-space: nowrap; }
+.objectives .obj-head { background: rgba(58, 40, 14, .9); color: #f2d27a; font-family: var(--sc); letter-spacing: .03em; }
+.objectives .obj-head i { font-style: normal; font-size: 11px; opacity: .8; }
+.objectives .obj:disabled { cursor: default; }
+.objectives .obj:not(:disabled):hover { border-color: #f2d27a; background: rgba(40, 28, 16, .92); }
+.objectives .obj-caso { border-color: #a04a3a; }
+.objectives .obj.hot { border-color: #f2c14e; color: #ffe39a; animation: cdPulse 2.4s ease-in-out infinite; }
+.objectives .obj-caso.hot { border-color: #e06a50; color: #ffc4b0; }
+.objectives img { width: 16px; height: 16px; }
+.m .objectives { top: 140px; max-width: calc(100% - 150px); gap: 5px; flex-wrap: nowrap; }
+.m .objectives .obj:nth-of-type(4) { display: none; } /* no celular: as duas metas principais */
+.m .objectives .obj span { max-width: 330px; overflow: hidden; text-overflow: ellipsis; }
+.m .objectives .obj-head, .m .objectives .obj { font-size: 17px; padding: 4px 10px; }
+.m .objectives img { width: 18px; height: 18px; }
+#stage.cinema-on .objectives, #stage.talking .objectives { display: none !important; }
