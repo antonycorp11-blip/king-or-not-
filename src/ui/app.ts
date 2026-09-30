@@ -17,6 +17,7 @@ import { companionsFor } from '../data/companions';
 import { companionLine, guardLine, waitingLine } from '../data/banter';
 import { portrait } from './common';
 import { iconImg } from '../render/pixel';
+import { Cinema } from '../render/cinema';
 import { SceneView } from './sceneView';
 import { WorldMap, type Lens } from './worldMap';
 import { TIPS, HOW_TO_PLAY, type TipId } from './tips';
@@ -73,6 +74,7 @@ export interface UIState {
   ring: boolean; // menu de ações do rei
   hotMenu: [number, number, string[]] | null; // menu de um móvel-lugar (posição no mundo e atividades)
   sleeping?: boolean; // o rei está deitado (a noite passa)
+  cineExit?: boolean; // a cena de cinema está saindo
   readWith: string | null; // quem lê junto com o rei
 }
 
@@ -97,6 +99,7 @@ export class App {
   stage: HTMLElement;
   scene: SceneView;
   private root: HTMLElement;
+  cinema: Cinema;
   private worldMap: WorldMap | null = null;
   feed: FeedItem[] = [];
   feedSeen = 0;
@@ -109,6 +112,7 @@ export class App {
     this.stage.id = 'stage';
     host.appendChild(this.stage);
     this.scene = new SceneView(this.stage);
+    this.cinema = new Cinema(this.stage, () => this.scene.castleWorld);
     this.root = document.createElement('div');
     this.root.id = 'ui';
     this.stage.appendChild(this.root);
@@ -451,6 +455,7 @@ export class App {
     this.scene.focus(null);
     setCrowned(s.spouse ? [s.spouse] : []);
     this.stage.classList.toggle('talking', ui.screen === 'trono' && !!ui.dialog);
+    this.stage.classList.toggle('cinema-on', this.cinema.active);
     const screen = ui.screen as ScreenId;
     this.scene.setHour(s.flags.nightPending ? 20.6 : s.hour);
     const mod = SCREENS[screen];

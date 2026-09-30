@@ -12,7 +12,7 @@ import { DAY_END, applyEffect, hasSkill, save, softenCost } from '../../engine/c
 import { canSpend, eventOf, isQueued, placeDue, spendHours, visibleAudiences } from '../../engine/day';
 import { councilChoices, holder, recordVote } from '../../engine/council';
 import { moodAdjust, moodAfterAudience, moodLabel, MOOD_LOOK } from '../../engine/mood';
-import { whereIs } from '../../engine/npcs';
+import { isAbsent, whereIs } from '../../engine/npcs';
 import { iconImg } from '../../render/pixel';
 import { effectTags, esc, portrait, reqCheck, shortName, txt } from '../common';
 import { genericAdvice } from '../../data/companions';
@@ -32,6 +32,45 @@ export function choicesFor(app: App, ev: GameEvent, node: string): Choice[] {
   const taken = app.ui.dialog?.taken;
   if (node === 'start' && taken?.length) list = list.filter((c) => !taken.includes(c.label));
   return moodAdjust(s, ev, list);
+}
+
+// Cenas especiais: cortejos, urgências, grandes dias e sustos da noite viram cinema
+const CINE_IDS = /^(segredo_|pedido_|cortejo_|revolta_|cedric_|julgamento_|atentado|casamento$|invasao$|rainha_|noite_|alarme_|eco_lysandra|eco_veneno|eco_lucas_frente|brandt_isabelle|isabelle_ultimato|haakon_proposta|ragnar_ultimato|herdeiro$|coroacao$|mae_boasvindas$)/;
+export function isCinematic(ev: GameEvent) {
+  return ev.kind === 'casamento' || ev.kind === 'urgente' || !!ev.big || !!ev.wake || CINE_IDS.test(ev.id);
+}
+
+function startCinema(app: App, ev: GameEvent, uid: number, inline: boolean) {
+  const s = app.s;
+  const d = app.ui.dialog!;
+  d.phase = 'entering';
+  const room = ev.wake ? 'quarto' : ev.place?.room ?? (inline ? s.castle.room : 'salao');
+  const hour = ev.kind === 'noite' ? Math.max(21, s.hour) : s.hour;
+  const who = speakerOf(s, ev);
+  // quem marcou o encontro espera no lugar; nas audiências, a pessoa entra no salão
+  const kingEnters = !!ev.place || (inline && ev.kind !== 'urgente' && !ev.wake);
+  if (!inline) s.castle.seated = true;
+  app.scene.halt('rei');
+  const extras = (ev.present ?? []).filter((x) => x !== who && x !== 'rei' && !isAbsent(s, x)).slice(0, 3);
+  const mood = ev.kind === 'casamento' || ev.id.startsWith('segredo_') ? 'romance' : ev.kind === 'urgente' ? 'urgente' : ev.big ? 'grande' : ev.kind === 'noite' ? 'noite' : undefined;
+  app.cinema.play({ room, hour, npc: who, title: ev.big?.title ?? ev.topic, sub: `${ROOMS[room].name} · ${fmt(hour)}`, kingEnters, kingSeated: room === 'salao' && !kingEnters, extras, expr: mood === 'urgente' ? 'preocupado' : mood === 'romance' ? 'feliz' : 'neutro', mood }, () => {
+    const dd = app.ui.dialog;
+    if (!dd || dd.uid !== uid || dd.phase !== 'entering') return;
+    dd.phase = 'talk';
+    app.render();
+    app.cinema.speak('npc', 3);
+  });
+  app.render();
+}
+
+// Reação em cena ao que o rei disse
+function cineReact(app: App, text: string) {
+  if (!app.cinema.active) return;
+  const d = app.ui.dialog;
+  app.cinema.speak('rei', 1.6);
+  const r = text.toLowerCase();
+  const kind = /beij/.test(r) ? 'beijo' : /ajoelh/.test(r) ? 'ajoelha' : d?.expr === 'feliz' ? 'feliz' : d?.expr === 'irritado' ? 'irritado' : /reverência|se curva/.test(r) ? 'reverencia' : 'neutro';
+  window.setTimeout(() => { if (!app.cinema.active) return; app.cinema.react(kind); app.cinema.speak('npc', 2.8); }, 1300);
 }
 
 // Conversas abertas: com a tensão baixa, dá para voltar e tratar de outro assunto
@@ -94,6 +133,7 @@ export function openAudience(app: App, uid: number) {
   app.ui.dialogCollapsed = false;
   app.ui.useInfluence = false;
   app.ui.ring = false;
+  if (isCinematic(ev)) return startCinema(app, ev, uid, inline);
   if (inline) return app.render();
   // Audiência no salão: o rei caminha até o trono, senta, e a pessoa atravessa o salão até ele.
   const callIn = () => {
@@ -267,6 +307,8 @@ export function render(app: App): string {
 
   if (!ev || !d) return `${queue}${roomHud(app)}`;
 
+  if (app.ui.cineExit) return '';
+  if (d.phase === 'entering' && app.cinema.active) return `<button class="cine-skip" data-act="skipWalk">Pular ›</button>`;
   if (d.phase === 'entering') {
     return `${queue}
       <div class="entering parchment"><p>Os guardas abrem as portas. Alguém entra no salão...</p><button class="btn sm" data-act="skipWalk">Pular</button></div>`;
@@ -355,6 +397,7 @@ export function handle(app: App, act: string, arg: string) {
     return app.autoOpenUrgent();
   }
   if (act === 'skipWalk') {
+    if (app.cinema.active) return app.cinema.skip();
     app.scene.finishWalks();
     const d = app.ui.dialog;
     if (d) {
@@ -427,6 +470,7 @@ export function handle(app: App, act: string, arg: string) {
       save(s);
       d.prefix = txt(ch.reply, s) || undefined;
       d.node = ch.goto;
+      cineReact(app, `${d.said ?? ''} ${d.prefix ?? ''}`);
       return app.render();
     }
     moodAfterAudience(s, d.tension, ch);
@@ -440,6 +484,7 @@ export function handle(app: App, act: string, arg: string) {
     }
     save(s);
     d.reply = (txt(ch.reply, s) || defaultReply(ch)) + cite;
+    cineReact(app, `${d.said ?? ''} ${d.reply}`);
     return app.render();
   }
   if (act === 'talkMore') {
@@ -451,6 +496,12 @@ export function handle(app: App, act: string, arg: string) {
     spendHours(s, 0.25, 'trabalho');
     save(s);
     return app.render();
+  }
+  if (act === 'finish' && app.cinema.active && !app.ui.cineExit) {
+    app.ui.cineExit = true;
+    app.render();
+    app.cinema.end(() => { app.ui.cineExit = false; handle(app, 'finish', arg); });
+    return;
   }
   if (act === 'finish') {
     dismissSpeaker(app);

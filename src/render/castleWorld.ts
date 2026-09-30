@@ -75,6 +75,11 @@ export class CastleWorld {
     const im = this.sheets.get(e[0]);
     return im ? { im, sx: e[1], sy: e[2], sw: e[3], sh: e[4] } : null;
   }
+  // usados pelo modo cinema (cenas laterais)
+  hasProp(name: string) { return !!this.src(name); }
+  propSize(name: string, w: number) { return this.size(name, w); }
+  drawProp(c: CanvasRenderingContext2D, name: string, x: number, y: number, w: number, h: number, flip = false) { this.blit(c, name, x, y, w, h, flip); }
+  patternOf(name: string, tile: number) { return this.pattern(name, tile); }
   private size(name: string, w: number): [number, number] { const s = this.src(name); return s ? [w, (w * s.sh) / s.sw] : [w, w]; }
   private blit(c: CanvasRenderingContext2D, name: string, x: number, y: number, w: number, h: number, flip = false) {
     const s = this.src(name);

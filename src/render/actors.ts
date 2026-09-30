@@ -183,6 +183,17 @@ export function portraitFromSheet(id: string, expr: Expr): HTMLCanvasElement | n
   return c;
 }
 
+// Retrato grande (256x256) para os closes do modo cinema
+export function portraitHi(id: string, expr: Expr): HTMLCanvasElement | null {
+  const sh = portraitSheetFor(id);
+  if (!sh) return null;
+  const [cx, cy] = EXPR_POS[expr];
+  const { c, ctx } = makeCanvas(PORTRAIT_TILE, PORTRAIT_TILE);
+  ctx.drawImage(sh, cx * PORTRAIT_TILE, cy * PORTRAIT_TILE, PORTRAIT_TILE, PORTRAIT_TILE, 0, 0, PORTRAIT_TILE, PORTRAIT_TILE);
+  if (crowned.has(id)) drawCrown(ctx, 0, 0, PORTRAIT_TILE, PORTRAIT_TILE, 4);
+  return c;
+}
+
 export function isCrowned(id: string) {
   return crowned.has(id);
 }
@@ -193,7 +204,7 @@ function sheetCell(id: string, anim: Anim, f: number): [number, number] {
     if (anim === 'seated') return [f % 2, 0];
     if (anim === 'seatedTalk') return [2, 0];
     if (anim === 'seatedThink') return [4, 0];
-    return [0, 1]; // em pé (fora do trono)
+    return [3, 1]; // em pé (fora do trono): o passo com os pés juntos
   }
   switch (anim) {
     case 'walk': return [f % 6, 0];

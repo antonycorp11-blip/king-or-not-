@@ -103,6 +103,7 @@ export class SceneView {
   get zoom() { return this.zoomMul; }
   focus(x: number | null, y = 0) { this.focusPoint = x === null || Number.isNaN(x) ? null : [x, y]; }
   isReady() { return !!this.world; }
+  get castleWorld() { return this.world; }
 
   has(key: string) { return this.actors.has(key); }
   keys(prefix: string) { return [...this.actors.keys()].filter((k) => k.startsWith(prefix)); }

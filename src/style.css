@@ -1506,3 +1506,16 @@ body.character-gallery-page { overflow: auto; height: auto; min-height: 100vh; b
 @keyframes sleepIn { from { opacity: 0; } }
 @keyframes sleepBreath { 50% { opacity: .45; } }
 .dock-btn.end.late { box-shadow: 0 0 0 2px #f2c14e, 0 0 14px rgba(242, 193, 78, .6); }
+
+/* ===== Modo cinema: cenas laterais dirigidas ===== */
+.cinema { position: absolute; inset: 0; display: none; background: #000; }
+.cinema.on { display: block; animation: cineIn .5s ease-out both; }
+.cinema canvas { width: 100%; height: 100%; object-fit: cover; display: block; }
+@keyframes cineIn { from { opacity: 0; } }
+#stage.cinema-on .topbar, #stage.cinema-on .queue, #stage.cinema-on .castle-dock, #stage.cinema-on .room-plaque,
+#stage.cinema-on .zoom-ctl, #stage.cinema-on .hall-call, #stage.cinema-on .hud-countdown, #stage.cinema-on .tip,
+#stage.cinema-on .scene-markers, #stage.cinema-on .screen-close { display: none !important; }
+#stage.cinema-on .dialog { bottom: 14px; }
+.cine-skip { position: absolute; right: 30px; bottom: 30px; padding: 10px 22px; font: 700 20px var(--sc); color: #f4e6c8; background: rgba(10, 8, 16, .7); border: 2px solid #8a6a2a; border-radius: 8px; pointer-events: auto; }
+.cine-skip:hover { filter: brightness(1.2); }
+#stage.cinema-on .toasts { display: none; }
