@@ -181,11 +181,6 @@ function readingModal(app: App): string {
 
 export function render(app: App): string {
   const s = app.s;
-  app.scene.setRoom('biblioteca');
-  app.scene.sync([
-    { key: 'rei', id: 'rei', x: 560, foot: 560, facing: 1, anim: 'idle', free: true, dir: 'north' },
-    { key: 'npc-theodric', id: 'theodric', x: 790, foot: 400, facing: -1, anim: 'talk', dir: 'west' },
-  ]);
   app.scene.setMode('full');
   const line = LINES[s.day % LINES.length];
   const visible = BOOKS.filter((b) => !b.hidden || s.flags[b.hidden.flag] || knows(s, b.knowledge));

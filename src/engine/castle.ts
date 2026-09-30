@@ -1,32 +1,15 @@
 import type { Appointment, GameEvent, GameState, RoomId } from '../types';
 import { EVENTS, EVENT_MAP } from '../data/events';
-import { ROOMS, TRAVEL_HOURS, entryPoint, roomRoute } from '../data/castle';
-import { canSpend, spendHours } from './day';
+import { WALK_HOURS, roomRoute } from '../data/castle';
 import { attend, dueHere } from './agenda';
-import { rand, save } from './core';
+import { rand } from './core';
 
 // O rei anda pelo castelo. Cada porta custa um pouco de tempo; chegar a um lugar
 // pode disparar um compromisso ou um encontro.
 
-export interface TravelResult { ok: boolean; hours: number; reason?: string }
-
 export function travelCost(s: GameState, to: RoomId): number | null {
   const route = roomRoute(s.castle.room, to);
-  return route ? (route.length - 1) * TRAVEL_HOURS : null;
-}
-
-export function travel(s: GameState, to: RoomId): TravelResult {
-  if (!ROOMS[to].ready) return { ok: false, hours: 0, reason: `${ROOMS[to].name} ainda está fechado.` };
-  const route = roomRoute(s.castle.room, to);
-  if (!route) return { ok: false, hours: 0, reason: 'Não há caminho até lá.' };
-  const hours = (route.length - 1) * TRAVEL_HOURS;
-  if (hours && !canSpend(s, hours) && s.hour < 20) return { ok: false, hours, reason: 'Não há tempo para isso hoje.' };
-  const from = route[route.length - 2] ?? s.castle.room;
-  if (hours) spendHours(s, Math.min(hours, Math.max(0, 20 - s.hour)), 'andar');
-  const [x, y] = entryPoint(from, to);
-  s.castle = { ...s.castle, room: to, x, y, seated: false, visitedToday: [...new Set([...s.castle.visitedToday, to])] };
-  save(s);
-  return { ok: true, hours };
+  return route ? (route.length - 1) * WALK_HOURS : null;
 }
 
 // Ao chegar: há um compromisso aqui agora? Um encontro esperando?

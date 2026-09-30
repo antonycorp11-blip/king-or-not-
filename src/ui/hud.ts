@@ -30,8 +30,9 @@ export function renderHud(app: App): string {
   // vela: queima das 8h às 20h
   const left = night ? 0 : Math.max(0, Math.min(1, (20 - s.hour) / 12));
   const nav: [ScreenId, string, string][] = [
-    ['trono', 'coroa', 'Castelo'], ['provincias', 'castelo', 'Províncias'], ['biblioteca', 'livro', 'Biblioteca'],
-    ['rei', 'estrela', 'O Rei'], ['corte', 'povo', 'Corte'], ['guerra', 'espadas', 'Guerra'],
+    // livros e cartas são lugares do castelo (estantes da biblioteca, escrivaninha do quarto)
+    ['trono', 'coroa', 'Castelo'], ['provincias', 'castelo', 'Províncias'],
+    ['rei', 'estrela', 'O Rei'], ['corte', 'povo', 'Casas'], ['guerra', 'espadas', 'Guerra'],
   ];
   const badge = (id: ScreenId) => {
     if (id === 'rei' && s.skillPoints > 0) return `<em>${s.skillPoints}</em>`;

@@ -1,4 +1,5 @@
 import type { Bond, CastleState, ConspiracyState, CouncilState, GameState, MoodState } from '../types';
+import { ROOMS, worldPoint } from '../data/castle';
 
 // Versões do save. v1: Atos I e II no salão. v2: castelo vivo, agenda, conselho,
 // humor, relações profundas, conspiração e dinastia. Saves antigos são completados,
@@ -6,9 +7,8 @@ import type { Bond, CastleState, ConspiracyState, CouncilState, GameState, MoodS
 export const SAVE_VERSION = 2;
 
 export function defaultCastle(room: CastleState['room'] = 'quarto'): CastleState {
-  return room === 'salao'
-    ? { room, x: 640, y: 330, seated: true, visitedToday: ['salao'], lastEncounter: {} }
-    : { room, x: 640, y: 470, seated: false, visitedToday: [room], lastEncounter: {} };
+  const [x, y] = worldPoint(room, room === 'salao' ? 'trono' : 'porta');
+  return { room, x, y: room === 'salao' ? y : y - 70, seated: room === 'salao', visitedToday: [room], lastEncounter: {}, world: true };
 }
 
 export function defaultCouncil(): CouncilState {
@@ -71,6 +71,8 @@ export function migrate(raw: unknown): GameState | null {
   s.castle ??= defaultCastle(fromV1 ? 'salao' : 'quarto');
   s.castle.visitedToday ??= [s.castle.room];
   s.castle.lastEncounter ??= {};
+  // saves de antes do castelo contínuo guardavam a posição dentro do cômodo
+  if (!s.castle.world) { const room = (ROOMS as Record<string, unknown>)[s.castle.room] ? s.castle.room : 'salao'; s.castle = defaultCastle(room); }
   s.agenda ??= [];
   s.council ??= defaultCouncil();
   s.council.queue ??= [];

@@ -3,11 +3,11 @@ import { applyEffect as applyEffectSafe, load, newGame, save, clearSave, storeLo
 import { athgGameStarted, athgReady, cloudLoad, inPortal } from '../engine/cloud';
 import { computeEconomy } from '../engine/economy';
 import { endDay, eventOf, isQueued, notices, pickNight, pushAudience, spendHours, startDay, visibleAudiences } from '../engine/day';
-import { arrival, startInline, travel } from '../engine/castle';
+import { arrival, startInline } from '../engine/castle';
 import { pickMatter } from '../engine/agenda';
 import { moodRemark } from '../engine/mood';
 import { ACTIVITIES } from '../data/activities';
-import { ROOMS } from '../data/castle';
+import { ROOMS, WALK_HOURS, worldPoint } from '../data/castle';
 import { EVENT_MAP } from '../data/events';
 import { char } from '../data/characters';
 import { renderCastleModal, handleCastleModal, type CastleModal } from './castleModals';
@@ -16,9 +16,8 @@ import { loadCharacterAssets, setCrowned, type Expr } from '../render/actors';
 import { companionsFor } from '../data/companions';
 import { companionLine, guardLine, waitingLine } from '../data/banter';
 import { portrait } from './common';
-import { LAYOUT } from '../render/scenes';
 import { iconImg } from '../render/pixel';
-import { SceneView, type ActorSpec } from './sceneView';
+import { SceneView } from './sceneView';
 import { WorldMap, type Lens } from './worldMap';
 import { TIPS, HOW_TO_PLAY, type TipId } from './tips';
 import * as Throne from './screens/throne';
@@ -64,7 +63,8 @@ export interface UIState {
   seatPick: CouncilSeatId | null;
   panel: 'estado' | 'feed' | null; // pergaminhos do HUD
   navOpen: boolean;
-  ring: boolean; // anel de ações em volta do rei
+  ring: boolean; // menu de ações do rei
+  hotMenu: [number, number, string[]] | null; // menu de um móvel-lugar (posição no mundo e atividades)
   readWith: string | null; // quem lê junto com o rei
 }
 
@@ -105,15 +105,41 @@ export class App {
     this.root.id = 'ui';
     this.stage.appendChild(this.root);
     this.s = load() ?? newGame();
-    this.ui = { screen: 'titulo', dialog: null, useInfluence: false, province: 'castelmar', warSel: null, warMode: 'reforcar', warResult: null, summary: null, summaryDay: 0, confirmEnd: false, help: false, lens: 'casas', good: 'graos', cardOpen: true, armyOpen: false, warClash: null, queueCollapsed: false, dialogCollapsed: false, castleModal: null, seatPick: null, panel: null, navOpen: true, ring: false, readWith: null };
+    this.ui = { screen: 'titulo', dialog: null, useInfluence: false, province: 'castelmar', warSel: null, warMode: 'reforcar', warResult: null, summary: null, summaryDay: 0, confirmEnd: false, help: false, lens: 'casas', good: 'graos', cardOpen: true, armyOpen: false, warClash: null, queueCollapsed: false, dialogCollapsed: false, castleModal: null, seatPick: null, panel: null, navOpen: true, ring: false, hotMenu: null, readWith: null };
     this.stage.addEventListener('click', (e) => this.onClick(e));
     // tocar numa pessoa pelo castelo abre uma conversa
     this.scene.onTap = (key) => {
-      if (key.startsWith('npc-')) return this.talkTo(key.slice(4));
-      if (key === 'rei' && !this.ui.dialog && this.ui.screen === 'trono') { this.ui.ring = !this.ui.ring; this.render(); }
+      if (this.ui.screen !== 'trono' || this.ui.dialog) return;
+      if (key.startsWith('npc-')) return this.approach(key, () => this.talkTo(key.slice(4)));
+      if (key === 'rei') { this.ui.ring = !this.ui.ring; this.ui.hotMenu = null; this.render(); }
     };
-    this.scene.onKingMove = () => { if (this.s.castle.seated) { this.s.castle.seated = false; } };
+    // tocar num móvel-lugar: o rei vai até ele e age
+    this.scene.onHotspot = (h) => {
+      if (this.ui.screen !== 'trono' || this.ui.dialog || this.ui.castleModal) return;
+      this.ui.ring = false;
+      const acts = h.acts.filter((id) => { const a = ACTIVITIES.find((x) => x.id === id); return a && (!a.cond || a.cond(this.s)) && !(a.perDay && this.s.activitiesToday.includes(a.id)) && !(a.once && this.s.flags[a.once]); });
+      if (!acts.length) return this.toast('Agora não há nada a fazer aqui.');
+      this.s.castle.seated = false;
+      this.scene.moveTo('rei', h.stand[0], h.stand[1], () => {
+        if (acts.length === 1) return this.doActivity(acts[0]);
+        this.ui.hotMenu = [h.stand[0], h.rect[1] - 10, acts];
+        this.render();
+      });
+    };
+    this.scene.onKingMove = () => {
+      if (this.s.castle.seated) this.s.castle.seated = false;
+      if (this.ui.ring || this.ui.hotMenu) { this.ui.ring = false; this.ui.hotMenu = null; this.render(); }
+    };
+    this.scene.onWorldTap = () => { if (this.ui.ring || this.ui.hotMenu) { this.ui.ring = false; this.ui.hotMenu = null; this.render(); } };
+    this.scene.onKingRoom = (room) => this.enterRoom(room);
+    this.scene.currentRoom = () => (this.ui.screen === 'titulo' || !this.s ? null : this.s.castle.room);
     window.addEventListener('resize', () => this.fit());
+    // Esc sempre volta ao castelo (fecha telas, pergaminhos e menus)
+    window.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' || this.ui.screen === 'titulo') return;
+      if (this.ui.panel || this.ui.castleModal || this.ui.ring || this.ui.hotMenu) { this.ui.panel = null; this.ui.castleModal = null; this.ui.ring = false; this.ui.hotMenu = null; this.ui.seatPick = null; return this.render(); }
+      if (this.ui.screen !== 'trono') this.go('trono');
+    });
     window.addEventListener('orientationchange', () => window.setTimeout(() => this.fit(), 250));
     window.visualViewport?.addEventListener('resize', () => this.fit());
     this.fit();
@@ -292,7 +318,7 @@ export class App {
   }
 
   autoOpenUrgent() {
-    if (this.s.ended || this.ui.screen !== 'trono' || this.ui.dialog || this.ui.castleModal || this.needsCompanion() || this.s.castle.room !== 'salao') return;
+    if (this.s.ended || this.ui.screen !== 'trono' || this.ui.dialog || this.ui.castleModal || this.needsCompanion() || this.s.castle.room !== 'salao' || !this.s.castle.seated) return;
     const urgent = visibleAudiences(this.s).find((a) => eventOf(a).kind === 'urgente');
     if (urgent) Throne.openAudience(this, urgent.uid);
   }
@@ -341,9 +367,9 @@ export class App {
     const ui = this.ui;
     if (ui.screen === 'titulo') {
       this.scene.setMovementEnabled(false);
-      this.scene.setRoom('trono');
       this.scene.setHour(17.5);
-      this.scene.sync(this.throneActors());
+      this.scene.sync(Throne.worldActors(this));
+      this.scene.focus(ROOMS.salao.rect[0] + 520, ROOMS.salao.rect[1] + 420);
       this.scene.setMode('dim');
       this.root.innerHTML = renderTitle(this);
       return;
@@ -371,39 +397,20 @@ export class App {
       ui.castleModal = 'agenda';
     }
     const pos = this.scene.kingPos();
-    const sceneRoom = this.scene.roomKind === 'trono' ? 'salao' : this.scene.roomKind;
-    if (pos && ui.screen === 'trono' && !s.castle.seated && sceneRoom === s.castle.room) { s.castle.x = pos.x; s.castle.y = pos.y; }
+    if (pos && !s.castle.seated && this.scene.isReady()) { s.castle.x = pos.x; s.castle.y = pos.y; }
+    this.scene.focus(null);
     setCrowned(s.spouse ? [s.spouse] : []);
     this.stage.classList.toggle('talking', ui.screen === 'trono' && !!ui.dialog);
     const screen = ui.screen as ScreenId;
     this.scene.setHour(s.flags.nightPending ? 20.6 : s.hour);
     const mod = SCREENS[screen];
-    if (screen !== 'biblioteca' && screen !== 'trono') this.scene.setRoom(s.castle.room === 'salao' ? 'trono' : (s.castle.room as Exclude<RoomId, 'salao'>));
     this.scene.setMovementEnabled(screen === 'trono' && !ui.dialog && !ui.summary && !s.ended && !this.needsCompanion() && !ui.castleModal);
-    if (screen !== 'trono' && screen !== 'biblioteca') { this.scene.setMarkers([]); if (s.castle.room === 'salao') this.scene.sync(this.throneActors()); }
+    if (screen !== 'trono') { this.scene.setMarkers([]); this.scene.sync(Throne.worldActors(this)); }
     const modal = ui.panel === 'estado' ? renderEstado(this) : ui.panel === 'feed' ? renderFeed(this) : screen === 'trono' ? renderCastleModal(this) : '';
-    this.root.innerHTML = this.topbar() + `<div class="screen screen-${screen} room-${s.castle.room}">${mod.render(this)}</div>` + this.confirmModal() + (modal || (this.needsCompanion() ? this.companionModal() : this.tipHtml()));
+    const close = screen !== 'trono' ? `<button class="screen-close" data-act="go" data-arg="trono" title="Voltar ao castelo (Esc)">${iconImg('castelo')} Voltar ao castelo</button>` : '';
+    this.root.innerHTML = this.topbar() + `<div class="screen screen-${screen} room-${s.castle.room}">${mod.render(this)}</div>` + close + this.confirmModal() + (modal || (this.needsCompanion() ? this.companionModal() : this.tipHtml()));
     mod.after?.(this);
     this.prevRes = floatDeltas(this, this.prevRes);
-  }
-
-  // Personagens fixos do salão: rei no trono, guardas, rainha e rainha-mãe.
-  // Personagens fixos do salão: rei no trono, quem está ao seu lado e a guarda ao fundo.
-  throneActors(exclude: string[] = []): ActorSpec[] {
-    const s = this.s;
-    const seated = s.castle.room !== 'salao' || s.castle.seated || this.ui.screen === 'titulo';
-    const list: ActorSpec[] = [
-      seated ? { key: 'rei', id: 'rei', x: LAYOUT.throneX, foot: LAYOUT.daisY, facing: -1, anim: 'seated' }
-        : { key: 'rei', id: 'rei', x: s.castle.x, foot: s.castle.y, facing: 1, anim: 'idle', free: true, dir: 'north' },
-      // guardas ao fundo, junto à parede, patrulhando (menores e mais escuros = mais longe)
-      { key: 'guard1', id: 'guarda', x: 150, foot: 146, facing: 1, anim: 'idle', scale: 0.72, dim: 0.3, roam: [118, 250] },
-      { key: 'guard2', id: 'guarda', x: 168, foot: 148, facing: 1, anim: 'idle', scale: 0.75, dim: 0.26, roam: [140, 290] },
-      { key: 'guard3', id: 'guarda', x: 330, foot: 148, facing: -1, anim: 'idle', scale: 0.75, dim: 0.26, roam: [292, 352] },
-    ];
-    // quem está ao lado do trono fica de pé atrás e à direita dele, como na corte de verdade
-    const comp = s.flags.companion as string | undefined;
-    if (comp && !exclude.includes(comp)) list.push({ key: `comp-${comp}`, id: comp, x: 462, foot: 154, facing: -1, anim: 'idle', scale: 0.96 });
-    return list;
   }
 
   private lifeClock = 6;
@@ -436,7 +443,7 @@ export class App {
 
   needsCompanion() {
     const s = this.s;
-    return this.ui.screen === 'trono' && !this.ui.summary && !s.ended && !s.flags.nightPending && s.flags.compDay !== s.day && s.castle.room === 'salao' && !this.ui.castleModal;
+    return this.ui.screen === 'trono' && !this.ui.summary && !s.ended && !s.flags.nightPending && s.flags.compDay !== s.day && s.castle.room === 'salao' && s.castle.seated && !this.ui.castleModal;
   }
 
   private companionModal() {
@@ -489,24 +496,36 @@ export class App {
     }
   }
 
-  // Andar até a porta e atravessar
-  walkOut(to: RoomId) {
-    if (this.ui.dialog) return;
-    const exit = ROOMS[this.s.castle.room].exits.find((e) => e.to === to);
-    if (!exit) return this.travelTo(to);
-    this.s.castle.seated = false;
-    this.scene.moveTo('rei', exit.x, exit.y, () => this.travelTo(to));
-  }
-
+  // Ir a um cômodo: o rei atravessa o castelo andando (depressa)
   travelTo(to: RoomId) {
-    this.ui.ring = false;
+    this.ui.ring = false; this.ui.hotMenu = null;
     if (this.ui.dialog && !this.ui.dialog.reply) return this.toast('Termine a conversa antes de sair.');
     if (this.ui.dialog) { Throne.dismissSpeaker(this); this.ui.dialog = null; }
-    if (to === this.s.castle.room) { this.ui.castleModal = null; this.ui.screen = 'trono'; return this.render(); }
-    const r = travel(this.s, to);
-    if (!r.ok) return this.toast(r.reason ?? 'Não é possível ir agora.');
     this.ui.castleModal = null;
     this.ui.screen = 'trono';
+    this.s.castle.seated = false;
+    this.render();
+    const [x, y] = worldPoint(to, to === 'salao' ? 'fala' : undefined);
+    this.scene.moveTo('rei', x, y, () => { if (to === 'salao') this.doActivity('sentar'); }, 300);
+  }
+
+  // Andar até alguém antes de falar com ela
+  private approach(key: string, then: () => void) {
+    const p = this.scene.pos(key), k = this.scene.kingPos();
+    if (!p || !k || Math.hypot(p[0] - k.x, p[1] - k.y) < 110) return then();
+    this.s.castle.seated = false;
+    this.scene.moveTo('rei', p[0] - 60, p[1] + 10, then);
+  }
+
+  // O rei atravessou uma porta: o tempo passa e o cômodo pode ter algo esperando
+  private enterRoom(room: RoomId) {
+    const s = this.s;
+    if (room === s.castle.room || this.ui.screen === 'titulo') return;
+    s.castle.room = room;
+    s.castle.visitedToday = [...new Set([...s.castle.visitedToday, room])];
+    if (s.hour < 20) spendHours(s, WALK_HOURS, 'andar');
+    const pos = this.scene.kingPos();
+    if (pos) { s.castle.x = pos.x; s.castle.y = pos.y; }
     this.render();
     this.onArrive();
   }
@@ -547,9 +566,14 @@ export class App {
     const s = this.s;
     const a = ACTIVITIES.find((x) => x.id === id);
     if (!a || this.ui.dialog) return;
+    this.ui.ring = false; this.ui.hotMenu = null;
     switch (a.special) {
       case 'dormir': return this.requestEndDay();
-      case 'sentar': s.castle.seated = true; save(s); this.render(); return this.autoOpenUrgent();
+      case 'sentar': {
+        s.castle.seated = true; save(s); this.render();
+        if (!visibleAudiences(s).length) this.toast(s.hour < 8 ? 'A corte abre às 8h.' : 'Ninguém espera no momento.');
+        return this.autoOpenUrgent();
+      }
       case 'cadeiras': this.ui.castleModal = 'cadeiras'; return this.render();
       case 'caderno': this.ui.castleModal = 'caderno'; return this.render();
       case 'lerJuntos': this.ui.readWith = s.spouse ?? null; s.activitiesToday.push(a.id); return this.go('biblioteca');
@@ -561,6 +585,8 @@ export class App {
         return this.openInline(m.id);
       }
     }
+    if (a.id === 'correio') this.ui.courtTab = 'correio';
+    else if (a.screen === 'corte') this.ui.courtTab = 'pessoas';
     if (a.screen) return this.go(a.screen);
     if (a.hours && s.hour + a.hours > 20.01) return this.toast('Não há tempo para isso hoje.');
     s.activitiesToday.push(a.id);
@@ -604,9 +630,10 @@ export class App {
       case 'closeEstado': case 'closeFeed': this.ui.panel = null; return this.render();
       case 'feed': this.ui.panel = 'feed'; this.feedSeen = this.feed.length; return this.render();
       case 'navToggle': this.ui.navOpen = !this.ui.navOpen; return this.render();
-      case 'ring': this.ui.ring = !this.ui.ring; return this.render();
+      case 'ring': this.ui.ring = !this.ui.ring; this.ui.hotMenu = null; return this.render();
       case 'travel': return this.travelTo(arg as RoomId);
-      case 'exit': return this.walkOut(arg as RoomId);
+      case 'hotClose': this.ui.hotMenu = null; return this.render();
+      case 'zoom': this.scene.setZoom(this.scene.zoom * (arg === 'in' ? 1.2 : 1 / 1.2)); return;
       case 'talk': return this.talkTo(arg);
       case 'activity': return this.doActivity(arg);
       case 'toggleQueue': this.ui.queueCollapsed = !this.ui.queueCollapsed; return this.render();

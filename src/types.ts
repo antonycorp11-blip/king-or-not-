@@ -79,7 +79,7 @@ export interface Effect {
 // Castelo
 export type RoomId =
   | 'quarto' | 'aposentos' | 'salao' | 'conselho' | 'patio' | 'capela'
-  | 'tesouro' | 'masmorra' | 'cozinha' | 'arquivos' | 'jardim' | 'estabulos' | 'biblioteca';
+  | 'tesouro' | 'masmorra' | 'cozinha' | 'arquivos' | 'jardim' | 'estabulos' | 'biblioteca' | 'galeria' | 'entrada';
 export type FloorId = 'superior' | 'principal' | 'inferior' | 'exterior';
 
 export interface CastleState {
@@ -87,6 +87,7 @@ export interface CastleState {
   x: number; // posição do rei no cômodo (coordenadas 1280x720)
   y: number;
   seated: boolean; // sentado no trono (só no salão)
+  world?: boolean; // coordenadas já são do castelo inteiro (saves antigos usavam o cômodo)
   visitedToday: RoomId[];
   lastEncounter?: Partial<Record<RoomId, number>>; // dia do último encontro em cada cômodo
 }

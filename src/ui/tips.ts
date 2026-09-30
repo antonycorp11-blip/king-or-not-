@@ -4,7 +4,7 @@ export type TipId = 'castelo' | 'conselho' | 'inicio' | 'dialogo' | 'chegada' | 
 export const TIPS: Record<TipId, { title: string; text: string; pos?: 'center' | 'top' | 'right' | 'left' }> = {
   castelo: {
     title: 'O seu castelo',
-    text: 'Cada dia começa no seu quarto. <b>Toque no chão</b> para andar, nas <b>portas</b> para mudar de cômodo, nas <b>pessoas</b> para conversar e <b>no rei</b> para ver o que dá para fazer ali. Toque no <b>retrato</b> ou nos números do topo para ver o Estado do Reino; o <b>sino</b> guarda os avisos. A <b>Agenda</b> mostra compromissos; o botão <b>Castelo</b> leva a qualquer lugar e responde <b>onde está</b> cada pessoa. A fila de audiências espera no <b>Salão do Trono</b>.',
+    text: '<b>Toque no chão</b> para andar pelo castelo. Toque nas <b>pessoas</b> para conversar e nos <b>móveis</b> (estante, escrivaninha, cama, trono) para usá-los. <b>Toque no rei</b> para ver as ações do lugar. A fila de audiências espera no <b>Salão do Trono</b>.',
     pos: 'right',
   },
   conselho: {
@@ -14,7 +14,7 @@ export const TIPS: Record<TipId, { title: string; text: string; pos?: 'center' |
   },
   inicio: {
     title: 'O salão do trono',
-    text: 'Cada dia vai das <b>8h às 20h</b>. Quem pede audiência espera na fila no alto da tela, mas você só vê o <b>rosto</b>. Quem é e o que quer, você só descobre quando a pessoa entra no salão. Cada audiência custa <b>1 hora</b>. Quando quiser, clique em <b>Encerrar o Dia</b>.',
+    text: 'Cada dia vai das <b>8h às 20h</b>. Quem pede audiência espera na fila do salão; você só descobre quem é quando a pessoa se aproxima. Cada audiência custa <b>1 hora</b>. <b>Dormir</b> encerra o dia.',
     pos: 'right',
   },
   dialogo: {

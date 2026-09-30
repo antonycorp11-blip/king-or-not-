@@ -4,15 +4,15 @@ import type { ActorSpec, SceneMarker } from '../sceneView';
 import { char } from '../../data/characters';
 import { HOUSES } from '../../data/realm';
 import { dynamicChoices } from '../../data/events';
-import { ROOMS } from '../../data/castle';
+import { ROOMS, worldPoint } from '../../data/castle';
+import { ROUTINES } from '../../data/routines';
 import { SEATS } from '../../data/council';
-import { activitiesIn } from '../../data/activities';
+import { ACTIVITIES, activitiesIn } from '../../data/activities';
 import { DAY_END, applyEffect, hasSkill, save, softenCost } from '../../engine/core';
 import { canSpend, eventOf, isQueued, spendHours, visibleAudiences } from '../../engine/day';
 import { councilChoices, holder, recordVote } from '../../engine/council';
 import { moodAdjust, moodAfterAudience, moodLabel, MOOD_LOOK } from '../../engine/mood';
-import { presentIn, spotPos } from '../../engine/npcs';
-import { LAYOUT } from '../../render/scenes';
+import { whereIs } from '../../engine/npcs';
 import { iconImg } from '../../render/pixel';
 import { effectTags, esc, portrait, reqCheck, shortName, txt } from '../common';
 import { genericAdvice } from '../../data/companions';
@@ -23,9 +23,6 @@ const KIND_LABEL: Record<string, string> = {
   audiencia: 'Audiência', urgente: 'Urgente', familia: 'Família', conselho: 'Conselho', casamento: 'Casamento', noite: 'Noite',
   encontro: 'Encontro', reuniao: 'Reunião do Conselho', atividade: 'Momento', conversa: 'Conversa',
 };
-const WAIT_X = [26, 76];
-const WAIT_FOOT = 176;
-
 export function choicesFor(app: App, ev: GameEvent, node: string): Choice[] {
   const s = app.s;
   let list = dynamicChoices(ev.id, s, node) ?? ev.nodes[node].choices;
@@ -65,107 +62,125 @@ export function openAudience(app: App, uid: number) {
   const initialTension = Math.max(8, Math.min(88, 28 + (ev.kind === 'urgente' ? 25 : ev.kind === 'casamento' ? 14 : ev.kind === 'reuniao' ? 10 : 0) - Math.round(relation / 4)));
   const inline = isInline(s, ev);
   if (ev.kind === 'reuniao' && s.castle.room === 'conselho') {
-    const [x, y] = ROOMS.conselho.spots.cabeceira;
+    const [x, y] = worldPoint('conselho', 'cabeceira');
     s.castle.x = x; s.castle.y = y; // o rei preside da cabeceira
-    app.scene.setRoom('conselho');
-    app.scene.sync([]);
   }
   app.ui.dialog = { uid, node: 'start', phase: inline ? 'talk' : 'entering', tension: initialTension, expr: ev.kind === 'urgente' ? 'preocupado' : 'neutro' };
   app.ui.dialogCollapsed = false;
   app.ui.useInfluence = false;
+  app.ui.ring = false;
   if (inline) return app.render();
-  // Audiência no salão: o rei senta no trono e a pessoa entra pela porta.
-  s.castle.seated = true;
-  const idx = waiting(app).slice(0, 2).findIndex((w) => w.uid === uid);
-  const from = idx >= 0 ? WAIT_X[idx] : LAYOUT.doorX;
-  app.scene.setRoom('trono');
-  app.scene.walk('speaker', ev.speaker, from, LAYOUT.speakerX, LAYOUT.floorY, 'bow', () => {
-    window.setTimeout(() => {
-      const d = app.ui.dialog;
-      if (!d || d.uid !== uid || d.phase !== 'entering') return;
-      d.phase = 'talk';
-      app.render();
-    }, 650);
-  });
+  // Audiência no salão: o rei caminha até o trono, senta, e a pessoa atravessa o salão até ele.
+  const callIn = () => {
+    const d0 = app.ui.dialog;
+    if (!d0 || d0.uid !== uid) return;
+    s.castle.seated = true;
+    const from = app.scene.pos(`wait-${uid}`) ?? worldPoint('salao', 'porta');
+    app.scene.walkIn('speaker', ev.speaker, from, worldPoint('salao', 'fala'), () => {
+      window.setTimeout(() => {
+        const d = app.ui.dialog;
+        if (!d || d.uid !== uid || d.phase !== 'entering') return;
+        d.phase = 'talk';
+        app.render();
+      }, 350);
+    });
+    app.render();
+  };
+  if (s.castle.seated) return callIn();
+  const [tx, ty] = worldPoint('salao', 'trono');
+  app.scene.moveTo('rei', tx, ty + 40, callIn, 260);
   app.render();
 }
 
 export function dismissSpeaker(app: App) {
-  if (app.scene.has('speaker')) app.scene.leave('speaker', LAYOUT.doorX - 20);
+  if (app.scene.has('speaker')) app.scene.leave('speaker');
 }
 
-// Pessoas que vivem neste cômodo agora + quem está conversando com o rei
-function roomPeople(app: App, inlineSpeaker?: string, ev?: GameEvent): ActorSpec[] {
-  const s = app.s;
-  const room = s.castle.room;
-  const list: ActorSpec[] = [];
-  const seen = new Set<string>(['rei']);
-  const comp = room === 'salao' ? (s.flags.companion as string | undefined) : undefined;
-  if (comp) seen.add(comp);
-  presentIn(s, room).forEach(({ id, where }, i) => {
-    if (seen.has(id)) return;
-    seen.add(id);
-    const [x, y] = spotPos(room, where.spot, i);
-    // à mesa do conselho, quem senta do lado de baixo olha para a mesa
-    const dir = room === 'conselho' && y > 460 ? 'north' : 'south';
-    list.push({ key: `npc-${id}`, id, x, foot: y, facing: 1, anim: 'idle', dir });
-  });
-  const extra = [...(inlineSpeaker && inlineSpeaker !== 'rei' ? [inlineSpeaker] : []), ...(ev?.present ?? [])];
-  const k = s.castle;
-  extra.forEach((id, i) => {
-    if (seen.has(id)) return;
-    seen.add(id);
-    const x = Math.min(ROOMS[room].walk[2], k.x + 90 + i * 60), y = k.y - 10 + i * 18;
-    list.push({ key: `npc-${id}`, id, x, foot: y, facing: -1, anim: 'talk', dir: 'west' });
-  });
-  return list;
-}
-
-function sceneActors(app: App): ActorSpec[] {
+// Todo mundo no castelo, onde a rotina (ou a agenda) manda estar agora
+export function worldActors(app: App): ActorSpec[] {
   const s = app.s;
   const d = app.ui.dialog;
   const ev = d ? eventOf(s.audiences.find((a) => a.uid === d.uid)!) : undefined;
   const inlineSpeaker = ev && isInline(s, ev) ? speakerOf(s, ev) : undefined;
-  if (s.castle.room !== 'salao') {
-    return [{ key: 'rei', id: 'rei', x: s.castle.x, foot: s.castle.y, facing: 1, anim: 'idle', free: true, dir: ev?.kind === 'reuniao' ? 'west' : 'north' }, ...roomPeople(app, inlineSpeaker, ev)];
-  }
   const queued = ev && !inlineSpeaker ? ev : undefined;
-  const waitingIds = waiting(app).slice(0, 2).map((a) => eventOf(a).speaker);
-  const list = app.throneActors([...(queued ? [queued.speaker] : []), ...waitingIds]);
-  const rei = list.find((x) => x.key === 'rei')!;
-  if (d?.phase === 'talk' && s.castle.seated) rei.anim = d.reply ? 'seated' : 'seatedThink';
-  waiting(app)
-    .slice(0, 2)
-    .forEach((a, i) => {
-      const id = eventOf(a).speaker;
-      if (id !== queued?.speaker) list.push({ key: `wait-${a.uid}`, id, x: WAIT_X[i], foot: WAIT_FOOT, facing: 1, anim: 'idle' });
-    });
-  if (d && queued) list.push({ key: 'speaker', id: queued.speaker, x: LAYOUT.speakerX, foot: LAYOUT.floorY, facing: 1, anim: d.phase === 'entering' ? 'bow' : d.reply ? 'idle' : 'talk' });
-  const skip = new Set([...waitingIds, ...(queued ? [queued.speaker] : [])]);
-  return [...list, ...roomPeople(app, inlineSpeaker, ev).filter((a) => !skip.has(a.id))];
+  const list: ActorSpec[] = [];
+  const seen = new Set<string>(['rei']);
+  // o rei
+  if (s.castle.room === 'salao' && s.castle.seated) {
+    const [x, y] = worldPoint('salao', 'trono');
+    list.push({ key: 'rei', id: 'rei', x, foot: y, anim: 'seated', dir: 'south' });
+  } else list.push({ key: 'rei', id: 'rei', x: s.castle.x, foot: s.castle.y, anim: 'idle', dir: ev?.kind === 'reuniao' ? 'west' : undefined });
+  // guardas fixos e de ronda
+  const [sx, sy] = ROOMS.salao.rect, [gx, gy] = ROOMS.galeria.rect, [ex, ey] = ROOMS.entrada.rect, [px, py] = ROOMS.patio.rect;
+  list.push({ key: 'guard1', id: 'guarda', x: sx + 330, foot: sy + 345, anim: 'idle', dir: 'south' });
+  list.push({ key: 'guard2', id: 'guarda', x: sx + 710, foot: sy + 345, anim: 'idle', dir: 'south' });
+  list.push({ key: 'guard3', id: 'sentinela', x: gx + 700, foot: gy + 230, anim: 'idle', roam: [gx + 300, gx + 2900], dir: 'east' });
+  list.push({ key: 'guard4', id: 'guarda', x: ex + 110, foot: ey + 640, anim: 'idle', dir: 'south' });
+  list.push({ key: 'guard5', id: 'guarda', x: ex + 330, foot: ey + 640, anim: 'idle', dir: 'south' });
+  list.push({ key: 'guard6', id: 'guarda', x: px + 460, foot: py + 700, anim: 'idle', roam: [px + 380, px + 760], dir: 'west' });
+  // quem acompanha o rei no trono
+  const comp = s.flags.companion as string | undefined;
+  if (comp && s.castle.room === 'salao' && s.castle.seated && comp !== inlineSpeaker) {
+    const [cx, cy] = worldPoint('salao', 'companheiro');
+    list.push({ key: `comp-${comp}`, id: comp, x: cx, foot: cy, anim: 'idle', dir: 'west' });
+    seen.add(comp);
+  }
+  // fila do salão (visitantes esperam perto da porta)
+  const fila = waiting(app);
+  fila.slice(0, 6).forEach((a, i) => {
+    const id = eventOf(a).speaker;
+    if (id === queued?.speaker) return;
+    const [x, y] = worldPoint('salao', i % 2 ? 'fila2' : 'fila1');
+    list.push({ key: `wait-${a.uid}`, id, x: x + (i > 1 ? (i % 2 ? 50 : -50) * Math.floor(i / 2) : 0), foot: y - Math.floor(i / 2) * 20, anim: 'idle', dir: 'north' });
+    seen.add(id);
+  });
+  if (queued && d) { const [x, y] = worldPoint('salao', 'fala'); list.push({ key: 'speaker', id: queued.speaker, x, foot: y, anim: d.reply ? 'idle' : 'talk', dir: 'north' }); seen.add(queued.speaker); }
+  // gente com rotina, em todo o castelo
+  const perRoom = new Map<string, number>();
+  for (const r of ROUTINES) {
+    if (seen.has(r.id)) continue;
+    const w = whereIs(s, r.id);
+    if (!w || w.why === 'audiencia') continue;
+    const n = perRoom.get(w.room) ?? 0; perRoom.set(w.room, n + 1);
+    const [x, y] = worldPoint(w.room, w.spot, n);
+    seen.add(r.id);
+    list.push({ key: `npc-${r.id}`, id: r.id, x, foot: y, anim: 'idle', dir: w.room === 'conselho' && y > ROOMS.conselho.rect[1] + 520 ? 'north' : 'south', speed: 70 });
+  }
+  // conselheiros numa reunião sem rotina (ex.: Otho) e quem fala com o rei agora
+  for (const a of s.agenda) for (const id of a.who) {
+    if (seen.has(id)) continue;
+    const w = whereIs(s, id);
+    if (!w || w.why !== 'compromisso') continue;
+    const [x, y] = worldPoint(w.room, w.spot, 3);
+    seen.add(id);
+    list.push({ key: `npc-${id}`, id, x, foot: y, anim: 'idle', dir: 'south', speed: 70 });
+  }
+  for (const [i, id] of [...(inlineSpeaker && inlineSpeaker !== 'rei' ? [inlineSpeaker] : []), ...(ev?.present ?? [])].entries()) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    list.push({ key: `npc-${id}`, id, x: s.castle.x + 80 + i * 56, foot: s.castle.y - 6 + i * 16, anim: 'talk', dir: 'west' });
+  }
+  return list;
 }
 
-// Portas e pessoas clicáveis sobre o cenário
+// Nomes de quem está perto, ícones dos lugares do cômodo e o menu de ações do rei
 function markers(app: App, actors: ActorSpec[]): SceneMarker[] {
   const s = app.s;
   if (app.ui.dialog) return [];
-  const R = ROOMS[s.castle.room];
-  const out: SceneMarker[] = R.exits.filter((e) => ROOMS[e.to].ready).map((e) => ({ key: `exit-${e.to}`, x: e.x, y: e.y - 44, label: `${iconImg('seta')} ${e.label}`, act: 'exit', arg: e.to, kind: 'porta' as const }));
-  for (const a of actors) if (a.key.startsWith('npc-')) out.push({ key: a.key, x: a.x, y: a.foot - 108, label: esc(shortName(a.id)), act: 'talk', arg: a.id, kind: 'pessoa' });
-  // Anel de ações: tocar no rei abre o que dá para fazer ali mesmo
-  const [kx, ky] = s.castle.room === 'salao' && s.castle.seated ? [640, 330] : [s.castle.x, s.castle.y];
+  const out: SceneMarker[] = [];
+  const [kx, ky] = s.castle.room === 'salao' && s.castle.seated ? worldPoint('salao', 'trono') : [s.castle.x, s.castle.y];
+  for (const a of actors) if (a.key.startsWith('npc-') && Math.hypot(a.x - kx, a.foot - ky) < 520) out.push({ key: a.key, x: a.x, y: a.foot - 104, label: esc(shortName(a.id)), act: 'talk', arg: a.id, kind: 'pessoa' });
+  // menu compacto: lista pequena em cima do rei
   if (app.ui.ring) {
-    const acts = activitiesIn(s, s.castle.room);
-    const items = [...acts.map((a) => ({ label: `${iconImg(a.icon)} ${esc(a.label)}`, act: 'activity', arg: a.id })),
-      { label: `${iconImg('pergaminho')} Agenda`, act: 'agenda', arg: '' }, { label: `${iconImg('castelo')} Ir a…`, act: 'castleMap', arg: '' }];
-    const n = items.length;
-    items.forEach((it, i) => {
-      const ang = -Math.PI / 2 + (i / n) * Math.PI * 2;
-      const x = Math.max(150, Math.min(1130, kx + Math.cos(ang) * 190));
-      const y = Math.max(150, Math.min(640, ky - 50 + Math.sin(ang) * 120));
-      out.push({ key: `ring-${i}`, x, y, label: it.label, act: it.act, arg: it.arg, kind: 'acao' });
-    });
-  } else out.push({ key: 'ring-hint', x: kx, y: ky - 118, label: `${iconImg('estrela')} Ações`, act: 'ring', arg: '', kind: 'acao' });
+    const acts = activitiesIn(s, s.castle.room).filter((a) => !a.special || a.special === 'dormir' || a.special === 'lerJuntos');
+    const items = [...acts.slice(0, 5).map((a) => ({ label: `${iconImg(a.icon)} ${esc(a.label)}`, act: 'activity', arg: a.id })), { label: '× Fechar', act: 'ring', arg: '' }];
+    items.forEach((it, i) => out.push({ key: `menu-${i}`, x: kx, y: ky - 130 - (items.length - 1 - i) * 34, label: it.label, act: it.act, arg: it.arg, kind: 'acao' }));
+  }
+  if (app.ui.hotMenu) {
+    const [x, y, ids] = app.ui.hotMenu;
+    ids.map((id) => ACTIVITIES.find((a) => a.id === id)).filter(Boolean).forEach((a, i, arr) => out.push({ key: `hot-${i}`, x, y: y - (arr.length - 1 - i) * 34, label: `${iconImg(a!.icon)} ${esc(a!.label)}`, act: 'activity', arg: a!.id, kind: 'acao' }));
+    out.push({ key: 'hot-x', x, y: y + 34, label: '× Fechar', act: 'hotClose', arg: '', kind: 'acao' });
+  }
   return out;
 }
 
@@ -178,17 +193,16 @@ function roomHud(app: App): string {
   const urgent = vis.find((a) => eventOf(a).kind === 'urgente');
   const away = s.castle.room !== 'salao';
   const next = s.agenda.find((a) => a.state === 'pendente' && a.hour + a.duration > s.hour);
-  return `<div class="room-plaque parchment">
-      <b>${esc(R.name)}</b><small>${esc(R.desc)}</small>
-      <em class="mood mood-${mood}">${esc(MOOD_LOOK[mood])}</em>
-    </div>
+  return `<div class="room-plaque"><b>${esc(R.name)}</b><em class="mood mood-${mood}">${esc(MOOD_LOOK[mood])}</em></div>
     <div class="castle-dock">
-      <button class="dock-btn" data-act="agenda">${iconImg('pergaminho', 'ico-lg')}<span>Agenda${next ? `<small>${fmt(next.hour)} ${esc(next.title)}</small>` : ''}</span></button>
-      <button class="dock-btn" data-act="castleMap">${iconImg('castelo', 'ico-lg')}<span>Castelo<small>Ir a · Onde está?</small></span></button>
-      ${s.hour < DAY_END ? `<button class="dock-btn" data-act="waitHour">${iconImg('ampulheta', 'ico-lg')}<span>${s.hour < 8 ? 'Esperar a corte abrir<small>As portas abrem às 8h</small>' : 'Esperar 1 hora'}</span></button>` : ''}
-      ${s.castle.room !== 'quarto' ? `<button class="dock-btn end" data-act="endDay">${iconImg('selo', 'ico-lg')}<span>Encerrar o dia<small>Voltar ao quarto e dormir</small></span></button>` : ''}
+      <button class="dock-btn" data-act="agenda" title="Agenda do dia">${iconImg('pergaminho', 'ico-lg')}<span>Agenda${next ? `<small>${fmt(next.hour)} ${esc(next.title)}</small>` : ''}</span></button>
+      <button class="dock-btn" data-act="castleMap" title="Ir a um lugar · Onde está alguém">${iconImg('castelo', 'ico-lg')}<span>Castelo</span></button>
+      <button class="dock-btn" data-act="ring" title="O que dá para fazer aqui">${iconImg('estrela', 'ico-lg')}<span>Ações</span></button>
+      ${s.hour < DAY_END ? `<button class="dock-btn" data-act="waitHour">${iconImg('ampulheta', 'ico-lg')}<span>${s.hour < 8 ? 'Esperar as 8h' : 'Esperar 1h'}</span></button>` : ''}
+      <button class="dock-btn end" data-act="endDay">${iconImg('selo', 'ico-lg')}<span>Dormir</span></button>
     </div>
-    ${away && vis.length ? `<button class="hall-call ${urgent ? 'urgent' : ''}" data-act="travel" data-arg="salao">${urgent ? `${portrait(eventOf(urgent).speaker, 'q-portrait')}<span><b>Urgente no salão</b><small>${esc(char(eventOf(urgent).speaker).name)} não pode esperar</small></span>` : `${iconImg('povo', 'ico-lg')}<span><b>${vis.length} aguardam no salão</b><small>Ir ao Salão do Trono</small></span>`}</button>` : ''}`;
+    <div class="zoom-ctl"><button data-act="zoom" data-arg="in" title="Aproximar">+</button><button data-act="zoom" data-arg="out" title="Afastar">−</button></div>
+    ${away && vis.length ? `<button class="hall-call ${urgent ? 'urgent' : ''}" data-act="travel" data-arg="salao">${urgent ? `${portrait(eventOf(urgent).speaker, 'q-portrait')}<span><b>Urgente no salão</b><small>${esc(char(eventOf(urgent).speaker).name)}</small></span>` : `${iconImg('povo', 'ico-lg')}<span><b>${vis.length} no salão</b><small>Ir até lá</small></span>`}</button>` : ''}`;
 }
 
 const fmt = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
@@ -201,9 +215,7 @@ export function render(app: App): string {
   const ev = current ? eventOf(current) : undefined;
   const inSalao = s.castle.room === 'salao';
 
-  app.scene.setRoom(inSalao ? 'trono' : (s.castle.room as Exclude<typeof s.castle.room, 'salao'>));
-  for (const e of ROOMS[s.castle.room].exits) if (e.to !== 'salao') app.scene.prefetch(e.to as Exclude<typeof e.to, 'salao'>);
-  const actors = sceneActors(app);
+  const actors = worldActors(app);
   app.scene.sync(actors);
   app.scene.setMarkers(markers(app, actors));
   app.scene.setMode('full');

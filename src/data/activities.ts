@@ -46,8 +46,7 @@ export const ACTIVITIES: ActivityDef[] = [
   { id: 'lerJuntos', room: 'aposentos', label: 'Ler junto com a rainha', sub: 'Um livro a dois', icon: 'coracao', hours: 0, special: 'lerJuntos', perDay: true, cond: (s) => !!s.spouse && whereIsSpouseHere(s) },
   // Salão
   { id: 'sentar', room: 'salao', label: 'Sentar no trono', sub: 'Receber a fila de audiências', icon: 'coroa', hours: 0, special: 'sentar', cond: (s) => !s.castle.seated },
-  { id: 'biblioteca', room: 'salao', label: 'Ir à biblioteca', sub: 'Ler e estudar', icon: 'livro', hours: 0, screen: 'biblioteca' },
-  { id: 'correio', room: 'salao', label: 'Casas, pessoas e correio', sub: 'Convocar e responder cartas', icon: 'pergaminho', hours: 0, screen: 'corte' },
+  { id: 'correio', room: 'quarto', label: 'Correio e cartas', sub: 'Casas, pessoas e mensagens', icon: 'pergaminho', hours: 0, screen: 'corte' },
   // Conselho
   { id: 'cadeiras', room: 'conselho', label: 'As cinco cadeiras', sub: 'Nomear e demitir conselheiros', icon: 'escudo', hours: 0, special: 'cadeiras' },
   { id: 'extra', room: 'conselho', label: 'Convocar conselho extraordinário', sub: '1 hora · −5 influência', icon: 'selo', hours: 0, special: 'conselhoExtra', perDay: true, cond: (s) => s.res.influencia >= 5 },
@@ -63,6 +62,7 @@ export const ACTIVITIES: ActivityDef[] = [
   { id: 'estudar', room: 'biblioteca', label: 'Escolher um livro', sub: 'Ler 30 min, 1 h ou 2 h', icon: 'livro', hours: 0, screen: 'biblioteca' },
   { id: 'pesquisar', room: 'arquivos', label: 'Pesquisar nos registros', sub: '1 hora · leis e segredos antigos', icon: 'pergaminho', hours: 1, perDay: true, effects: { xp: 8, run: (s) => { if (s.day >= 10 && !s.conspiracy.clues.includes('lei_chaves')) { s.conspiracy.clues.push('lei_chaves'); s.log.push({ icon: 'mascara', title: 'Nova anotação no caderno', text: 'A Lei das Cinco Chaves. Está escrito no Caderno do Rei.', tone: 'rumor' }); } } }, toast: 'Poeira, tinta velha e nomes de mortos. Às vezes, um nome vivo no meio deles.' },
   // Tesouro
+  { id: 'comercio', room: 'tesouro', label: 'Livro de contas e comércio', sub: 'Rotas, impostos e preços', icon: 'moedas', hours: 0, screen: 'provincias' },
   { id: 'contas', room: 'tesouro', label: 'Conferir os cofres', sub: 'Comércio, impostos e rotas', icon: 'moedas', hours: 0, screen: 'provincias' },
   { id: 'contar', room: 'tesouro', label: 'Contar o ouro pessoalmente', sub: '1 hora · o tesoureiro sua frio', icon: 'olho', hours: 1, perDay: true, effects: { xp: 6, run: (s) => { const t = s.council.seats.tesoureiro; if (t) { const b = s.bonds[t]; if (b) b.medo = Math.min(100, b.medo + 8); } } }, toast: 'Você conta pilha por pilha. Bate com o livro. Quase. O tesoureiro enxuga a testa.' },
   // Cozinha

@@ -60,15 +60,6 @@ export function presentIn(s: GameState, room: RoomId, hour = s.hour): { id: stri
   return out;
 }
 
-// Posição de alguém no cômodo: um lugar nomeado ou, na falta, um ponto espalhado
-export function spotPos(room: RoomId, spot: string, index: number): [number, number] {
-  const p = ROOMS[room].spots[spot];
-  if (p) return [p[0] + (index % 2 ? 36 : 0), p[1] + (index > 1 ? 30 : 0)];
-  const [x0, y0, x1, y1] = ROOMS[room].walk;
-  const cols = [0.28, 0.72, 0.4, 0.6, 0.2, 0.8];
-  return [Math.round(x0 + (x1 - x0) * cols[index % cols.length]), Math.round(y0 + (y1 - y0) * (index % 2 ? 0.62 : 0.4))];
-}
-
 // Frase para "Onde está...?"
 export function whereLine(s: GameState, id: string): string {
   const w = whereIs(s, id);

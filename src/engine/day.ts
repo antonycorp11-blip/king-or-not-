@@ -16,7 +16,7 @@ import { captures, delegate } from './council';
 import { conspiracyDaily, trackOf } from './conspiracy';
 import { applyMood, moodHours, moodLabel, moodSleep, MOOD_NAMES } from './mood';
 import { bond } from './bonds';
-import { ROOMS } from '../data/castle';
+import { worldPoint } from '../data/castle';
 
 // Avisos que a interface mostra assim que o tempo passa (compromissos perdidos etc.)
 export const notices: LogEntry[] = [];
@@ -62,8 +62,8 @@ export function startDay(s: GameState) {
   // O rei acorda no quarto, antes de a corte abrir as portas.
   s.hour = WAKE_HOUR;
   s.log = [];
-  const bed = ROOMS.quarto.spots.cama;
-  s.castle = { ...s.castle, room: 'quarto', x: bed[0] + 90, y: bed[1] + 110, seated: false, visitedToday: ['quarto'] };
+  const [kx, ky] = worldPoint('quarto', 'porta');
+  s.castle = { ...s.castle, room: 'quarto', x: kx, y: ky - 70, seated: false, visitedToday: ['quarto'], world: true };
   s.activitiesToday = [];
   s.dayStart = { res: { ...s.res }, loyalty: { ...s.loyalty } };
   s.audiences = s.audiences.filter((a) => !a.done && a.expires >= s.day);
