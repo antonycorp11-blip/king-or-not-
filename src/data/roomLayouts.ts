@@ -145,7 +145,7 @@ export const ROOM_LAYOUTS: Partial<Record<RoomId, RoomLayout>> = {
     O('cama_rei', 470, 480, 172, { base: 0.78, hot: ['dormir', 'descansar'] }),
     O('criado_mudo', 590, 300, 42, { light: 60 }),
     O('bau_rei', 470, 540, 82, { hot: ['escrivaninha'] }),
-    O('escrivaninha_rei', 150, 460, 140, { light: 70, hot: ['correio', 'caderno'] }),
+    O('escrivaninha_rei', 150, 460, 140, { light: 70, hot: ['caso', 'correio', 'caderno'] }),
     O('poltrona_rei', 150, 520, 50),
     O('guarda_roupa', 590, 660, 86),
     O('manto_coroa', 60, 670, 58),

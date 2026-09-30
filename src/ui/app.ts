@@ -24,6 +24,8 @@ import { WorldMap, type Lens } from './worldMap';
 import { TIPS, HOW_TO_PLAY, type TipId } from './tips';
 import { barkFor } from '../data/barks';
 import * as Throne from './screens/throne';
+import * as Investigation from './screens/investigation';
+import * as Square from './screens/square';
 import * as Library from './screens/library';
 import * as King from './screens/king';
 import * as Court from './screens/court';
@@ -94,6 +96,8 @@ const SCREENS: Record<ScreenId, ScreenModule> = {
   corte: Court,
   provincias: Provinces,
   guerra: War,
+  investigacao: Investigation,
+  praca: Square,
 };
 
 export class App {

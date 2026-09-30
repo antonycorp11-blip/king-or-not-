@@ -34,6 +34,8 @@ export function renderHud(app: App): string {
     // livros e cartas são lugares do castelo (estantes da biblioteca, escrivaninha do quarto)
     ['trono', 'coroa', 'Castelo'], ['provincias', 'castelo', 'Províncias'],
     ['rei', 'estrela', 'O Rei'], ['corte', 'povo', 'Casas'], ['guerra', 'espadas', 'Guerra'],
+    // o caso da morte de Odran aparece depois que Pimenta planta a dúvida
+    ...(s.investigation?.open ? [['investigacao', 'olho', 'O Caso'] as [ScreenId, string, string]] : []),
   ];
   const badge = (id: ScreenId) => {
     if (id === 'rei' && s.skillPoints > 0) return `<em>${s.skillPoints}</em>`;

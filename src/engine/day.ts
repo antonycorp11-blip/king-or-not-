@@ -19,6 +19,17 @@ import { bond } from './bonds';
 import { worldPoint } from '../data/castle';
 import { housesDaily } from './houses';
 import { applyPolicy, resolveForwarded } from './policy';
+import { checkMission, inv, investigationDaily } from './investigation';
+
+// Pimenta voltou de uma missão: marca o encontro para ouvir o relatório
+function missionTick(s: GameState) {
+  const room = checkMission(s);
+  if (!room) return;
+  const ev = EVENT_MAP.olhos_relatorio;
+  if (ev?.place) ev.place = { ...ev.place, room, hour: Math.min(19.5, Math.max(9, Math.ceil(s.hour) + 1)) };
+  s.scheduled.push({ id: 'olhos_relatorio', day: s.day });
+  notices.push({ icon: 'olho', title: 'Pimenta voltou', text: `Ele espera o rei em ${room === 'galeria' ? 'algum canto da galeria' : 'segredo'}. Veja a agenda.`, tone: 'rumor' });
+}
 
 // Avisos que a interface mostra assim que o tempo passa (compromissos perdidos etc.)
 export const notices: LogEntry[] = [];
@@ -95,6 +106,9 @@ export function startDay(s: GameState) {
     if (ev?.kind === 'reuniao') { if (!s.council.queue.includes(ev.id)) s.council.queue.push(ev.id); continue; }
     if (ev && (!ev.cond || ev.cond(s)) && !s.audiences.some((a) => a.eventId === ev.id)) addAudience(s, ev, DAY_START, d.origin);
   }
+  // a investigação existe desde o começo (o culpado é sorteado agora)
+  inv(s);
+  missionTick(s);
   // roteiro do dia
   for (const ev of EVENTS) if (ev.day === s.day && (AUDIENCE_KINDS.includes(ev.kind) || ev.place) && eligible(s, ev)) addAudience(s, ev);
 
@@ -176,6 +190,7 @@ export function spendHours(s: GameState, hours: number, activity: 'trabalho' | '
   const missed = tickAgenda(s);
   s.log.push(...missed);
   notices.push(...missed);
+  missionTick(s);
   placeDue(s);
   notices.push(...reminders(s));
   return missed;
@@ -364,6 +379,9 @@ export function endDay(s: GameState): LogEntry[] {
   if (mood !== 'sereno') entries.push({ icon: 'coracao', title: 'O rei vai dormir ' + MOOD_NAMES[mood], text: s.mood.memo.filter((m) => m.day === s.day).map((m) => m.text).slice(-2).join('. ') || 'O dia deixou marcas.', tone: ['satisfeito', 'esperancoso'].includes(mood) ? 'bom' : 'neutro' });
   const baseline = (gov - 50) / 2 + (s.spouse ? (bond(s, s.spouse).amor - 50) / 4 : 0);
   moodSleep(s, baseline, s.mood.stress > 70);
+
+  // 8c2. O caso da morte de Odran vive sozinho: reações, perigo, vazamento
+  investigationDaily(s, entries);
 
   // 8d. As casas reagem: exigências, ressentimento, tropas próprias e ciúmes
   housesDaily(s, entries);

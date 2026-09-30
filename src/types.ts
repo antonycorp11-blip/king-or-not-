@@ -7,7 +7,7 @@ export type Good = 'graos' | 'madeira' | 'ferro' | 'peixe' | 'vinho' | 'prata';
 export type Attr = 'diplomacia' | 'estrategia' | 'comercio' | 'intriga' | 'carisma' | 'justica';
 export type Tone = 'bom' | 'ruim' | 'neutro' | 'rumor' | 'lei';
 export type ChoiceColor = 'azul' | 'dourado' | 'vermelho' | 'roxo' | 'verde';
-export type ScreenId = 'trono' | 'provincias' | 'biblioteca' | 'rei' | 'corte' | 'guerra';
+export type ScreenId = 'trono' | 'provincias' | 'biblioteca' | 'rei' | 'corte' | 'guerra' | 'investigacao' | 'praca';
 export type TaxLevel = 'baixo' | 'normal' | 'alto';
 export type FlagVal = boolean | number | string;
 

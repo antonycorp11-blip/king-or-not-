@@ -68,6 +68,7 @@ export const ACTIVITIES: ActivityDef[] = [
   // Cozinha
   { id: 'provar', room: 'cozinha', label: 'Provar o que está no fogo', sub: '30 min · a cozinha adora', icon: 'coracao', hours: 0.5, perDay: true, rest: true, effects: { mood: { joy: 8, stress: -6 }, res: { povo: 1 }, run: (s) => { s.tracks.fome = 0; } }, toast: 'Dona Ilda serve um prato que não é para rei, é para gente. É o melhor que você comeu no mês.' },
   // Jardim
+  { id: 'caso', room: 'quarto', label: 'A mesa de investigação', sub: 'A morte do rei Odran', icon: 'olho', hours: 0, cond: (s) => !!s.investigation?.open, screen: 'investigacao' },
   { id: 'comer', room: 'banquete', label: 'Comer alguma coisa', sub: '15 min · fora de hora, mata a fome', icon: 'trigo', hours: 0.25, perDay: true, rest: true, cond: (s) => (s.tracks.fome ?? 0) > 0, effects: { mood: { fatigue: -6, stress: -3 }, run: (s) => { s.tracks.fome = 0; } }, toast: 'Um criado traz pão, queijo e o que sobrou do último banquete. Não é um almoço de rei, mas mata a fome.' },
   { id: 'passear', room: 'jardim', label: 'Passear entre as roseiras', sub: '30 min · respira', icon: 'flor', hours: 0.5, perDay: true, rest: true, effects: { mood: { stress: -14, joy: 6, anger: -10 } }, toast: 'Os cisnes brigam, a fonte canta, e por meia hora ninguém pede nada ao rei.' },
   // Estábulos
