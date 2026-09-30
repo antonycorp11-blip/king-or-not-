@@ -18,6 +18,7 @@ import { companionLine, guardLine, waitingLine } from '../data/banter';
 import { portrait } from './common';
 import { iconImg } from '../render/pixel';
 import { Cinema } from '../render/cinema';
+import { Guide, TOURS } from './guide';
 import { SceneView } from './sceneView';
 import { WorldMap, type Lens } from './worldMap';
 import { TIPS, HOW_TO_PLAY, type TipId } from './tips';
@@ -75,6 +76,7 @@ export interface UIState {
   hotMenu: [number, number, string[]] | null; // menu de um móvel-lugar (posição no mundo e atividades)
   sleeping?: boolean; // o rei está deitado (a noite passa)
   cineExit?: boolean; // a cena de cinema está saindo
+  tour?: { id: string; i: number } | null; // tutorial guiado em andamento
   readWith: string | null; // quem lê junto com o rei
 }
 
@@ -100,6 +102,8 @@ export class App {
   scene: SceneView;
   private root: HTMLElement;
   cinema: Cinema;
+  guide: Guide;
+  private guideTimer = 0;
   private worldMap: WorldMap | null = null;
   feed: FeedItem[] = [];
   feedSeen = 0;
@@ -116,6 +120,7 @@ export class App {
     this.root = document.createElement('div');
     this.root.id = 'ui';
     this.stage.appendChild(this.root);
+    this.guide = new Guide(this, this.stage);
     this.s = load() ?? newGame();
     this.ui = { screen: 'titulo', dialog: null, useInfluence: false, province: 'castelmar', warSel: null, warMode: 'reforcar', warResult: null, summary: null, summaryDay: 0, confirmEnd: false, help: false, lens: 'casas', good: 'graos', cardOpen: true, armyOpen: false, warClash: null, queueCollapsed: false, dialogCollapsed: false, castleModal: null, seatPick: null, panel: null, navOpen: true, ring: false, hotMenu: null, readWith: null };
     this.stage.addEventListener('click', (e) => this.onClick(e));
@@ -382,7 +387,7 @@ export class App {
   }
 
   private pendingTip(): TipId | null {
-    if (this.tipsOff() || this.ui.screen === 'titulo') return null;
+    if (this.tipsOff() || this.ui.screen === 'titulo' || this.ui.tour) return null;
     const s = this.s;
     const want: TipId[] = [];
     if (this.ui.summary) want.push('resumo');
@@ -394,7 +399,9 @@ export class App {
       want.push(this.ui.screen as TipId);
       if (this.ui.screen === 'provincias' && computeEconomy(s).shortages.some((x) => x.province === this.ui.province)) want.push('escassez');
     }
-    return want.find((t) => TIPS[t] && !s.flags[`tip_${t}`]) ?? null;
+    // dicas cobertas por um tutorial guiado não aparecem (o tutorial ensina melhor)
+    const guided = new Set(s.flags.tutorialOff ? [] : TOURS.flatMap((t) => t.tips ?? []));
+    return want.find((t) => TIPS[t] && !s.flags[`tip_${t}`] && !guided.has(t)) ?? null;
   }
 
   private tipHtml() {
@@ -418,6 +425,9 @@ export class App {
   render() {
     const s = this.s;
     const ui = this.ui;
+    // o tutorial se posiciona depois que a tela nova foi montada
+    window.clearTimeout(this.guideTimer);
+    this.guideTimer = window.setTimeout(() => this.guide.place(), 40);
     if (ui.screen === 'titulo') {
       this.scene.setMovementEnabled(false);
       this.scene.setHour(17.5);
@@ -702,6 +712,7 @@ export class App {
     if (!el || el.hasAttribute('disabled')) return;
     const act = el.dataset.act!;
     const arg = el.dataset.arg ?? '';
+    if (this.guide.handle(act)) return;
     switch (act) {
       case 'go': return this.go(arg as ScreenId);
       case 'endDay': return this.ui.confirmEnd ? this.doEndDay() : this.requestEndDay();

@@ -85,6 +85,7 @@ export function renderAjustes(app: App): string {
     <div class="ajustes-list">
       <button class="btn" data-act="help">${iconImg('balao')} Como jogar</button>
       <button class="btn" data-act="tipsToggle">${iconImg('pergaminho')} Dicas: ${app.tipsOff() ? 'desligadas' : 'ligadas'}</button>
+      <button class="btn" data-act="guideReset">${iconImg('estrela')} Refazer os tutoriais guiados</button>
       <button class="btn" data-act="toTitle">${iconImg('coroa')} Voltar ao menu inicial</button>
       ${inPortal() ? `<button class="btn primary" data-act="exitGame">${iconImg('seta')} Sair do jogo</button>` : ''}
     </div>
