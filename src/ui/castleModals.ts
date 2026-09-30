@@ -1,4 +1,6 @@
-import type { CouncilSeatId, FloorId, RoomId } from '../types';
+import type { AudienceCategory, CouncilSeatId, FloorId, PolicyTarget, RoomId } from '../types';
+import { CATEGORIES, CATEGORY_IDS, applyPolicy, categoryOf, forwardedSummary, policyOf, pullBack } from '../engine/policy';
+import { EVENT_MAP } from '../data/events';
 import type { App } from './app';
 import { ROOMS, ROOM_IDS, FLOOR_NAMES } from '../data/castle';
 import { ADVISORS, SEATS, SEAT_CANDIDATES, SEAT_IDS } from '../data/council';
@@ -15,11 +17,11 @@ import { isAbsent, whereIs, whereLine } from '../engine/npcs';
 import { moodLabel, MOOD_LOOK } from '../engine/mood';
 import { save } from '../engine/core';
 import { iconImg } from '../render/pixel';
-import { esc, portrait } from './common';
+import { esc, portrait, shortName } from './common';
 import { BOOKS } from '../data/progression';
 import { qualityLabel, readQuality } from './screens/library';
 
-export type CastleModal = 'agenda' | 'mapa' | 'cadeiras' | 'caderno' | null;
+export type CastleModal = 'agenda' | 'mapa' | 'cadeiras' | 'caderno' | 'politica' | null;
 
 const fmt = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
 const STATE: Record<string, string> = { pendente: '', feito: 'Feito', atrasado: 'Atrasado', faltou: 'Faltou', cancelado: 'Cancelado' };
@@ -31,6 +33,7 @@ export function renderCastleModal(app: App): string {
     case 'mapa': return castleMap(app);
     case 'cadeiras': return seats(app);
     case 'caderno': return notebook(app);
+    case 'politica': return policy(app);
     default: return '';
   }
 }
@@ -59,8 +62,44 @@ function agenda(app: App) {
     <p class="sub">${esc(MOOD_LOOK[mood])}</p>
     ${items ? `<ol class="agenda-list">${items}</ol>` : '<p class="sub">Nenhum compromisso marcado. O dia é seu, e o reino também.</p>'}
     ${loose ? `<h3>Sem hora marcada</h3><ul class="loose">${loose}</ul>` : ''}
+    ${forwardedBlock(app)}
     <p class="hint">Faltar tem consequência, mas a agenda não manda em você. Toque no chão para andar, nas portas para mudar de cômodo, nas pessoas para conversar.</p>
     <div class="row"><button class="btn primary" data-act="closeCastleModal">Começar o dia</button></div>`);
+}
+
+// Encaminhados ao Conselho: contagem por tipo, lista curta e "puxar para mim"
+function forwardedBlock(app: App) {
+  const s = app.s;
+  const { pend, count, yesterday } = forwardedSummary(s);
+  const open = app.ui.fwdOpen;
+  const counts = [...count].map(([c, n]) => `<span class="fwd-chip">${iconImg(CATEGORIES[c].icon)} ${n} ${CATEGORIES[c].name.toLowerCase()}</span>`).join('');
+  const list = pend.map(({ a, ev, cat }) => { const who = holder(s, a.fwd!); return `<li>${portrait(ev.speaker, 'fwd-portrait')}<span><b>${esc(ev.topic)}</b><small>${esc(char(ev.speaker).name)} · ${esc(CATEGORIES[cat].name)} → ${who ? esc(shortName(who)) : 'cadeira vazia'}</small></span><button class="btn sm" data-act="pullBack" data-arg="${a.uid}">Receber eu</button></li>`; }).join('');
+  const yest = yesterday.length ? `<p class="fwd-yest">Ontem o Conselho decidiu ${yesterday.filter((r) => !r.unresolved).length} assunto(s) por você${yesterday.some((r) => r.unresolved) ? `; ${yesterday.filter((r) => r.unresolved).length} ficou sem ninguém` : ''}. <button class="linkish" data-act="fwdLog">ver</button></p>` : '';
+  const log = app.ui.fwdLog ? `<ul class="fwd-log">${yesterday.map((r) => `<li><b>${esc(r.topic)}</b> · ${r.who ? esc(shortName(r.who)) : 'ninguém'}${r.decision ? `: "${esc(r.decision)}"` : ''}${r.summary ? ` <small>${esc(r.summary)}</small>` : ''}</li>`).join('')}</ul>` : '';
+  return `<div class="fwd">
+    <h3>Encaminhados ao Conselho <button class="btn sm" data-act="policy">${iconImg('selo')} Política de audiências</button></h3>
+    ${pend.length ? `<div class="fwd-chips">${counts}<button class="linkish" data-act="fwdOpen">${open ? 'esconder' : 'ver quais'}</button></div>${open ? `<ul class="fwd-list">${list}</ul>` : ''}` : '<p class="sub">Nada encaminhado hoje. Todos os pedidos esperam o rei no salão.</p>'}
+    ${yest}${log}
+  </div>`;
+}
+
+// Quem recebe cada tipo de demanda
+function policy(app: App) {
+  const s = app.s;
+  const rows = CATEGORY_IDS.map((c) => {
+    const C = CATEGORIES[c];
+    const cur = policyOf(s, c);
+    const locked = c === 'urgencias';
+    const opt = (t: PolicyTarget, label: string, sub = '') => `<button class="pol-opt ${cur === t ? 'on' : ''} ${t === C.seat ? 'natural' : ''}" data-act="setPolicy" data-arg="${c}:${t}" ${locked && t !== 'rei' ? 'disabled' : ''}><b>${label}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</button>`;
+    return `<li class="pol-row"><span class="pol-cat">${iconImg(C.icon, 'ico-lg')}<span><b>${C.name}</b><small>${C.desc}</small></span></span>
+      <span class="pol-opts">${opt('rei', 'Rei')}${SEAT_IDS.map((k) => { const h = holder(s, k); return opt(k, SEATS[k].name.replace('Mestre dos ', ''), h ? shortName(h) : 'vazia'); }).join('')}</span></li>`;
+  }).join('');
+  const dom = SEAT_IDS.map((k) => { const h = holder(s, k); const n = s.tracks[`dom_${k}`] ?? 0; return h ? `<span class="pol-pow">${portrait(h, 'fwd-portrait')}<b>${esc(shortName(h))}</b><small>${n} decisões · ${powerLabel(s.council.power[h] ?? 0)}</small></span>` : ''; }).join('');
+  return frame('policy-modal', 'Política de Audiências', `
+    <p class="sub">O que o rei recebe pessoalmente e o que vai direto a uma cadeira do conselho. Quem decide por você ganha poder com isso. A cadeira marcada é a que cuida do assunto.</p>
+    <ul class="pol-list">${rows}</ul>
+    <div class="pol-pows">${dom}</div>
+    <div class="row"><button class="btn" data-act="agenda">Voltar à agenda</button></div>`);
 }
 
 function castleMap(app: App) {
@@ -167,6 +206,19 @@ export function handleCastleModal(app: App, act: string, arg: string): boolean {
       app.render();
       return true;
     }
+    case 'policy': app.ui.castleModal = 'politica'; app.render(); return true;
+    case 'setPolicy': {
+      const [c, t] = arg.split(':') as [AudienceCategory, PolicyTarget];
+      if (c === 'urgencias') return true;
+      (s.audiencePolicy ??= {})[c] = t;
+      // pedidos de hoje que ainda esperam seguem a regra nova
+      if (t !== 'rei') applyPolicy(s);
+      else for (const a of s.audiences) if (a.fwd && !a.done && categoryOf(EVENT_MAP[a.eventId]) === c) pullBack(s, a.uid);
+      save(s); app.render(); return true;
+    }
+    case 'pullBack': if (pullBack(s, Number(arg))) { save(s); app.toast('O pedido volta para a fila do salão.'); } app.render(); return true;
+    case 'fwdOpen': app.ui.fwdOpen = !app.ui.fwdOpen; app.render(); return true;
+    case 'fwdLog': app.ui.fwdLog = !app.ui.fwdLog; app.render(); return true;
     case 'dismissSeat': {
       const e = dismiss(s, arg as CouncilSeatId);
       save(s);

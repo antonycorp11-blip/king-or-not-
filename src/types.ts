@@ -257,6 +257,11 @@ export interface DecisionOrigin {
   decision: string;
 }
 
+// Política de audiências: o que o rei recebe pessoalmente e o que vai direto ao conselho
+export type AudienceCategory = 'povo' | 'comercio' | 'nobres' | 'militar' | 'religiao' | 'diplomacia' | 'financas' | 'justica' | 'urgencias';
+export type PolicyTarget = 'rei' | CouncilSeatId;
+export interface ForwardRecord { day: number; eventId: string; topic: string; category: AudienceCategory; seat: CouncilSeatId; who?: string; decision?: string; summary?: string; unresolved?: boolean }
+
 // Cartas: recados que chegam ao rei sem audiência (não gastam horas)
 export interface LetterDef {
   id: string;
@@ -284,6 +289,7 @@ export interface Letter {
 export interface Audience {
   uid: number;
   eventId: string;
+  fwd?: CouncilSeatId; // encaminhado ao conselho por esta cadeira (não entra na fila do rei)
   expires: number; // último dia em que pode ser atendida
   arrive?: number; // hora em que a pessoa chega ao castelo (padrão 8h)
   done: boolean;
@@ -402,6 +408,11 @@ export interface GameState {
   savedAt?: number;
   letters?: Letter[];
   houses?: Record<HouseId, import('./engine/houses').HouseState>; // humor, tropas e exigências de cada casa
+  audiencePolicy?: Partial<Record<AudienceCategory, PolicyTarget>>; // quem recebe cada tipo de demanda
+  forwarded?: ForwardRecord[]; // o que o conselho resolveu pelo rei (histórico recente)
+  investigation?: import('./engine/investigation').InvestigationState; // a morte do rei Odran
+  crowd?: import('./engine/crowd').CrowdState; // a praça da coroa e a opinião pública
+  speeches?: import('./engine/crowd').SpeechRecord[]; // pronunciamentos feitos
   summoned?: Record<string, number>; // último dia em que cada personagem foi convocado // quando foi salvo (para comparar com o save da nuvem)
   ended?: { kind: 'derrota' | 'fimAto'; title: string; text: string };
 }

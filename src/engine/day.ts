@@ -18,6 +18,7 @@ import { applyMood, moodHours, moodLabel, moodSleep, MOOD_NAMES } from './mood';
 import { bond } from './bonds';
 import { worldPoint } from '../data/castle';
 import { housesDaily } from './houses';
+import { applyPolicy, resolveForwarded } from './policy';
 
 // Avisos que a interface mostra assim que o tempo passa (compromissos perdidos etc.)
 export const notices: LogEntry[] = [];
@@ -134,6 +135,8 @@ export function startDay(s: GameState) {
     if (a.done || ev.place || !captures(s, ev, () => rand(s))) continue;
     if (delegate(s, ev, () => rand(s), 'Chegou ao conselheiro antes de chegar ao rei')) a.done = true;
   }
+  // A política de audiências: o que o rei não quer receber vai direto ao conselho
+  applyPolicy(s);
   // urgentes primeiro
   s.audiences.sort((a, b) => Number(eventOf(b).kind === 'urgente') - Number(eventOf(a).kind === 'urgente'));
   buildAgenda(s, () => rand(s));
@@ -142,7 +145,7 @@ export function startDay(s: GameState) {
 
 // Quem está na fila do salão (acontecimentos pelo castelo não entram na fila)
 export function visibleAudiences(s: GameState) {
-  return s.audiences.filter((a) => !a.done && (a.arrive ?? DAY_START) <= s.hour && isQueued(eventOf(a)));
+  return s.audiences.filter((a) => !a.done && !a.fwd && (a.arrive ?? DAY_START) <= s.hour && isQueued(eventOf(a)));
 }
 
 export const isQueued = (ev: GameEvent | undefined) => !!ev && !ev.place && (AUDIENCE_KINDS.includes(ev.kind) || ev.kind === 'noite');
@@ -194,6 +197,9 @@ function signed(n: number) {
 // Fecha o dia: demandas ignoradas, economia, povo, exército e o resumo.
 export function endDay(s: GameState): LogEntry[] {
   const entries: LogEntry[] = [];
+
+  // 0. O que foi encaminhado ao conselho é decidido agora
+  resolveForwarded(s, () => rand(s), entries);
 
   // 1. Demandas não atendidas
   const pending: Audience[] = [];

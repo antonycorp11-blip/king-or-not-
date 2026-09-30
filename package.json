@@ -13,7 +13,8 @@
     "topdown:check": "node scripts/topdown-catalog.mjs && python3 scripts/check_topdown.py",
     "topdown:test": "esbuild scripts/check_topdown_runtime.ts --bundle --platform=node --format=esm --outfile=build/check-topdown.mjs --log-level=warning && node build/check-topdown.mjs",
     "test:save": "esbuild scripts/save-test.ts --bundle --platform=node --outfile=build/save-test.cjs --log-level=warning && node build/save-test.cjs",
-    "audit:dialogos": "esbuild scripts/audit-dialogos.ts --bundle --platform=node --outfile=build/audit.cjs --log-level=warning && node build/audit.cjs"
+    "audit:dialogos": "esbuild scripts/audit-dialogos.ts --bundle --platform=node --outfile=build/audit.cjs --log-level=warning && node build/audit.cjs",
+    "test:expansao": "esbuild scripts/test-expansion.ts --bundle --platform=node --outfile=build/test-expansion.cjs --log-level=warning && node build/test-expansion.cjs"
   },
   "devDependencies": {
     "esbuild": "^0.25.12",

@@ -77,6 +77,7 @@ export interface UIState {
   sleeping?: boolean; // o rei está deitado (a noite passa)
   cineExit?: boolean; // a cena de cinema está saindo
   tour?: { id: string; i: number } | null; // tutorial guiado em andamento
+  fwdOpen?: boolean; fwdLog?: boolean; // agenda: encaminhados ao conselho
   readWith: string | null; // quem lê junto com o rei
 }
 

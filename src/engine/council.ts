@@ -94,6 +94,13 @@ function score(before: GameState, after: GameState, id: string): number {
   v += (cares.king ?? 0) * (after.res.prestigio - before.res.prestigio) * 0.5;
   // e ninguém quer ser o responsável por uma guerra
   if (!before.war && after.war) v -= 25;
+  // ambição: quem quer subir escolhe o que dá influência e poder a si mesmo
+  v += (p?.ambition ?? 30) / 100 * ((after.council.power[id] ?? 0) - (before.council.power[id] ?? 0)) * 2;
+  // relação com o rei: quem o ama protege o prestígio dele; quem o ressente, nem tanto
+  const b = before.bonds[id];
+  if (b) v += ((b.lealdade - 50) / 50) * (after.res.prestigio - before.res.prestigio) * 0.6;
+  // quem já pertence ao Pacto prefere o que deixa o rei mais fraco
+  if (before.conspiracy.members.includes(id)) v -= (after.res.prestigio - before.res.prestigio) * 0.8 + (after.res.povo - before.res.povo) * 0.3;
   return v;
 }
 
@@ -132,8 +139,8 @@ function reqOk(s: GameState, c: Choice) {
 
 export interface Delegation { who: string; seat: CouncilSeatId; labels: string[]; summary: string }
 
-export function delegate(s: GameState, ev: GameEvent, rng: () => number, why = 'O rei não recebeu'): Delegation | null {
-  const dom = domainOf(ev);
+export function delegate(s: GameState, ev: GameEvent, rng: () => number, why = 'O rei não recebeu', seatOverride?: CouncilSeatId): Delegation | null {
+  const dom = seatOverride ?? domainOf(ev);
   if (dom === 'pessoal') return null;
   const who = holder(s, dom);
   if (!who) return null;

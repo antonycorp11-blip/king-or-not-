@@ -1686,3 +1686,33 @@ body.character-gallery-page { overflow: auto; height: auto; min-height: 100vh; b
 .m .person .btn { font-size: 10px; padding: 2px 6px; }
 .m .btn.summon { font-size: 10px; padding: 2px 6px; }
 .m .btn.summon small { font-size: 8px; }
+
+/* ===== Política de audiências e encaminhados ===== */
+.fwd { margin-top: 8px; padding-top: 6px; border-top: 2px solid #c8a868; }
+.fwd h3 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fwd h3 .btn { font-size: 12px; padding: 3px 10px; }
+.fwd-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.fwd-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; font-size: 14px; background: rgba(90, 60, 30, .12); border: 1px solid #b8905a; border-radius: 12px; }
+.linkish { background: none; border: none; color: #2a3f8f; text-decoration: underline; cursor: pointer; font-size: 14px; padding: 0 4px; }
+.fwd-list, .fwd-log { list-style: none; padding: 0; margin: 6px 0; display: flex; flex-direction: column; gap: 4px; }
+.fwd-list li { display: grid; grid-template-columns: 34px 1fr auto; gap: 8px; align-items: center; padding: 3px 8px; background: rgba(255, 255, 255, .35); }
+.fwd-list b { font-size: 15px; } .fwd-list small { display: block; font-size: 12px; color: #5a4630; }
+.fwd-portrait { width: 32px; height: 32px; border-radius: 4px; }
+.fwd-list .btn { font-size: 12px; padding: 3px 8px; }
+.fwd-yest { font-size: 14px; margin: 6px 0 0; color: #5a4630; }
+.fwd-log li { font-size: 13px; } .fwd-log small { color: #6a5a3a; }
+.policy-modal .pol-list { list-style: none; padding: 0; margin: 6px 0; display: flex; flex-direction: column; gap: 4px; }
+.pol-row { display: grid; grid-template-columns: 270px 1fr; gap: 10px; align-items: center; padding: 4px 8px; background: rgba(255, 255, 255, .3); }
+.pol-cat { display: flex; gap: 8px; align-items: center; }
+.pol-cat b { font-size: 15px; display: block; } .pol-cat small { font-size: 12px; color: #5a4630; }
+.pol-opts { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.pol-opt { padding: 3px 4px; background: #f3e6c4; border: 2px solid #c8a868; border-radius: 6px; display: flex; flex-direction: column; align-items: center; line-height: 1.1; color: var(--ink); }
+.pol-opt b { font-size: 12px; } .pol-opt small { font-size: 10px; color: #6a5a3a; }
+.pol-opt.natural { border-style: dashed; border-color: #2a3f8f; }
+.pol-opt.on { background: #2a3f8f; border-color: #1c2c6a; color: #fff; } .pol-opt.on small { color: #d8dcff; }
+.pol-opt[disabled] { opacity: .35; }
+.pol-pows { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0; }
+.pol-pow { display: flex; gap: 6px; align-items: center; font-size: 13px; } .pol-pow small { display: block; color: #5a4630; }
+.m .pol-row { grid-template-columns: 150px 1fr; padding: 2px 6px; }
+.m .pol-cat small { display: none; } .m .pol-cat b { font-size: 12px; } .m .pol-cat .ico-lg { width: 20px; height: 20px; }
+.m .pol-opt b { font-size: 10px; } .m .pol-opt small { font-size: 8px; }
