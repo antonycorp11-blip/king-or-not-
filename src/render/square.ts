@@ -147,6 +147,8 @@ export class SquareView {
   private bg: HTMLCanvasElement | null = null;
   private bgKey = '';
   private raf = 0;
+  private drawnAt = 0;
+  private lastT = 0;
   private t0 = performance.now();
   private parts: Particle[] = [];
   private react: Partial<Record<Group, { r: Reaction; at: number }>> = {};
@@ -207,7 +209,8 @@ export class SquareView {
     if (!cv || !cv.isConnected || !this.ctx) return; // a tela fechou
     const r = cv.getBoundingClientRect();
     if (Math.abs(r.width * this.dpr - cv.width) > 2 || Math.abs(r.height * this.dpr - cv.height) > 2) this.resize();
-    this.draw(now);
+    // 30 quadros por segundo: a multidão não precisa de mais, e o celular agradece
+    if (now - this.drawnAt >= 31) { this.drawnAt = now; this.draw(now); }
     this.raf = requestAnimationFrame(this.frame);
   };
 
@@ -215,7 +218,8 @@ export class SquareView {
     const g = this.ctx!;
     const cv = this.cv!;
     const t = (now - this.t0) / 1000;
-    const dt = 1 / 60;
+    const dt = Math.min(0.1, this.lastT ? (now - this.lastT) / 1000 : 1 / 30);
+    this.lastT = now;
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.fillStyle = '#0d0a08';
     g.fillRect(0, 0, cv.width, cv.height);
@@ -382,7 +386,7 @@ export class SquareView {
 
   private drawParticles(g: CanvasRenderingContext2D, dt: number) {
     // pétalas quando a praça está em festa
-    if ((this.opts.mood === 'celebrando' || this.opts.mood === 'emocionada') && Math.random() < 0.4)
+    if ((this.opts.mood === 'celebrando' || this.opts.mood === 'emocionada') && Math.random() < 0.4 * dt * 60)
       this.push({ x: Math.random() * SQ_W, y: CROWD_TOP - 20, vx: (Math.random() - 0.5) * 20, vy: 30 + Math.random() * 20, life: 0, max: 5, kind: 'petala', color: Math.random() < 0.5 ? '#f0a0b8' : '#fff0f4' });
     const keep: Particle[] = [];
     for (const p of this.parts) {

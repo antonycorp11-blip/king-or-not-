@@ -71,7 +71,7 @@ export class SceneView {
     this.el.innerHTML = `<canvas class="pix layer actors"></canvas><div class="tint"></div><div class="vignette"></div><div class="bubbles"></div><div class="scene-markers"></div>`;
     host.appendChild(this.el);
     this.canvas = this.el.querySelector('canvas')!;
-    this.ctx = this.canvas.getContext('2d')!;
+    this.ctx = this.canvas.getContext('2d', { alpha: false })!; // opaco: o fundo sempre cobre tudo
     this.bubbleLayer = this.el.querySelector('.bubbles')!;
     this.markerLayer = this.el.querySelector('.scene-markers')!;
     this.el.closest<HTMLElement>('#stage')?.classList.add('hall-view');
@@ -97,7 +97,7 @@ export class SceneView {
     this.el.style.setProperty('--dusk', String(dusk));
     this.el.style.setProperty('--dawn', String(dawn));
   }
-  setMode(mode: 'full' | 'dim') { this.el.classList.toggle('dim', mode === 'dim'); }
+  setMode(mode: 'full' | 'dim') { this.ver++; this.el.classList.toggle('dim', mode === 'dim'); }
   setMovementEnabled(enabled: boolean) { this.movementEnabled = enabled; this.el.classList.toggle('move-enabled', enabled); }
   setZoom(mul: number) { this.zoomMul = Math.max(0.55, Math.min(1.5, mul)); }
   get zoom() { return this.zoomMul; }
@@ -113,6 +113,7 @@ export class SceneView {
 
   // Mantém os personagens da cena. Quem já existe caminha até o novo lugar.
   sync(specs: ActorSpec[]) {
+    this.ver++;
     const keep = new Set(specs.map((s) => s.key));
     for (const [k, a] of this.actors) if (!keep.has(k) && !a.leaving && !a.path.length) this.actors.delete(k);
     for (const s of specs) {
@@ -141,6 +142,7 @@ export class SceneView {
 
   // balão de fala sobre a cabeça de alguém
   say(key: string, text: string, ms = 4200) {
+    this.ver++;
     if (!this.actors.has(key)) return;
     this.bubbles.get(key)?.el.remove();
     const el = document.createElement('div');
@@ -151,6 +153,7 @@ export class SceneView {
   }
 
   setMarkers(list: SceneMarker[]) {
+    this.ver++;
     this.markers = list;
     this.markerLayer.innerHTML = list.map((m) => `<button class="scene-marker m-${m.kind}" data-act="${m.act}" data-arg="${m.arg}"><span>${m.label}</span></button>`).join('');
     this.markerEls = [...this.markerLayer.querySelectorAll<HTMLElement>('.scene-marker')];
@@ -186,7 +189,7 @@ export class SceneView {
   halt(key: string) { const a = this.actors.get(key); if (a) { a.path = []; a.onArrive = undefined; a.anim = 'idle'; } }
   // o rei deitado: some da cena (a cama já é o desenho) e o balão fica sobre ela
   private hidden = new Set<string>();
-  setHidden(key: string, on: boolean) { if (on) this.hidden.add(key); else this.hidden.delete(key); }
+  setHidden(key: string, on: boolean) { this.ver++; if (on) this.hidden.add(key); else this.hidden.delete(key); }
   place(key: string, x: number, y: number) { const a = this.actors.get(key); if (a) { a.x = x; a.foot = y; a.path = []; } }
   hotspotStand(act: string): [number, number] | null { return this.world?.hotspots.find((h) => h.acts.includes(act))?.stand ?? null; }
   setAnim(key: string, anim: Anim) { const a = this.actors.get(key); if (a && !a.path.length) a.anim = anim; }
@@ -252,10 +255,51 @@ export class SceneView {
       if (r && r !== cur) { const first = this.kingRoom === null && !this.currentRoom; this.kingRoom = r; if (!first) this.onKingRoom?.(r); }
       else if (r) this.kingRoom = r;
     }
-    if (now - this.lastDraw < 40) return;
+    // Só redesenha quando algo mudou: alguém andando, a câmera deslizando, um
+    // balão, um marcador novo. Parado de dia, o quadro anterior continua valendo;
+    // à noite as velas tremulam a 12 quadros por segundo. Atrás de uma tela
+    // (cena borrada), no máximo 4 quadros por segundo.
+    const dim = this.el.classList.contains('dim');
+    if (now - this.lastDraw < (dim ? 250 : 30)) return;
+    const sig = this.signature();
+    const flicker = this.night > 0 && !dim && now - this.lastDraw >= 80;
+    if (sig === this.lastSig && !flicker && !this.bubbles.size && now - this.lastDraw < 2000) return;
+    this.lastSig = sig;
     this.lastDraw = now;
+    const t0 = performance.now();
     this.draw(now);
+    this.adapt(performance.now() - t0);
   };
+
+  // Aparelho fraco: se o desenho médio passa de 16 ms, a cena cai para 85% e
+  // depois 70% da resolução (o navegador estica). Em aparelho bom nada muda.
+  private res = 1;
+  private cost = 0;
+  private draws = 0;
+  private adapt(ms: number) {
+    this.draws++;
+    this.cost = this.draws === 1 ? ms : this.cost * 0.9 + ms * 0.1;
+    if (this.draws < 30 || this.res <= 0.7) return;
+    if (this.cost > 16) { this.res = this.res > 0.85 ? 0.85 : 0.7; this.draws = 0; this.ver++; }
+  }
+  get resolution() { return this.res; }
+
+  private lastSig = '';
+  private ver = 0; // muda a cada chamada que altera a cena por fora
+  private signature() {
+    const c = this.cam;
+    let s = `${this.ver}|${this.world ? 1 : 0}|${this.canvas.width}x${this.canvas.height}|${this.el.offsetWidth}x${this.el.offsetHeight}|${c.x.toFixed(1)},${c.y.toFixed(1)}|${this.zoomMul}|${this.night}`;
+    // só conta quem aparece na tela (um guarda andando no outro lado do castelo não pede quadro novo)
+    for (const a of this.actors.values()) {
+      if (a.x < c.x - 80 || a.x > c.x + c.vw + 80 || a.foot < c.y - 20 || a.foot > c.y + c.vh + 140) continue;
+      s += `|${a.key}:${a.x | 0},${a.foot | 0},${a.dir},${a.anim},${a.anim === 'walk' ? a.frame : 0}`;
+    }
+    const king = this.actors.get('rei');
+    if (king || this.focusPoint) s += `|f${this.focusPoint?.join(',') ?? ''}`;
+    return s;
+  }
+  /** avisa o laço que algo mudou por fora (marcadores, balões, modo) */
+  touch() { this.ver++; }
 
   resetKingRoom(r: RoomId) { this.kingRoom = r; }
 
@@ -286,7 +330,7 @@ export class SceneView {
   }
 
   private fitCanvas() {
-    const w = this.el.offsetWidth || 1280, h = this.el.offsetHeight || 720;
+    const w = Math.round((this.el.offsetWidth || 1280) * this.res), h = Math.round((this.el.offsetHeight || 720) * this.res);
     if (this.canvas.width !== w || this.canvas.height !== h) { this.canvas.width = w; this.canvas.height = h; }
   }
 
@@ -312,7 +356,7 @@ export class SceneView {
     if (!w) return;
     c.setTransform(cam.zoom, 0, 0, cam.zoom, -cam.x * cam.zoom, -cam.y * cam.zoom);
     c.imageSmoothingEnabled = true;
-    w.drawBackground(c, cam);
+    w.drawBackgroundCached(c, cam, this.night);
     // objetos e pessoas, por profundidade
     const inView = (x: number, y: number, ww: number, hh: number) => x < cam.x + cam.vw && x + ww > cam.x && y < cam.y + cam.vh && y + hh > cam.y;
     const items: { depth: number; draw: () => void }[] = [];

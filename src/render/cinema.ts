@@ -224,8 +224,12 @@ export class Cinema {
     // fade
     this.fade += (this.fadeTo - this.fade) * Math.min(1, dt * 3.2);
     if (this.fadeTo === 1 && this.fade > 0.97 && this.endCb) return this.stop();
+    // 30 quadros por segundo bastam para a cena (a lógica acima segue o tempo real)
+    if (now - this.drawnAt < 31) return;
+    this.drawnAt = now;
     this.draw(now);
   };
+  private drawnAt = 0;
 
   private night() {
     const h = this.play_?.hour ?? 12;

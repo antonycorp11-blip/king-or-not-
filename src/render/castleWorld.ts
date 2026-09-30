@@ -3,9 +3,10 @@ import { DOORS, ROOMS, ROOM_IDS, WORLD_H, WORLD_W, walkRects } from '../data/cas
 import { ROOM_LAYOUTS, type Place } from '../data/roomLayouts';
 import { loadHallAtlas, regions, type HallAsset } from './throneHall';
 
-// O castelo inteiro num mapa só. Nada é pré-desenhado numa imagem gigante: a cada
-// quadro desenha-se apenas o que a câmera vê (pisos por padrão de textura, paredes,
-// tapetes, objetos). Assim cabe no celular.
+// O castelo inteiro num mapa só. O que não se mexe (pisos, paredes, tapetes,
+// sombras) é desenhado sob demanda em blocos de 512px e reaproveitado; a cada
+// quadro só os móveis, as pessoas e as luzes são desenhados de novo. Nada de
+// imagem gigante: só os blocos que a câmera vê (e alguns recentes) ficam na memória.
 
 interface PropManifest {
   sheets: Record<string, string>;
@@ -17,6 +18,7 @@ export interface WorldObject {
   x: number; y: number; w: number; h: number; depth: number;
   solid: boolean; hit: [number, number, number, number];
   draw: (c: CanvasRenderingContext2D) => void;
+  shadow: (c: CanvasRenderingContext2D) => void; // fica no chão: vai para o cache do fundo
 }
 export interface Hotspot { id: string; room: RoomId; rect: [number, number, number, number]; stand: [number, number]; acts: string[] }
 export interface WorldLight { x: number; y: number; r: number }
@@ -139,13 +141,13 @@ export class CastleWorld {
     const x = rx + p.x - w / 2, foot = ry + p.y, y = foot - h;
     const base = Math.min(h, h * (p.base ?? 0.45));
     this.objects.push({ x, y, w, h, depth: foot, solid: p.solid !== false, hit: [x + 6, foot - base, w - 12, base],
-      draw: (c) => {
+      shadow: (c) => {
         // sombra projetada: o sol (ou a vela) vem do alto à esquerda
         const sw = w * 0.5, sh = Math.max(6, Math.min(16, h * 0.1));
         c.fillStyle = 'rgba(10,8,20,.16)'; c.beginPath(); c.ellipse(x + w / 2 + w * 0.1, foot - 2, sw * 1.12, sh * 1.3, 0, 0, Math.PI * 2); c.fill();
         c.fillStyle = 'rgba(10,8,20,.24)'; c.beginPath(); c.ellipse(x + w / 2 + w * 0.05, foot - 3, sw * 0.9, sh, 0, 0, Math.PI * 2); c.fill();
-        this.blit(c, p.p, x, y, w, h, p.flip);
-      } });
+      },
+      draw: (c) => this.blit(c, p.p, x, y, w, h, p.flip) });
     if (p.light) this.lights.push({ x: rx + p.x, y: foot - h * 0.78, r: p.light });
     if (p.hot) this.hotspots.push({ id: `${room}-${p.p}-${this.hotspots.length}`, room, rect: [x, y, w, h], stand: [rx + p.x, foot + 30], acts: p.hot });
   }
@@ -174,6 +176,57 @@ export class CastleWorld {
   walkable(x: number, y: number) {
     const cx = Math.floor(x / this.cell), cy = Math.floor(y / this.cell);
     return cx >= 0 && cy >= 0 && cx < this.cols && cy < this.rows && this.grid[cy * this.cols + cx] === 1;
+  }
+
+  // ---------- cache do fundo ----------
+  // Chão, paredes, tapetes e sombras dos móveis não mudam:
+  // são desenhados uma vez em blocos, na resolução do zoom atual, e depois
+  // cada quadro só cola os blocos visíveis, alinhados em pixels inteiros.
+  private chunks = new Map<string, { cv: HTMLCanvasElement; used: number }>();
+  private static CHUNK_PX = 512;
+  private static MAX_CHUNKS = 30;
+  drawBackgroundCached(c: CanvasRenderingContext2D, cam: Camera, night = 0) {
+    const bakeGlow = night === 0; // de dia o brilho das velas é fixo e sutil: vai para o bloco
+    // blocos na escala exata do zoom: cada quadro é só uma cópia 1:1 em
+    // pixels inteiros (sem reamostrar), o jeito mais barato de desenhar
+    const s = Math.round(cam.zoom * 1000) / 1000;
+    const P = CastleWorld.CHUNK_PX;
+    const W = P / s; // tamanho do bloco no mundo
+    const x0 = Math.floor(cam.x / W), x1 = Math.floor((cam.x + cam.vw) / W);
+    const y0 = Math.floor(cam.y / W), y1 = Math.floor((cam.y + cam.vh) / W);
+    const now = performance.now();
+    c.save();
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    const ox = Math.round(-cam.x * cam.zoom), oy = Math.round(-cam.y * cam.zoom);
+    for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+      const key = `${s}:${cx}:${cy}:${bakeGlow ? 'd' : 'n'}`;
+      let ch = this.chunks.get(key);
+      if (!ch) { ch = { cv: this.renderChunk(cx * P, cy * P, s, bakeGlow), used: now }; this.chunks.set(key, ch); this.trimChunks(); }
+      ch.used = now;
+      c.drawImage(ch.cv, ox + cx * P, oy + cy * P);
+    }
+    c.restore();
+  }
+  // um bloco: P×P pixels de tela a partir do pixel (px, py) do mundo já escalado
+  private renderChunk(px: number, py: number, s: number, bakeGlow: boolean): HTMLCanvasElement {
+    const P = CastleWorld.CHUNK_PX;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = P;
+    const g = cv.getContext('2d', { alpha: false })!; // opaco: a cópia por quadro é mais barata
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = 'high';
+    g.setTransform(s, 0, 0, s, -px, -py);
+    const wx = px / s, wy = py / s, ws = P / s;
+    const cam: Camera = { x: wx, y: wy, zoom: s, vw: ws, vh: ws };
+    this.drawBackground(g, cam);
+    for (const o of this.objects) if (o.x < wx + ws && o.x + o.w > wx && o.y < wy + ws + 20 && o.depth + 20 > wy) o.shadow(g);
+    if (bakeGlow) this.drawGlows(g, cam, 0, 0);
+    return cv;
+  }
+  private trimChunks() {
+    if (this.chunks.size <= CastleWorld.MAX_CHUNKS) return;
+    const old = [...this.chunks.entries()].sort((a, b) => a[1].used - b[1].used);
+    for (const [k] of old.slice(0, this.chunks.size - CastleWorld.MAX_CHUNKS)) this.chunks.delete(k);
   }
 
   // ---------- desenho ----------
@@ -257,40 +310,82 @@ export class CastleWorld {
     }
   }
 
-  // Luz: de dia, fachos pelas janelas; à noite, o castelo escurece e velas e tochas acendem de verdade
+  // Luz: de dia, fachos pelas janelas; à noite, o castelo escurece e velas e tochas acendem de verdade.
+  // Fachos e brilhos são sprites prontos (o gradiente é desenhado uma vez só);
+  // cada quadro só cola cada um na sua área, com a intensidade no globalAlpha.
   drawLights(c: CanvasRenderingContext2D, cam: Camera, time: number, night: number) {
     const day = Math.max(0, 1 - night * 1.4);
     c.save();
     if (day > 0) {
       c.globalCompositeOperation = 'screen';
+      c.globalAlpha = day;
       for (const b of this.beams) {
         if (b.x + b.w * 2 < cam.x || b.x - b.w * 2 > cam.x + cam.vw || b.y > cam.y + cam.vh || b.y + b.len < cam.y) continue;
-        const g = c.createLinearGradient(0, b.y, 0, b.y + b.len);
-        g.addColorStop(0, `rgba(255,236,190,${0.22 * day})`); g.addColorStop(1, 'rgba(255,236,190,0)');
-        c.fillStyle = g;
-        c.beginPath();
-        c.moveTo(b.x - b.w / 2, b.y); c.lineTo(b.x + b.w / 2, b.y);
-        c.lineTo(b.x + b.w * 0.9 + b.len * 0.18, b.y + b.len); c.lineTo(b.x - b.w * 0.9 + b.len * 0.18, b.y + b.len);
-        c.closePath(); c.fill();
+        const sp = this.beamSprite(b);
+        c.drawImage(sp.cv, sp.x, sp.y, sp.w, sp.h);
       }
+      c.globalAlpha = 1;
     }
     if (night > 0) {
       c.globalCompositeOperation = 'source-over';
       c.fillStyle = `rgba(10,14,38,${night * 0.58})`;
       c.fillRect(cam.x - 10, cam.y - 10, cam.vw + 20, cam.vh + 20);
     }
+    if (night > 0) this.drawGlows(c, cam, time, night); // de dia já estão nos blocos do chão
+    c.restore();
+  }
+
+  private drawGlows(c: CanvasRenderingContext2D, cam: Camera, time: number, night: number) {
+    c.save();
     c.globalCompositeOperation = 'lighter';
+    c.globalAlpha = 0.07 + night * 0.3;
+    const glow = this.glow();
     for (const [i, L] of this.lights.entries()) {
       if (L.x < cam.x - L.r * 2 || L.x > cam.x + cam.vw + L.r * 2 || L.y < cam.y - L.r * 2 || L.y > cam.y + cam.vh + L.r * 2) continue;
-      const f = 1 + Math.sin(time / 211 + i * 2.7) * 0.04;
+      const f = night > 0 ? 1 + Math.sin(time / 211 + i * 2.7) * 0.04 : 1;
       const r = L.r * f * (1 + night * 0.7);
-      const a = 0.07 + night * 0.3;
-      const g = c.createRadialGradient(L.x, L.y, 0, L.x, L.y, r);
-      g.addColorStop(0, `rgba(255,190,110,${a})`);
-      g.addColorStop(0.45, `rgba(240,150,60,${a * 0.35})`); g.addColorStop(1, 'rgba(240,130,40,0)');
-      c.fillStyle = g; c.fillRect(L.x - r, L.y - r, r * 2, r * 2);
+      c.drawImage(glow, L.x - r, L.y - r, r * 2, r * 2);
     }
     c.restore();
+  }
+
+  // o facho de uma janela, desenhado uma vez numa imagem pequena
+  private beamSprites = new Map<object, { cv: HTMLCanvasElement; x: number; y: number; w: number; h: number }>();
+  private beamSprite(b: { x: number; y: number; w: number; len: number }) {
+    let sp = this.beamSprites.get(b);
+    if (sp) return sp;
+    const x0 = b.x - b.w * 0.9, x1 = b.x + b.w * 0.9 + b.len * 0.18;
+    const w = x1 - x0, h = b.len;
+    const k = 0.5; // gradiente suave: meia resolução basta
+    const cv = document.createElement('canvas');
+    cv.width = Math.ceil(w * k); cv.height = Math.ceil(h * k);
+    const g = cv.getContext('2d')!;
+    g.setTransform(k, 0, 0, k, -x0 * k, -b.y * k);
+    const gr = g.createLinearGradient(0, b.y, 0, b.y + b.len);
+    gr.addColorStop(0, 'rgba(255,236,190,0.22)'); gr.addColorStop(1, 'rgba(255,236,190,0)');
+    g.fillStyle = gr;
+    g.beginPath();
+    g.moveTo(b.x - b.w / 2, b.y); g.lineTo(b.x + b.w / 2, b.y);
+    g.lineTo(b.x + b.w * 0.9 + b.len * 0.18, b.y + b.len); g.lineTo(b.x - b.w * 0.9 + b.len * 0.18, b.y + b.len);
+    g.closePath(); g.fill();
+    sp = { cv, x: x0, y: b.y, w, h };
+    this.beamSprites.set(b, sp);
+    return sp;
+  }
+
+  // o brilho de uma vela, desenhado uma vez (o gradiente é o mesmo de sempre;
+  // a intensidade vem do globalAlpha)
+  private glowCv: HTMLCanvasElement | null = null;
+  private glow() {
+    if (this.glowCv) return this.glowCv;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 256;
+    const g = cv.getContext('2d')!;
+    const gr = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+    gr.addColorStop(0, 'rgba(255,190,110,1)');
+    gr.addColorStop(0.45, 'rgba(240,150,60,0.35)'); gr.addColorStop(1, 'rgba(240,130,40,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
+    return (this.glowCv = cv);
   }
 
   hotspotAt(x: number, y: number): Hotspot | null {
