@@ -2,6 +2,7 @@ import type { Choice, GameEvent, GameState } from '../../types';
 import { CONFESSION, EVIDENCE_MAP, KIND_INFO, MISSION_MAP, SUSPECTS, type SuspectId } from '../investigation';
 import { accuse, canConfront, confront, inv, openCase, phase, seenKind, suspicion, takeReport, has, discover } from '../../engine/investigation';
 import { char } from '../characters';
+import { currentOp, offerOp, opPitch } from '../../engine/nightOps';
 
 // EVENTOS DA INVESTIGAÇÃO: Pimenta, os relatórios, o perigo, os confrontos e a acusação
 const P = 'pessoal' as const;
@@ -50,7 +51,20 @@ const confrontChoices = (id: SuspectId) => (s: GameState): Choice[] => {
   ];
 };
 
-export const INVESTIGATION_CHOICES: Record<string, (s: GameState) => Choice[]> = Object.fromEntries(SUSPECTS.map((id) => [`confronto_${id}`, confrontChoices(id)]));
+// O relatório da noite: às vezes Pimenta tem um plano para agora mesmo
+const reportChoices = (s: GameState): Choice[] => {
+  const op = offerOp(s);
+  const base: Choice[] = [
+    { label: 'Colocar na mesa', sub: 'Guardar a evidência', color: 'azul', icon: 'pergaminho', say: 'Bom trabalho. Vou pôr isso na mesa, junto com o resto. E você, descanse um pouco.', effects: { run: (st) => { takeReport(st); }, rel: { pimenta: 2 }, xp: 10 }, reply: op ? '"Descansar? Ainda não, Majestade." Ele olha para os lados.' : '"Descansar? Eu sou bobo, Majestade, não preguiçoso." Ele some antes de você terminar de agradecer.', goto: op ? 'op' : undefined },
+    { label: 'Perguntar como ele conseguiu', sub: 'Conhecer o método', color: 'verde', icon: 'balao', say: 'Como você conseguiu isso sem ninguém perceber?', effects: { run: (st) => { takeReport(st); }, rel: { pimenta: 4 }, bond: { pimenta: { confianca: 4 } }, xp: 10 }, reply: '"Truque de bobo, Majestade: se você tropeça três vezes na frente de alguém, na quarta vez ele nem olha."' + (op ? ' Ele baixa a voz.' : ''), goto: op ? 'op' : undefined },
+  ];
+  return base;
+};
+
+export const INVESTIGATION_CHOICES: Record<string, (s: GameState) => Choice[]> = {
+  ...Object.fromEntries(SUSPECTS.map((id) => [`confronto_${id}`, confrontChoices(id)])),
+  olhos_relatorio: reportChoices,
+};
 
 export const INVESTIGATION_EVENTS: GameEvent[] = [
   // ======================= A PRIMEIRA PISTA =======================
@@ -84,8 +98,16 @@ export const INVESTIGATION_EVENTS: GameEvent[] = [
   },
   {
     id: 'olhos_relatorio', speaker: 'pimenta', topic: 'Pimenta voltou', kind: 'encontro', domain: P, talk: false,
-    place: { room: 'arquivos', hour: 12, title: 'Pimenta voltou da missão' },
-    nodes: { start: {
+    place: { room: 'arquivos', hour: 20, duration: 2, title: 'Pimenta espera nos arquivos' },
+    nodes: {
+      op: {
+        text: (s) => { const op = currentOp(s); return op ? opPitch(op) : 'Pimenta pensa melhor e desiste do plano. "Outra noite."'; },
+        choices: [
+          { label: 'Vamos agora', sub: 'Uma operação noturna', color: 'roxo', icon: 'olho', say: 'Vamos. Agora, enquanto o castelo dorme.', effects: { run: (s) => { const op = currentOp(s); if (op) op.go = true; }, rel: { pimenta: 3 }, xp: 6 }, reply: 'Pimenta apaga a vela com dois dedos. "Siga o bobo, Majestade. E não espirre."' },
+          { label: 'Hoje não', sub: 'Ir dormir', color: 'azul', icon: 'coracao', say: 'Hoje não, Pimenta. Estou exausto. Outra noite.', effects: { run: (s) => { const op = currentOp(s); if (op) op.done = 'desistiu'; } }, reply: '"Outra noite, então. Mas as paredes não esperam para sempre."' },
+        ],
+      },
+      start: {
       text: (s) => reportText(s),
       choices: [
         { label: 'Colocar na mesa', sub: 'Guardar a evidência', color: 'azul', icon: 'pergaminho', say: 'Bom trabalho. Vou pôr isso na mesa, junto com o resto. E você, descanse um pouco.', effects: { run: (s) => { takeReport(s); }, rel: { pimenta: 2 }, xp: 10 }, reply: '"Descansar? Eu sou bobo, Majestade, não preguiçoso." Ele some antes de você terminar de agradecer.' },

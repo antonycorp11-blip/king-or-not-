@@ -1,4 +1,5 @@
 import { crowdDaily } from './crowd';
+import { nextMeet } from './nightOps';
 import type { Audience, DecisionOrigin, GameEvent, GameState, LogEntry, Resources } from '../types';
 import { AUDIENCE_KINDS, EVENTS, EVENT_MAP } from '../data/events';
 import { HOUSE_IDS, HOUSES, PROVINCES, GOODS } from '../data/realm';
@@ -23,13 +24,22 @@ import { applyPolicy, resolveForwarded } from './policy';
 import { checkMission, inv, investigationDaily } from './investigation';
 
 // Pimenta voltou de uma missão: marca o encontro para ouvir o relatório
+// Pimenta sempre entrega o relatório à noite, depois das 20h, num lugar secreto
 function missionTick(s: GameState) {
   const room = checkMission(s);
   if (!room) return;
-  const ev = EVENT_MAP.olhos_relatorio;
-  if (ev?.place) ev.place = { ...ev.place, room, hour: Math.min(19.5, Math.max(9, Math.ceil(s.hour) + 1)) };
+  const I = inv(s);
+  I.meet = nextMeet(s);
+  syncMeet(s);
   s.scheduled.push({ id: 'olhos_relatorio', day: s.day });
-  notices.push({ icon: 'olho', title: 'Pimenta voltou', text: `Ele espera o rei em ${room === 'galeria' ? 'algum canto da galeria' : 'segredo'}. Veja a agenda.`, tone: 'rumor' });
+  notices.push({ icon: 'olho', title: 'Um bilhete de Pimenta', text: `Debaixo da sua porta, um guizo e um papel: "Hoje, depois das 20h, ${I.meet.where}. Venha sozinho. Ou com fome, tanto faz."`, tone: 'rumor' });
+}
+
+// o lugar do encontro vale para o evento (a agenda grava o cômodo de qualquer forma)
+export function syncMeet(s: GameState) {
+  const ev = EVENT_MAP.olhos_relatorio;
+  const m = s.investigation?.meet;
+  if (ev?.place && m) ev.place = { ...ev.place, room: m.room, hour: 20, duration: 2, spot: undefined, title: `Pimenta espera ${m.where}` };
 }
 
 // Avisos que a interface mostra assim que o tempo passa (compromissos perdidos etc.)
@@ -59,6 +69,7 @@ function addAudience(s: GameState, ev: GameEvent, arrive = DAY_START, origin?: D
 
 // Encontros combinados para hoje mesmo (numa conversa, "às 17h no jardim")
 export function placeDue(s: GameState) {
+  syncMeet(s);
   const due = s.scheduled.filter((x) => x.day <= s.day && EVENT_MAP[x.id]?.place);
   if (!due.length) return;
   s.scheduled = s.scheduled.filter((x) => !due.includes(x));
@@ -100,6 +111,7 @@ export function startDay(s: GameState) {
   for (const a of s.audiences) a.arrive = DAY_START; // quem voltou já espera desde cedo
 
   // eventos agendados por decisões anteriores
+  syncMeet(s);
   const due = s.scheduled.filter((x) => x.day <= s.day);
   s.scheduled = s.scheduled.filter((x) => x.day > s.day);
   for (const d of due) {

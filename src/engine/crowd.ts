@@ -181,6 +181,7 @@ export function finishSpeech(s: GameState): SpeechResult & { lines: string[] } {
   if (s.flags.promessaVazia && !s.flags.promessaVaziaVista) { s.flags.promessaVaziaVista = true; s.flags.promessaVaziaDia = s.day; }
   // o que este anúncio resolve
   const k = live.kind;
+  if (k === 'coroacao') s.flags.primeiroDiscurso = s.day;
   if (k === 'guerra') { s.flags.guerraDeclarada = s.day; lines.push('A guerra agora tem a voz do rei. O recrutamento volta ao normal.'); }
   if (k === 'rainha') { s.flags.rainhaApresentada = s.day; s.flags.rainhaImagem = Number(s.flags.rainhaImagem ?? 0) + (r.verdict === 'triunfo' ? 15 : r.verdict === 'bom' ? 8 : r.verdict === 'desastre' ? -10 : 0); if (s.spouse) s.rel[s.spouse] = clamp((s.rel[s.spouse] ?? 0) + (r.score > 0 ? 6 : -4), -100, 100); }
   if (k === 'impostos') s.flags.impostoAnunciado = s.day;
@@ -347,6 +348,7 @@ export function crowdDaily(s: GameState, entries: LogEntry[]) {
 }
 
 const PENDING_TEXT: Record<SpeechKind, string> = {
+  coroacao: 'A cidade ainda espera o primeiro discurso do novo rei.',
   geral: 'A praça quer ver o rei.',
   rainha: 'A cidade ainda não viu a rainha na varanda. Já dizem que ela se esconde, ou que o rei a esconde.',
   guerra: 'A guerra continua sem uma palavra do rei.',

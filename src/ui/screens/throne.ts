@@ -1,4 +1,5 @@
 import { sound } from '../../audio/sound';
+import { matterHandled, nextMatter, scheduleCouncil, urgentAppt } from '../../engine/agenda';
 import type { Choice, CouncilSeatId, GameEvent, GameState } from '../../types';
 import type { App } from '../app';
 import type { ActorSpec, SceneMarker } from '../sceneView';
@@ -272,7 +273,24 @@ function roomHud(app: App): string {
       <button class="dock-btn end ${s.hour >= 19 ? 'late' : ''}" data-act="endDay" title="O rei vai até a cama e dorme">${iconImg('selo', 'ico-lg')}<span>Ir dormir</span></button>
     </div>
     <div class="zoom-ctl"><button data-act="zoom" data-arg="in" title="Aproximar">+</button><button data-act="zoom" data-arg="out" title="Afastar">−</button></div>
+    ${apptCall(app)}
     ${away && vis.length ? `<button class="hall-call ${urgent ? 'urgent' : ''}" data-act="travel" data-arg="salao">${urgent ? `${portrait(eventOf(urgent).speaker, 'q-portrait')}<span><b>Urgente no salão</b><small>${esc(char(eventOf(urgent).speaker).name)}</small></span>` : `${iconImg('povo', 'ico-lg')}<span><b>${vis.length} no salão</b><small>Ir até lá</small></span>`}</button>` : ''}`;
+}
+
+// Compromisso importante começando (ou já começado) em outro lugar: impossível não ver
+function apptCall(app: App): string {
+  const s = app.s;
+  if (app.ui.dialog || s.flags.nightPending) return '';
+  const a = urgentAppt(s);
+  if (!a) return '';
+  const started = s.hour >= a.hour;
+  const mins = Math.round((a.hour - s.hour) * 60);
+  // a primeira vez que aparece, o sino toca
+  if (app.ui.apptRang !== a.uid) { app.ui.apptRang = a.uid; window.setTimeout(() => sound.play(a.kind === 'conselho' ? 'drum' : 'bell'), 200); }
+  const what = a.kind === 'conselho' ? 'A reunião do Conselho' : a.meal ? (a.meal === 'almoco' ? 'O almoço' : 'O jantar') : a.title;
+  return `<button class="appt-call ${started ? 'late' : ''}" data-act="travel" data-arg="${a.room}">
+    ${iconImg(a.kind === 'conselho' ? 'selo' : a.meal ? 'trigo' : 'ampulheta', 'ico-lg')}
+    <span><b>${started ? `${esc(what)} já começou!` : `${esc(what)} em ${mins} min`}</b><small>${esc(ROOMS[a.room].name)} · toque para ir agora</small></span></button>`;
 }
 
 const fmt = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
@@ -448,7 +466,7 @@ export function handle(app: App, act: string, arg: string) {
     const first = !a.done;
     if (first) {
       a.done = true;
-      const cost = ev.kind === 'noite' || ev.kind === 'atividade' ? 0 : ev.hours ?? 1;
+      const cost = ev.kind === 'noite' || ev.kind === 'atividade' ? 0 : ev.kind === 'reuniao' ? 0.5 : ev.hours ?? 1;
       if (cost) spendHours(s, cost, 'trabalho');
     }
     if (d.node === 'start') d.root = ch.label;
@@ -461,10 +479,16 @@ export function handle(app: App, act: string, arg: string) {
     const before = mood();
     const resBefore = { ...s.res };
     applyEffect(s, ch.effects, { soften, origin: { day: s.day, event: ev.topic, decision: ch.label } });
+    // uma lei mudou numa conversa: o conselho precisa se reunir sobre ela
+    if (ch.effects?.law && ev.kind !== 'reuniao') {
+      s.flags._leiPendente = ch.effects.law;
+      const when = scheduleCouncil(s, 'cm_ratificar_lei');
+      window.setTimeout(() => app.toast(`Nova lei: o Conselho vai se reunir ${when} para discuti-la.`), 900);
+    }
     // o som do resultado: moedas entrando, algo bom, algo que custou caro
     const gain = (s.res.povo - resBefore.povo) + (s.res.prestigio - resBefore.prestigio) + (s.res.moral - resBefore.moral) / 2;
     window.setTimeout(() => sound.play(s.res.ouro - resBefore.ouro >= 40 ? 'coin' : gain >= 4 ? 'good' : gain <= -4 ? 'bad' : 'page'), 350);
-    if (ev.council && first) recordVote(s, ev, ch.seat ?? null);
+    if (ev.council && first) { recordVote(s, ev, ch.seat ?? null); matterHandled(s, ev.id); }
     placeDue(s); // "às 17h no jardim": o encontro entra na agenda de hoje
     // seguir (ou ignorar) o conselho mexe com quem aconselhou
     if (d.advice) applyEffect(s, { rel: { [d.advice.who]: isAdv ? (hasSkill(s, 'confidente') ? 6 : 3) : -2 } });
@@ -517,6 +541,17 @@ export function handle(app: App, act: string, arg: string) {
     save(s);
     if (ev.kind === 'noite' && s.flags.nightPending) return app.doEndDay(); // acordou na cama: volta a dormir
     if (s.crowd?.live && s.crowd.live.day === s.day && !s.crowd.live.picks.length) return app.go('praca'); // o rei sobe à varanda
+    if (app.startNightOp()) return; // Pimenta e o rei saem pela noite
+    // a pauta do conselho continua: o próximo assunto entra em seguida
+    if (ev.kind === 'reuniao') {
+      const nm = nextMatter(s);
+      if (nm) {
+        app.render();
+        app.toast(`Próximo assunto da pauta (${nm.n} de ${nm.total}).`);
+        window.setTimeout(() => { if (!app.ui.dialog) app.openInline(nm.id); }, 700);
+        return;
+      }
+    }
     app.render();
     if (s.war && ev.id === 'invasao') app.toast('A guerra começou! Abra a tela de Guerra para comandar.');
     app.autoOpenUrgent();

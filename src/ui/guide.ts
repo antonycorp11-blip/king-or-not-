@@ -18,6 +18,14 @@ interface Tour { id: string; when: (app: App) => boolean; steps: Step[]; tips?: 
 const onTrono = (app: App) => app.ui.screen === 'trono' && !app.ui.dialog && !app.ui.castleModal && !app.ui.summary && !app.ui.panel && !app.cinema.active && !app.ui.sleeping;
 
 export const TOURS: Tour[] = [
+  // o primeiro discurso: a praça é apresentada logo no começo do reinado
+  { id: 'praca', when: (app) => app.ui.screen === 'praca' && !!app.s.crowd?.live && !app.ui.panel, steps: [
+    { sel: '.sq-stage', title: 'A Praça da Coroa', text: 'Lá embaixo está a cidade: o povo no meio, mercadores à esquerda, religiosos à direita, nobres na frente e soldados nos lados. Cada um reage do seu jeito ao que o rei diz.' },
+    { sel: '.sq-groups', title: 'O que cada grupo pensa', text: 'Estas barras mostram o humor de cada grupo. Elas mudam ao vivo a cada frase do discurso.' },
+    { sel: '.sq-step', title: 'Cinco etapas', text: 'Todo pronunciamento tem abertura, mensagem, justificativa, promessa e encerramento. Você escolhe uma frase em cada etapa.' },
+    { sel: '.sq-opts', title: 'Os tons', text: 'As etiquetas coloridas são o tom da frase. O povo gosta de populista e inspirador; nobres, de autoritário; religiosos, de religioso. Tons que se contradizem (autoritário e populista, por exemplo) fazem o rei perder credibilidade.' },
+    { sel: '.sq-opts .sq-opt', title: 'Agora é com você', text: 'Escolha a primeira frase e veja a multidão reagir. Durante o reinado, guerras, impostos, leis e a rainha vão pedir novos discursos.', wait: true, advanceOn: (app) => (app.s.crowd?.live?.picks.length ?? 0) > 0 },
+  ] },
   { id: 'castelo', tips: ['castelo', 'inicio'], when: onTrono, steps: [
     { sel: '.hud-king', title: 'Este é você', text: 'O retrato mostra o humor do rei e a vela mostra quantas horas ainda restam no dia. Toque nele para ver o Estado do Reino.' },
     { sel: '.hud-res', title: 'Os recursos da coroa', text: 'Ouro, Influência e Governabilidade. Se o ouro ficar negativo, os soldados param de receber e a guarda se revolta.' },

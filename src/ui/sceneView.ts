@@ -115,7 +115,8 @@ export class SceneView {
   sync(specs: ActorSpec[]) {
     this.ver++;
     const keep = new Set(specs.map((s) => s.key));
-    for (const [k, a] of this.actors) if (!keep.has(k) && !a.leaving && !a.path.length) this.actors.delete(k);
+    // 'st-' são atores de cena roteirizada (as noites do bobo): o jogo não os controla
+    for (const [k, a] of this.actors) if (!keep.has(k) && !a.leaving && !a.path.length && !k.startsWith('st-')) this.actors.delete(k);
     for (const s of specs) {
       const cur = this.actors.get(s.key);
       if (!cur || cur.id !== s.id) {
@@ -192,6 +193,12 @@ export class SceneView {
   setHidden(key: string, on: boolean) { this.ver++; if (on) this.hidden.add(key); else this.hidden.delete(key); }
   place(key: string, x: number, y: number) { const a = this.actors.get(key); if (a) { a.x = x; a.foot = y; a.path = []; } }
   hotspotStand(act: string): [number, number] | null { return this.world?.hotspots.find((h) => h.acts.includes(act))?.stand ?? null; }
+  face(key: string, dir: TopDownDir) { const a = this.actors.get(key); if (a && !a.path.length) a.dir = dir; }
+  remove(key: string) { this.actors.delete(key); this.ver++; }
+  spawn(key: string, id: string, x: number, y: number, dir: TopDownDir = 'south') {
+    this.actors.set(key, { key, id, x, foot: y, anim: 'idle', frame: 0, acc: 0, path: [], dir });
+    this.ver++;
+  }
   setAnim(key: string, anim: Anim) { const a = this.actors.get(key); if (a && !a.path.length) a.anim = anim; }
 
   // Caminho pela grade do castelo (contorna móveis, passa pelas portas)

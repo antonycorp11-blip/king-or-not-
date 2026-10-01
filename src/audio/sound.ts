@@ -13,12 +13,17 @@ interface Prefs { music: boolean; sfx: boolean }
 const KEY = 'king-or-not-audio';
 
 // escalas (semitons a partir da tônica) e andamento de cada clima
-const MOODS: Record<Exclude<MusicMood, 'silencio'>, { root: number; scale: number[]; beat: number; density: number; drone: number; vol: number }> = {
-  dia: { root: 50, scale: [0, 2, 3, 5, 7, 9, 10, 12, 14], beat: 0.42, density: 0.62, drone: 0.05, vol: 0.55 }, // ré dórico
-  noite: { root: 45, scale: [0, 3, 5, 7, 10, 12, 15], beat: 0.7, density: 0.4, drone: 0.045, vol: 0.45 }, // lá menor pentatônica
-  tensao: { root: 45, scale: [0, 1, 3, 5, 7, 8, 12], beat: 0.34, density: 0.5, drone: 0.07, vol: 0.5 }, // lá frígio
-  festa: { root: 55, scale: [0, 2, 4, 5, 7, 9, 12, 14], beat: 0.26, density: 0.8, drone: 0.04, vol: 0.55 }, // sol maior
-  luto: { root: 43, scale: [0, 3, 5, 7, 8, 12], beat: 0.9, density: 0.35, drone: 0.06, vol: 0.5 }, // sol menor, lento
+const MOODS: Record<Exclude<MusicMood, 'silencio'>, { root: number; scale: number[]; beat: number; density: number; drone: number; vol: number; harmony: number; perc: number }> = {
+  // dia: ré maior, andamento de feira, terças por cima e um pandeiro leve
+  dia: { root: 50, scale: [0, 2, 4, 5, 7, 9, 11, 12, 14, 16], beat: 0.3, density: 0.72, drone: 0.035, vol: 0.55, harmony: 0.45, perc: 0.5 },
+  // noite: sol maior pentatônica, calma (aconchego, não tristeza)
+  noite: { root: 55, scale: [0, 2, 4, 7, 9, 12, 14, 16], beat: 0.48, density: 0.55, drone: 0.03, vol: 0.45, harmony: 0.3, perc: 0 },
+  // tensão: lá frígio, só nas urgências, na investigação e na guerra
+  tensao: { root: 45, scale: [0, 1, 3, 5, 7, 8, 12], beat: 0.32, density: 0.5, drone: 0.06, vol: 0.5, harmony: 0, perc: 0.35 },
+  // festa: sol maior rápido, dança
+  festa: { root: 55, scale: [0, 2, 4, 5, 7, 9, 12, 14, 16], beat: 0.22, density: 0.85, drone: 0.03, vol: 0.55, harmony: 0.6, perc: 0.8 },
+  // luto: sol menor, lento (só o velório e as derrotas)
+  luto: { root: 43, scale: [0, 3, 5, 7, 8, 12], beat: 0.9, density: 0.35, drone: 0.06, vol: 0.5, harmony: 0, perc: 0 },
 };
 const hz = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12);
 
@@ -103,7 +108,7 @@ class Sound {
     const dg = ctx.createGain(); dg.gain.value = M.drone;
     lp.connect(dg).connect(gain);
     const oscs: OscillatorNode[] = [];
-    for (const [semi, det] of [[-12, 0], [-5, 4], [-12, -6]] as const) {
+    for (const [semi, det] of [[-12, 0], [-5, 4], [0, -6]] as const) {
       const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = hz(M.root + semi); o.detune.value = det;
       o.connect(lp); o.start(); oscs.push(o);
     }
@@ -133,7 +138,19 @@ class Sound {
     idx = Math.max(0, Math.min(sc.length - 1, idx));
     this.lastNote = idx;
     this.pluck(hz(M.root + 12 + sc[idx]), at, out, 0.26);
+    // terça (dois graus acima) por cima: soa como duas cordas, alegre
+    if (M.harmony && Math.random() < M.harmony) this.pluck(hz(M.root + 12 + sc[Math.min(sc.length - 1, idx + 2)]), at + 0.012, out, 0.14);
+    // pandeiro leve no contratempo
+    if (M.perc && Math.random() < M.perc) this.shaker(at + M.beat / 2, out);
     if (phrasePos === 0 && Math.random() < 0.5) this.pluck(hz(M.root + sc[0]), at, out, 0.16); // baixo no tempo forte
+  }
+
+  private shaker(at: number, out: AudioNode) {
+    const ctx = this.ctx!;
+    const src = ctx.createBufferSource(); src.buffer = this.noiseBuf;
+    const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 6000;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(0.05, at + 0.004); g.gain.exponentialRampToValueAtTime(0.0008, at + 0.08);
+    src.connect(f).connect(g).connect(out); src.start(at, Math.random()); src.stop(at + 0.1);
   }
 
   // corda dedilhada: triângulo + harmônico com ataque curto e queda exponencial

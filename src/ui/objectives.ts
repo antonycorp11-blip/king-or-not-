@@ -2,6 +2,7 @@ import type { App } from './app';
 import type { GameState } from '../types';
 import { MARRIAGE_DEADLINE, ACT_END } from '../engine/core';
 import { upcomingBig, visibleAudiences } from '../engine/day';
+import { urgentAppt } from '../engine/agenda';
 import { computeEconomy } from '../engine/economy';
 import { inv, phase } from '../engine/investigation';
 import { GOODS, PROVINCES } from '../data/realm';
@@ -50,7 +51,9 @@ export function objectives(s: GameState): Goal[] {
   const vis = visibleAudiences(s);
   const urgent = vis.find((a) => EVENT_MAP[a.eventId]?.kind === 'urgente');
   const eco = computeEconomy(s);
-  if (urgent) out.push({ kind: 'agora', icon: 'selo', text: 'Urgente no salão do trono', hot: true, act: 'travel', arg: 'salao' });
+  const appt = urgentAppt(s);
+  if (appt) out.push({ kind: 'agora', icon: appt.kind === 'conselho' ? 'selo' : 'ampulheta', text: `${appt.kind === 'conselho' ? 'Reunião do Conselho' : appt.meal ? (appt.meal === 'almoco' ? 'Almoço' : 'Jantar') : 'Encontro'} ${s.hour >= appt.hour ? 'começou!' : 'em breve'} · ir agora`, hot: true, act: 'travel', arg: appt.room });
+  else if (urgent) out.push({ kind: 'agora', icon: 'selo', text: 'Urgente no salão do trono', hot: true, act: 'travel', arg: 'salao' });
   else if (s.crowd?.spont && !s.crowd.spont.handled) out.push({ kind: 'agora', icon: 'povo', text: 'Uma multidão espera o rei', hot: true, act: 'go', arg: 'praca' });
   else if (s.skillPoints > 0) out.push({ kind: 'agora', icon: 'estrela', text: `Gastar ${s.skillPoints} ponto${s.skillPoints > 1 ? 's' : ''} de habilidade`, act: 'go', arg: 'rei' });
   else if (s.crowd?.pending?.length) out.push({ kind: 'agora', icon: 'povo', text: 'O povo espera ouvir o rei', act: 'go', arg: 'praca' });
@@ -64,7 +67,7 @@ export function objectives(s: GameState): Goal[] {
 
 export function renderObjectives(app: App): string {
   const s = app.s;
-  if (s.flags.nightPending || app.ui.dialog) return '';
+  if (s.flags.nightPending || app.ui.dialog || app.ui.screen !== 'trono') return '';
   const goals = objectives(s);
   if (!goals.length) return '';
   const collapsed = !!app.ui.objCollapsed;

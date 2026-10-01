@@ -1,5 +1,7 @@
 import { sound, type MusicMood } from '../audio/sound';
 import { playPrologue } from './prologue';
+import { NightOpRun } from './nightOp';
+import { currentOp } from '../engine/nightOps';
 import type { CouncilSeatId, GameState, Good, LogEntry, RoomId, ScreenId } from '../types';
 import { applyEffect as applyEffectSafe, load, newGame, save, clearSave, storeLocal } from '../engine/core';
 import { athgExit, athgGameStarted, athgOwnExit, athgReady, cloudLoad, inPortal } from '../engine/cloud';
@@ -79,6 +81,8 @@ export interface UIState {
   ring: boolean; // menu de ações do rei
   hotMenu: [number, number, string[]] | null; // menu de um móvel-lugar (posição no mundo e atividades)
   sleeping?: boolean; // o rei está deitado (a noite passa)
+  apptRang?: number; // último compromisso anunciado com sino
+  meetWarned?: number; // já avisou hoje que Pimenta espera
   objCollapsed?: boolean; // a faixa de objetivos recolhida
   prologue?: boolean; // o velório e a coroação (primeiro minuto de um reinado novo)
   cineExit?: boolean; // a cena de cinema está saindo
@@ -135,12 +139,14 @@ export class App {
     this.stage.addEventListener('click', (e) => this.onClick(e));
     // tocar numa pessoa pelo castelo abre uma conversa
     this.scene.onTap = (key) => {
+      if (this.night) return; // à noite, ninguém para para conversar
       if (this.ui.screen !== 'trono' || this.ui.dialog) return;
       if (key.startsWith('npc-')) return this.approach(key, () => this.talkTo(key.slice(4)));
       if (key === 'rei') { this.ui.ring = !this.ui.ring; this.ui.hotMenu = null; this.render(); }
     };
     // tocar num móvel-lugar: o rei vai até ele e age
     this.scene.onHotspot = (h) => {
+      if (this.night) { this.scene.moveTo('rei', h.stand[0], h.stand[1]); return; } // na missão, o móvel é só esconderijo
       if (this.ui.screen !== 'trono' || this.ui.dialog || this.ui.castleModal) return;
       this.ui.ring = false;
       const acts = h.acts.filter((id) => { const a = ACTIVITIES.find((x) => x.id === id); return a && (!a.cond || a.cond(this.s)) && !(a.perDay && this.s.activitiesToday.includes(a.id)) && !(a.once && this.s.flags[a.once]); });
@@ -242,6 +248,19 @@ export class App {
     this.autoOpenUrgent();
   }
 
+  night: NightOpRun | null = null;
+  // Pimenta propôs e o rei aceitou: a noite começa
+  startNightOp() {
+    const op = currentOp(this.s);
+    if (!op || !op.go || op.done || this.night) return false;
+    this.ui.dialog = null; this.ui.castleModal = null; this.ui.panel = null; this.ui.ring = false; this.ui.hotMenu = null;
+    this.ui.screen = 'trono';
+    this.night = new NightOpRun(this, op);
+    this.render();
+    this.night.start();
+    return true;
+  }
+
   continueGame() {
     const s = load();
     if (!s) return;
@@ -308,6 +327,14 @@ export class App {
   requestEndDay() {
     const s = this.s;
     if (this.ui.sleeping) return;
+    // Pimenta espera à noite: o primeiro toque em "Ir dormir" só lembra
+    const meet = s.agenda.find((a) => a.eventId === 'olhos_relatorio' && a.state === 'pendente');
+    if (meet && this.ui.meetWarned !== s.day) {
+      this.ui.meetWarned = s.day;
+      sound.play('whisper');
+      this.toast(`Pimenta espera em ${ROOMS[meet.room].name}, depois das 20h. Toque em "Ir dormir" de novo para dormir mesmo assim.`);
+      return;
+    }
     const bed = this.scene.hotspotStand('dormir');
     const k = this.scene.kingPos();
     if (bed && k && (s.castle.room !== 'quarto' || Math.hypot(k.x - bed[0], k.y - bed[1]) > 150)) {
@@ -438,6 +465,7 @@ export class App {
   private musicMood(): MusicMood {
     const s = this.s, ui = this.ui;
     if (ui.prologue) return 'luto';
+    if (this.night) return 'tensao';
     if (ui.screen === 'titulo') return 'noite';
     if (s.ended) return s.ended.kind === 'derrota' ? 'luto' : 'festa';
     const d = ui.dialog;
@@ -457,9 +485,23 @@ export class App {
     const s = this.s;
     const ui = this.ui;
     if (s || ui.screen === 'titulo') sound.setMood(this.musicMood());
+    this.stage.classList.toggle('op-on', !!this.night);
+    if (this.night) {
+      // a missão noturna: sem interface, só o castelo escuro
+      const pos = this.scene.kingPos();
+      if (pos) { s.castle.x = pos.x; s.castle.y = pos.y; s.castle.seated = false; }
+      this.scene.setMode('full');
+      this.scene.setHour(21.4);
+      this.scene.sync(Throne.worldActors(this));
+      this.scene.setMarkers(this.night.markers());
+      this.scene.setMovementEnabled(true);
+      this.root.innerHTML = this.night.overlay();
+      return;
+    }
     if (ui.prologue) {
       // o prólogo ocupa a tela inteira: nada do castelo por baixo
       this.stage.classList.add('cinema-on');
+      this.scene.setMarkers([]);
       this.root.innerHTML = '';
       return;
     }
@@ -472,14 +514,17 @@ export class App {
       this.scene.sync(Throne.worldActors(this));
       this.scene.focus(ROOMS.salao.rect[0] + 520, ROOMS.salao.rect[1] + 420);
       this.scene.setMode('dim');
+      this.scene.setMarkers([]);
       this.root.innerHTML = renderTitle(this);
       return;
     }
     this.stage.classList.remove('talking');
+    this.stage.classList.toggle('summary-on', !!ui.summary);
     if (ui.summary) {
       this.scene.setMovementEnabled(false);
       this.scene.setHour(20.5);
       this.scene.setMode('full');
+      this.scene.setMarkers([]); // os nomes de quem está no quarto não ficam por cima do resumo
       this.root.innerHTML = renderSummary(this) + this.tipHtml();
       return;
     }
@@ -487,6 +532,7 @@ export class App {
       this.scene.setMovementEnabled(false);
       this.scene.setHour(20);
       this.scene.setMode('dim');
+      this.scene.setMarkers([]);
       this.root.innerHTML = renderEnd(this);
       return;
     }
@@ -627,6 +673,7 @@ export class App {
   private enterRoom(room: RoomId) {
     const s = this.s;
     if (room === s.castle.room || this.ui.screen === 'titulo') return;
+    if (this.night) { s.castle.room = room; return; } // na missão noturna: sem encontros, sem relógio
     s.castle.room = room;
     s.castle.visitedToday = [...new Set([...s.castle.visitedToday, room])];
     if (s.hour < 20) spendHours(s, WALK_HOURS, 'andar');
@@ -673,7 +720,10 @@ export class App {
       // o rei para de andar e vai até quem o espera
       this.scene.halt('rei');
       const id = a.event.id, key = `npc-${a.event.speaker}`;
-      if (this.scene.has(key)) return this.approach(key, () => this.openInline(id));
+      // só vai até quem fala se a pessoa estiver neste cômodo (senão o rei saía
+      // andando do banquete até a biblioteca atrás de quem estava na rotina)
+      const p = this.scene.pos(key);
+      if (p && roomAt(p[0], p[1]) === s.castle.room) return this.approach(key, () => this.openInline(id));
       return this.openInline(id);
     }
     this.autoOpenUrgent();
@@ -777,6 +827,10 @@ export class App {
       case 'estado': this.ui.panel = this.ui.panel === 'estado' ? null : 'estado'; return this.render();
       case 'closeEstado': case 'closeFeed': this.ui.panel = null; return this.render();
       case 'ajustes': this.ui.panel = this.ui.panel === 'ajustes' ? null : 'ajustes'; return this.render();
+      case 'opQuit': this.night?.quit(); return;
+      case 'opSearch': this.night?.search(Number(arg)); return;
+      case 'opClose': this.night?.close(); this.night = null; return this.render();
+      case 'noop': return;
       case 'objToggle': this.ui.objCollapsed = !this.ui.objCollapsed; return this.render();
       case 'musicToggle': sound.toggleMusic(); return this.render();
       case 'sfxToggle': sound.toggleSfx(); return this.render();

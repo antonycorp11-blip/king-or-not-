@@ -1,11 +1,13 @@
 // Testes dos sistemas da expansão: política de audiências, investigação e praça.
 import { newGame } from '../src/engine/core';
-import { startDay, endDay, visibleAudiences } from '../src/engine/day';
+import { startDay, endDay, visibleAudiences, spendHours } from '../src/engine/day';
 import { pendingForwarded, pullBack } from '../src/engine/policy';
 import { migrate } from '../src/engine/migrate';
 import { accuse, checkMission, discover, interrogate, inv, investigationDaily, openCase, phase, suspicion, takeReport } from '../src/engine/investigation';
 import { crowd, crowdDaily, evaluate, finishSpeech, pickStage, respondCrowd, spokeToday, startSpeech } from '../src/engine/crowd';
 import { layoutCrowd } from '../src/render/square';
+import { finishOp, overheard, planNightOp } from '../src/engine/nightOps';
+import { scheduleCouncil, tickAgenda } from '../src/engine/agenda';
 import { EVIDENCE_MAP, MISSIONS, SUSPECTS, WITNESSES, type SuspectId } from '../src/data/investigation';
 
 const store = new Map<string, string>();
@@ -176,6 +178,47 @@ const ok = (cond: unknown, msg: string) => { if (!cond) { fails++; console.error
   let spont = 0;
   for (let d = 0; d < 30 && !s7.ended; d++) { if (crowd(s7).spont) spont++; endDay(s7); }
   ok(s7.day > 5 && spont > 0, `dias seguidos com a praça ligada, sem erro (dia ${s7.day}${s7.ended ? ', ' + s7.ended.title : ''}; multidões: ${spont})`);
+}
+
+// ---------- 4. noites do bobo, pauta do conselho e leis ----------
+{
+  // o relatório de Pimenta é sempre à noite, depois das 20h
+  const s = newGame('Teste'); startDay(s); const I = inv(s); openCase(s); I.eyes = true;
+  I.mission = { id: 'criadagem', started: 0, doneAt: 0 };
+  s.hour = 10; spendHours(s, 0.5);
+  const ap = s.agenda.find((a) => a.eventId === 'olhos_relatorio');
+  ok(!!ap && ap.hour === 20 && ap.duration >= 2 && !!I.meet, `o relatório vira encontro noturno (${ap?.room} às ${ap?.hour}h)`);
+  s.hour = 20; tickAgenda(s);
+  ok(ap?.state === 'pendente', 'às 20h o encontro com Pimenta continua de pé');
+  // operações noturnas
+  let kinds = new Set<string>();
+  for (let i = 0; i < 40; i++) { const op = planNightOp(s); if (op) kinds.add(op.kind); }
+  ok(kinds.size === 3, `Pimenta planeja os três tipos de noite (${[...kinds].join(', ')})`);
+  const op = planNightOp(s)!;
+  const before = I.found.length;
+  finishOp(s, op, 'ok');
+  ok(!op.evId || I.found.length === before + 1, 'noite bem-sucedida rende evidência');
+  const heat0 = I.heat[op.target];
+  finishOp(s, { ...op }, 'falhou');
+  ok(I.heat[op.target] > heat0, 'ser visto deixa o suspeito atento');
+  for (const t of SUSPECTS) ok(overheard({ ...op, kind: 'seguir', target: t }).length === 4, `conversa noturna de ${t}`);
+
+  // pauta do conselho e lei nova
+  const s2 = newGame('Teste'); startDay(s2);
+  let multi = false;
+  for (let d = 0; d < 10; d++) { s2.res.povo = 60; s2.res.ouro = 600; s2.ended = undefined; endDay(s2); const c = s2.agenda.find((a) => a.kind === 'conselho'); if (c?.matters?.length) multi = true; }
+  ok(multi, 'reuniões do conselho têm pauta com vários assuntos');
+  let meetings = 0;
+  const steady = () => { s2.res.povo = 60; s2.res.ouro = 600; s2.res.moral = 60; s2.res.prestigio = 50; for (const h of ['valmont', 'drakon', 'seren', 'montclair'] as const) s2.loyalty[h] = 10; s2.ended = undefined; };
+  for (let d = 0; d < 25; d++) { steady(); endDay(s2); if (s2.agenda.some((a) => a.kind === 'conselho')) meetings++; }
+  ok(meetings >= 12, `o conselho continua se reunindo depois de semanas (${meetings}/25 dias)`);
+  s2.hour = 10; s2.flags._leiPendente = 'Lei de teste';
+  const when = scheduleCouncil(s2, 'cm_ratificar_lei');
+  ok(when.startsWith('hoje') && s2.agenda.some((a) => a.kind === 'conselho' && (a.matterId === 'cm_ratificar_lei' || a.matters?.includes('cm_ratificar_lei'))), `lei nova convoca o conselho (${when})`);
+  s2.hour = 19; const s3 = s2; s3.agenda = s3.agenda.filter((a) => a.kind !== 'conselho');
+  ok(scheduleCouncil(s3, 'cm_ratificar_lei') === 'amanhã' && s3.council.queue.includes('cm_ratificar_lei'), 'lei nova à noite vai para a reunião de amanhã');
+  const back = migrate(JSON.parse(JSON.stringify(s)));
+  ok(back?.investigation?.meet?.room === I.meet?.room, 'o lugar do encontro sobrevive ao save');
 }
 
 if (fails) { console.error(`${fails} falha(s)`); process.exit(1); }

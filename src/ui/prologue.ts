@@ -3,6 +3,7 @@ import type { Effect } from '../types';
 import { applyEffect, save } from '../engine/core';
 import { sound } from '../audio/sound';
 import { esc } from './common';
+import { startSpeech } from '../engine/crowd';
 
 // PRÓLOGO: o primeiro minuto
 // O velório do rei Odran vira coroação. Em 15 segundos o jogador já decide
@@ -124,6 +125,8 @@ export function playPrologue(app: App): Promise<void> {
       }
       await say(null, 'Cinco pessoas ganharam alguma coisa com a morte do rei. Todas estão nesta capela, olhando para você.', 5200);
       cin.tagActors({});
+      cin.showCloseUp('aldric', 'neutro', 3600);
+      await say('Chanceler Aldric', 'Majestade, a praça está cheia. A cidade inteira quer ouvir o novo rei. Da varanda, agora.', 3800);
       cap.classList.remove('on');
       if (!skipped) {
         title.innerHTML = '<h1>King or Not?</h1><p>Governe. Case-se. Descubra quem matou seu pai, antes que seja tarde.</p>';
@@ -134,10 +137,13 @@ export function playPrologue(app: App): Promise<void> {
       // entra o jogo
       s.flags.prologo = true;
       save(s);
+      // direto para a varanda: o primeiro discurso apresenta a praça
+      startSpeech(s, 'coroacao');
+      save(s);
       cin.fadeOut(() => {
         ov.remove();
         app.ui.prologue = false;
-        app.render();
+        app.go('praca');
         finish();
       });
       if (skipped) { ov.classList.add('out'); }

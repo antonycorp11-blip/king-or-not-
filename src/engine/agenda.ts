@@ -21,20 +21,23 @@ function add(s: GameState, a: Omit<Appointment, 'uid' | 'state'>) {
 }
 
 function eligibleMatter(s: GameState, e: GameEvent) {
-  if (e.kind !== 'reuniao' || s.council.decided.includes(e.id)) return false;
+  if (e.kind !== 'reuniao') return false;
+  // assuntos recorrentes voltam depois de três dias; os demais, uma vez só
+  if (e.id.startsWith('cmr_')) { const last = s.seen[e.id]; if (last !== undefined && s.day - last < 3) return false; }
+  else if (s.council.decided.includes(e.id)) return false;
   if (e.minDay && s.day < e.minDay) return false;
   if (e.maxDay && s.day > e.maxDay) return false;
   return e.cond ? e.cond(s) : true;
 }
 
-export function pickMatter(s: GameState, rng: () => number): GameEvent | null {
+export function pickMatter(s: GameState, rng: () => number, skip: string[] = []): GameEvent | null {
   // assuntos enviados ao conselho por decisões anteriores vêm primeiro
-  while (s.council.queue.length) {
+  while (!skip.length && s.council.queue.length) {
     const id = s.council.queue.shift()!;
     const ev = EVENT_MAP[id];
     if (ev && eligibleMatter(s, ev)) return ev;
   }
-  const pool = EVENTS.filter((e) => eligibleMatter(s, e) && (e.weight ?? 0) > 0);
+  const pool = EVENTS.filter((e) => eligibleMatter(s, e) && (e.weight ?? 0) > 0 && !skip.includes(e.id));
   if (!pool.length) return null;
   const total = pool.reduce((a, e) => a + (e.weight ?? 1), 0);
   let r = rng() * total;
@@ -47,7 +50,16 @@ export function buildAgenda(s: GameState, rng: () => number) {
   // 1. Conselho: quase todo dia há algo na mesa
   if (s.day >= 2 && (s.council.queue.length || rng() < 0.8)) {
     const m = pickMatter(s, rng);
-    if (m) add(s, { kind: 'conselho', title: m.topic, room: 'conselho', hour: rng() < 0.7 ? 9 : 14, duration: 1.5, who: seated, importance: m.council?.lead === 'marechal' || s.war ? 3 : 2, eventId: m.id, matterId: m.id, note: 'Sem o rei, o conselho decide sozinho.' });
+    if (m) {
+      // uma reunião de verdade tem pauta: o assunto principal e mais um ou dois
+      const extra: string[] = [];
+      for (let i = 0; i < (rng() < 0.55 ? 2 : 1); i++) {
+        const e = pickMatter(s, rng, [m.id, ...extra]);
+        if (e) extra.push(e.id);
+      }
+      for (const id of [m.id, ...extra]) if (id.startsWith('cmr_')) s.seen[id] = s.day;
+      add(s, { kind: 'conselho', title: `Conselho: ${m.topic}${extra.length ? ` (+${extra.length} assunto${extra.length > 1 ? 's' : ''})` : ''}`, room: 'conselho', hour: rng() < 0.7 ? 9 : 14, duration: 1 + 0.5 * (extra.length + 1), who: seated, importance: m.council?.lead === 'marechal' || s.war ? 3 : 2, eventId: m.id, matterId: m.id, matters: extra, note: 'Sem o rei, o conselho decide sozinho.' });
+    }
   }
   // 2. Audiências marcadas de gente importante (as demais apenas aparecem no salão)
   for (const a of s.audiences) {
@@ -171,9 +183,13 @@ function miss(s: GameState, a: Appointment): LogEntry[] {
 function missWhat(s: GameState, a: Appointment): LogEntry[] {
   switch (a.kind) {
     case 'conselho': {
-      const ev = a.matterId ? EVENT_MAP[a.matterId] : undefined;
-      const e = ev ? councilDecidesAlone(s, ev) : null;
-      return e ? [e] : [];
+      const out: LogEntry[] = [];
+      for (const id of [a.matterId, ...(a.matters ?? [])]) {
+        const ev = id ? EVENT_MAP[id] : undefined;
+        const e = ev && !(a.handled ?? []).includes(ev.id) ? councilDecidesAlone(s, ev) : null;
+        if (e) out.push(e);
+      }
+      return out;
     }
     case 'jantar':
       applyEffect(s, { bond: { [a.who[0]]: { amor: -3, ressentimento: 5 } }, rel: { [a.who[0]]: -4 } });
@@ -225,3 +241,46 @@ export function looseEnds(s: GameState): { text: string; room?: RoomId }[] {
 }
 
 export const roomName = (r: RoomId) => ROOMS[r].name;
+
+// Um assunto urgente para o conselho (uma lei nova, por exemplo): entra na
+// próxima reunião de hoje, ou numa reunião extraordinária daqui a pouco, ou amanhã.
+export function scheduleCouncil(s: GameState, matterId: string): string {
+  s.council.decided = s.council.decided.filter((x) => x !== matterId);
+  const fmtH = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
+  const today = s.agenda.find((a) => a.kind === 'conselho' && a.state === 'pendente' && a.hour > s.hour);
+  if (today) {
+    if (today.matterId !== matterId && !(today.matters ?? []).includes(matterId)) { (today.matters ??= []).unshift(matterId); today.duration += 0.5; }
+    return `hoje, às ${fmtH(today.hour)}`;
+  }
+  if (s.hour <= 17.5) {
+    const h = Math.ceil(s.hour + 1);
+    const seated = SEAT_IDS.map((k) => holder(s, k)).filter(Boolean) as string[];
+    add(s, { kind: 'conselho', title: `Conselho extraordinário: ${EVENT_MAP[matterId]?.topic ?? 'a nova lei'}`, room: 'conselho', hour: h, duration: 1.5, who: seated, importance: 3, eventId: matterId, matterId, matters: [], note: 'Sem o rei, o conselho decide sozinho o destino da lei.' });
+    s.agenda.sort((x, y) => x.hour - y.hour);
+    return `hoje, às ${fmtH(h)}`;
+  }
+  if (!s.council.queue.includes(matterId)) s.council.queue.unshift(matterId);
+  return 'amanhã';
+}
+
+// A reunião em andamento: qual o próximo assunto da pauta?
+export function nextMatter(s: GameState): { id: string; n: number; total: number } | null {
+  const a = s.agenda.find((x) => x.kind === 'conselho' && (x.state === 'feito' || x.state === 'atrasado') && (x.matters ?? []).some((m) => !(x.handled ?? []).includes(m)));
+  if (!a) return null;
+  const all = [a.matterId!, ...(a.matters ?? [])];
+  const id = (a.matters ?? []).find((m) => !(a.handled ?? []).includes(m) && EVENT_MAP[m]);
+  if (!id) return null;
+  return { id, n: all.indexOf(id) + 1, total: all.length };
+}
+
+// marca o assunto como tratado na reunião de hoje
+export function matterHandled(s: GameState, id: string) {
+  const a = s.agenda.find((x) => x.kind === 'conselho' && (x.matterId === id || (x.matters ?? []).includes(id)));
+  if (a && !(a.handled ??= []).includes(id)) a.handled.push(id);
+}
+
+// Compromisso importante começando (ou já começado) em outro cômodo
+export function urgentAppt(s: GameState): Appointment | null {
+  return s.agenda.find((a) => a.state === 'pendente' && (a.kind === 'conselho' || (a.kind === 'encontro' && !!a.eventId) || a.kind === 'jantar' || !!a.meal)
+    && s.hour >= a.hour - 0.75 && s.hour < a.hour + a.duration && a.room !== s.castle.room) ?? null;
+}

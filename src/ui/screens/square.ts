@@ -17,6 +17,7 @@ let reacts: { g: Group; r: Reaction }[] = [];
 let result: (SpeechResult & { lines: string[]; kind: SpeechKind }) | null = null;
 
 const KIND_WHY: Record<SpeechKind, string> = {
+  coroacao: 'A cidade quer conhecer o novo rei. A primeira impressão é a que fica.',
   geral: 'Falar ao povo sem motivo especial. Bom para ganhar apoio quando a praça está calma.',
   rainha: 'A cidade ainda não viu a rainha na varanda. A primeira impressão dela depende do rei.',
   guerra: 'A guerra começou sem uma palavra do rei. Enquanto ele não falar, a moral cai e o recrutamento emperra.',

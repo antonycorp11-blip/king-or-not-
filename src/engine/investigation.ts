@@ -32,6 +32,8 @@ export interface InvestigationState {
   accused?: { id: SuspectId; day: number; correct: boolean; confidence: number; outcome: 'preso' | 'fugiu' | 'duvida' | 'inocente_condenado' | 'inocente_solto' };
   leaked?: number; // dia em que o boato vazou para a cidade
   selected?: string; // item selecionado na mesa (interface)
+  meet?: { room: RoomId; where: string }; // onde Pimenta espera o rei hoje à noite
+  offer?: import('./nightOps').NightOp | { day: number; none: true }; // a operação noturna proposta
 }
 
 const abs = (s: GameState) => s.day * 24 + s.hour;

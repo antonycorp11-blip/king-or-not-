@@ -108,6 +108,8 @@ export interface Appointment {
   mandatory?: boolean;
   eventId?: string; // o que acontece quando o rei comparece
   matterId?: string; // reunião do conselho
+  matters?: string[]; // outros assuntos da pauta, depois do primeiro
+  handled?: string[]; // assuntos da pauta já tratados nesta reunião
   state: AppointmentState;
   note?: string; // o que acontece se faltar
   spot?: string; // onde a pessoa espera dentro do cômodo

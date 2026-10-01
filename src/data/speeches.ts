@@ -32,9 +32,9 @@ export type Reaction = 'aplausos' | 'vaias' | 'murmurios' | 'silencio' | 'gritos
 export interface SpeechOption { label: string; say: Txt; tones: Tone[]; groups: Partial<Record<Group, number>>; react: Reaction; effects?: Effect }
 export interface SpeechStage { id: string; title: string; prompt: Txt; options: SpeechOption[] }
 
-export type SpeechKind = 'geral' | 'rainha' | 'guerra' | 'impostos' | 'caso' | 'multidao' | 'paz' | 'execucao' | 'reforma';
+export type SpeechKind = 'coroacao' | 'geral' | 'rainha' | 'guerra' | 'impostos' | 'caso' | 'multidao' | 'paz' | 'execucao' | 'reforma';
 export const SPEECH_NAME: Record<SpeechKind, string> = {
-  geral: 'Discurso ao povo', rainha: 'A apresentação da rainha', guerra: 'Declaração de guerra', impostos: 'O anúncio dos impostos', caso: 'A morte do rei Odran',
+  coroacao: 'O primeiro discurso do rei', geral: 'Discurso ao povo', rainha: 'A apresentação da rainha', guerra: 'Declaração de guerra', impostos: 'O anúncio dos impostos', caso: 'A morte do rei Odran',
   multidao: 'Diante da multidão', paz: 'O anúncio da paz', execucao: 'A justiça do rei', reforma: 'Uma nova lei',
 };
 
@@ -74,6 +74,12 @@ const ENCERRAMENTO: SpeechStage = { id: 'encerramento', title: 'Encerramento', p
 
 // ---------- a mensagem principal de cada tipo ----------
 const MENSAGEM: Record<SpeechKind, SpeechStage> = {
+  coroacao: { id: 'mensagem', title: 'O que o novo rei promete', prompt: 'A cidade inteira quer saber que tipo de rei você vai ser. O que dizer?', options: [
+    O('Um reino justo para todos', 'Não prometo um reino fácil. Prometo um reino justo: a mesma lei para o lorde e para o padeiro.', ['inspirador', 'honesto'], { povo: 6, mercadores: 4, nobres: -2 }, 'aplausos'),
+    O('Honrar a memória do meu pai', 'Meu pai governou trinta anos sem deixar Castelmar cair. Vou honrar cada um desses anos.', ['religioso', 'conciliador'], { religiosos: 7, nobres: 4, povo: 2 }, 'lenços'),
+    O('Pulso firme contra os inimigos', 'Quem pensa que um rei jovem é um rei fraco vai descobrir o contrário. Castelmar não se ajoelha.', ['autoritario', 'militarista'], { soldados: 8, nobres: 3, povo: -2 }, 'escudos'),
+    O('Pão, festa e portas abertas', 'Hoje à noite, a coroa paga o vinho da praça! E as portas do castelo ficam abertas para quem precisar do rei.', ['populista'], { povo: 9, nobres: -4, mercadores: -2 }, 'gritos'),
+  ] },
   geral: { id: 'mensagem', title: 'Mensagem principal', prompt: 'O que o rei veio dizer?', options: [
     O('Falar do inverno que vem', 'O inverno vem cedo este ano. Os celeiros vão abrir, as obras vão continuar, e ninguém vai ficar sozinho.', ['inspirador', 'honesto'], { povo: 7, mercadores: 3 }, 'aplausos'),
     O('Falar da força do reino', 'Castelmar tem mil lanças, quatro casas e uma coroa. Quem olhar para nós do norte vai ver uma muralha.', ['militarista', 'autoritario'], { soldados: 8, nobres: 4, povo: -1 }, 'escudos'),
