@@ -99,6 +99,8 @@ export class SceneView {
   }
   setMode(mode: 'full' | 'dim') { this.ver++; this.el.classList.toggle('dim', mode === 'dim'); }
   setMovementEnabled(enabled: boolean) { this.movementEnabled = enabled; this.el.classList.toggle('move-enabled', enabled); }
+  private panel = 0; // fração da largura coberta pelo painel de diálogo (direita)
+  setPanel(frac: number) { if (Math.abs(frac - this.panel) > 0.01) { this.panel = frac; this.ver++; } }
   setZoom(mul: number) { this.zoomMul = Math.max(0.55, Math.min(1.5, mul)); }
   get zoom() { return this.zoomMul; }
   focus(x: number | null, y = 0) { this.focusPoint = x === null || Number.isNaN(x) ? null : [x, y]; }
@@ -295,7 +297,7 @@ export class SceneView {
   private ver = 0; // muda a cada chamada que altera a cena por fora
   private signature() {
     const c = this.cam;
-    let s = `${this.ver}|${this.world ? 1 : 0}|${this.canvas.width}x${this.canvas.height}|${this.el.offsetWidth}x${this.el.offsetHeight}|${c.x.toFixed(1)},${c.y.toFixed(1)}|${this.zoomMul}|${this.night}`;
+    let s = `${this.ver}|${this.panel}|${this.world ? 1 : 0}|${this.canvas.width}x${this.canvas.height}|${this.el.offsetWidth}x${this.el.offsetHeight}|${c.x.toFixed(1)},${c.y.toFixed(1)}|${this.zoomMul}|${this.night}`;
     // só conta quem aparece na tela (um guarda andando no outro lado do castelo não pede quadro novo)
     for (const a of this.actors.values()) {
       if (a.x < c.x - 80 || a.x > c.x + c.vw + 80 || a.foot < c.y - 20 || a.foot > c.y + c.vh + 140) continue;
@@ -347,7 +349,8 @@ export class SceneView {
     c.vw = this.canvas.width / c.zoom; c.vh = this.canvas.height / c.zoom;
     const king = this.actors.get('rei');
     const [fx, fy] = this.focusPoint ?? (king ? [king.x, king.foot - 60] : [1600, 400]);
-    const tx = Math.max(-80, Math.min(WORLD_W + 80 - c.vw, fx - c.vw / 2));
+    // com o painel de diálogo aberto à direita, o foco fica no meio da parte visível
+    const tx = Math.max(-80, Math.min(WORLD_W + 80 - c.vw, fx - (c.vw * (1 - this.panel)) / 2));
     const ty = Math.max(-80, Math.min(WORLD_H + 80 - c.vh, fy - c.vh / 2));
     const k = Math.abs(tx - c.x) > 1500 || Math.abs(ty - c.y) > 1500 ? 1 : 0.14;
     if (!Number.isFinite(c.x) || !Number.isFinite(c.y)) { c.x = tx; c.y = ty; }

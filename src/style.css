@@ -1960,3 +1960,58 @@ body.character-gallery-page { overflow: auto; height: auto; min-height: 100vh; b
 .m .appt-call { top: 196px; padding: 8px 16px; }
 .m .appt-call b { font-size: 24px; }
 #stage.cinema-on .appt-call, #stage.op-on .appt-call, #stage.talking .appt-call { display: none !important; }
+
+/* ===================== DIÁLOGO EM PAINEL LATERAL =====================
+   A cena fica à esquerda (a câmera se desloca); a conversa vive numa coluna
+   à direita: retrato e nome no topo, texto grande com rolagem, escolhas embaixo. */
+#stage .dialog { transform: none; left: auto; right: 14px; top: 96px; bottom: 14px; height: auto; width: 640px; display: flex; flex-direction: column; gap: 8px; padding: 10px; background: rgba(14, 10, 20, .9); border: 3px solid #0c0810; box-shadow: inset 0 0 0 2px var(--gold-d, #8a6a2a), 0 10px 30px rgba(0, 0, 0, .55); z-index: 6; }
+#stage .dialog::before { display: none; }
+#stage .dialog .d-portrait { position: relative; left: auto; bottom: auto; width: auto; height: 112px; flex: none; display: flex; align-items: center; gap: 12px; padding: 4px 12px 4px 4px; border-width: 3px; }
+#stage .dialog .big-portrait, #stage .dialog .big-portrait.art, #stage .dialog .big-portrait.placeholder { position: static; width: 100px; height: 100px; flex: none; }
+#stage .dialog .d-house { position: static; height: auto; padding: 0; background: none; border: 0; flex: 1; min-width: 0; }
+#stage .dialog .d-house b { font-size: 24px; }
+#stage .dialog .d-house small { font-size: 16px; }
+#stage .dialog .speech { position: relative; left: auto; right: auto; bottom: auto; flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 12px 16px; margin: 0; }
+#stage .dialog .speech h3 { font-size: 26px; display: block; padding-right: 36px; }
+#stage .dialog .speech h3 small { display: block; margin: 2px 0 0; font-size: 16px; }
+#stage .dialog .speech p { font-size: 26px; line-height: 1.38; font-weight: 500; }
+#stage .dialog .king-said p { font-size: 21px; }
+#stage .dialog .infl-toggle { position: static; width: auto; margin-top: 10px; display: inline-flex; font-size: 16px; }
+#stage .dialog .consult { position: static; margin-top: 8px; }
+#stage .dialog .council-args { max-height: none; }
+#stage .dialog .council-args p { font-size: 18px; }
+#stage .dialog .alert { left: -12px; top: -12px; }
+#stage .dialog .choices, #stage .dialog .choices.many { position: static; left: auto; right: auto; bottom: auto; height: auto; flex: none; max-height: 50%; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+#stage .dialog .choice { min-height: 62px; padding: 8px 12px; gap: 10px; border-width: 3px; }
+#stage .dialog .choice:hover:not([disabled]) { transform: translateX(-4px); }
+#stage .dialog .choice-ico .ico-xl { width: 36px; height: 36px; }
+#stage .dialog .choice-text b { font-size: 23px; }
+#stage .dialog .choice-text small { font-size: 16px; }
+#stage .dialog .adv-badge { width: 34px; height: 34px; }
+#stage.talking .scene, .m #stage.talking .scene { top: 0; transform: none; }
+#stage.cinema-on .dialog { bottom: 14px; }
+/* celular deitado: coluna mais larga, letra que se lê sem esforço */
+.m #stage .dialog { transform: none; left: auto; top: 62px; right: 8px; bottom: 8px; width: 46%; padding: 6px; gap: 6px; }
+.m #stage .dialog .d-portrait { height: 84px; padding: 2px 8px 2px 2px; gap: 8px; }
+.m #stage .dialog .big-portrait, .m #stage .dialog .big-portrait.art, .m #stage .dialog .big-portrait.placeholder { width: 76px; height: 76px; }
+.m #stage .dialog .d-house b { font-size: 22px; }
+.m #stage .dialog .d-house small { font-size: 15px; }
+.m #stage .dialog .speech { padding: 8px 12px; }
+.m #stage .dialog .speech h3 { font-size: 24px; }
+.m #stage .dialog .speech h3 small { font-size: 15px; }
+.m #stage .dialog .speech p { font-size: 27px; line-height: 1.32; }
+.m #stage .dialog .king-said p { font-size: 22px; }
+.m #stage .dialog .tension-meter { font-size: 14px; }
+.m #stage .dialog .choice { min-height: 58px; padding: 6px 10px; gap: 8px; }
+.m #stage .dialog .choice-ico .ico-xl { width: 30px; height: 30px; }
+.m #stage .dialog .choice-text b { font-size: 23px; }
+.m #stage .dialog .choice-text small { font-size: 15px; }
+.m #stage .dialog .council-args p { font-size: 18px; }
+.m #stage .dialog .infl-toggle { font-size: 15px; }
+#stage .dialog .d-house span small + small { opacity: .7; font-size: 14px; }
+#stage .dialog .d-kind { font-family: var(--sc); font-size: 17px; color: #6a4a2a; border-bottom: 2px solid #b8903a; padding: 0 36px 4px 0; margin-bottom: 6px; }
+.m #stage .dialog .d-kind { font-size: 16px; }
+.m #stage .dialog .d-house span small + small { font-size: 13px; }
+#stage.cinema-on .dialog { top: 14px; }
+.m #stage.cinema-on .dialog { top: 8px; }
+.m #stage .dialog .tension-meter em { display: none; }

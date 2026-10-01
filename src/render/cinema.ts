@@ -14,7 +14,8 @@ const FLOOR_Y = 640; // onde a parede encontra o chão
 const FEET = 800; // linha dos pés dos personagens
 const SCALE = 2.25; // célula 128x256 → ~576 px de altura
 const CELL_W = 128, CELL_H = 256, CELL_FOOT = 246;
-const KING_X = 620, NPC_X = 1180;
+// o painel de diálogo ocupa a direita da tela: a cena acontece à esquerda
+const KING_X = 400, NPC_X = 900;
 
 interface Piece { p: string; x: number; foot?: number; top?: number; w: number; flip?: boolean; light?: number }
 interface SetDef { floor: string; wall?: string; exterior?: boolean; dark?: number; back: Piece[]; wallDeco?: Piece[] }
@@ -109,6 +110,7 @@ export class Cinema {
   private endCb: (() => void) | null = null;
   private raf = 0;
   active = false;
+  private noClose = false; // nas conversas, o retrato já está no painel
 
   constructor(host: HTMLElement, world: () => CastleWorld | null) {
     this.el = document.createElement('div');
@@ -123,6 +125,7 @@ export class Cinema {
   // Começa a cena. onReady: quando quem chega termina de entrar (o diálogo pode começar)
   play(p: CinemaPlay, onReady: () => void) {
     this.play_ = p;
+    this.noClose = true;
     this.active = true;
     this.el.classList.add('on');
     this.fade = 1; this.fadeTo = 0;
@@ -131,7 +134,7 @@ export class Cinema {
     const npcFlip = true; // o outro olha para a esquerda, para o rei
     this.actors = [];
     // figurantes ao fundo (menores e mais escuros)
-    (p.extras ?? []).forEach((id, i) => this.actors.push({ id, x: 300 + i * 420 + (i % 2) * 120, to: 300 + i * 420 + (i % 2) * 120, flip: i % 2 === 0, anim: 'idle', frame: i, acc: 0, speed: 0, scale: 0.72, dim: 0.35 }));
+    (p.extras ?? []).forEach((id, i) => this.actors.push({ id, x: 170 + i * 360 + (i % 2) * 90, to: 170 + i * 360 + (i % 2) * 90, flip: i % 2 === 0, anim: 'idle', frame: i, acc: 0, speed: 0, scale: 0.72, dim: 0.35 }));
     const king: Actor = { id: 'rei', x: p.kingEnters ? -200 : KING_X, to: KING_X, flip: false, anim: p.kingSeated ? 'seated' : p.kingEnters ? 'walk' : 'idle', frame: 0, acc: 0, speed: 300, scale: 1, dim: 0 };
     const npc: Actor = { id: p.npc, x: p.kingEnters ? NPC_X : W + 220, to: NPC_X, flip: npcFlip, anim: p.kingEnters ? 'idle' : 'walk', frame: 0, acc: 0, speed: 280, scale: 1, dim: 0 };
     this.actors.push(king, npc);
@@ -150,6 +153,7 @@ export class Cinema {
   // Monta o palco com um elenco livre; o resto é conduzido passo a passo.
   stageScene(p: { room: RoomId; hour: number; title: string; sub: string; focus: string }, cast: Cast[]) {
     this.play_ = { room: p.room, hour: p.hour, npc: p.focus, title: p.title, sub: p.sub, kingEnters: true };
+    this.noClose = false;
     this.active = true;
     this.el.classList.add('on');
     this.fade = 1; this.fadeTo = 0;
@@ -417,7 +421,7 @@ export class Cinema {
   // close no rosto: retrato grande com moldura, entra pela direita
   private drawCloseUp(c: CanvasRenderingContext2D, now: number) {
     const cu = this.closeUp;
-    if (!cu || now > cu.until) return;
+    if (!cu || now > cu.until || this.noClose) return;
     const img = portraitHi(cu.id, cu.expr);
     if (!img) return;
     const k = Math.min(1, (now - cu.from) / 350) * Math.min(1, (cu.until - now) / 350);

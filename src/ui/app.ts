@@ -495,6 +495,7 @@ export class App {
       this.scene.sync(Throne.worldActors(this));
       this.scene.setMarkers(this.night.markers());
       this.scene.setMovementEnabled(true);
+      this.scene.setPanel(0);
       this.root.innerHTML = this.night.overlay();
       return;
     }
@@ -559,6 +560,9 @@ export class App {
     const close = screen !== 'trono' ? `<button class="screen-close" data-act="go" data-arg="trono" title="Voltar ao castelo (Esc)">${iconImg('castelo')} Voltar ao castelo</button>` : '';
     if (ui.sleeping) { this.scene.setHour(23); this.scene.setMovementEnabled(false); }
     this.root.innerHTML = (ui.sleeping ? `<div class="sleep-veil"><p>O rei dorme…</p></div>` : '') + this.topbar() + `<div class="screen screen-${screen} room-${s.castle.room}">${mod.render(this)}</div>` + close + this.confirmModal() + (modal || (this.needsCompanion() ? this.companionModal() : this.tipHtml()));
+    // o painel de diálogo à direita empurra o foco da câmera para a esquerda
+    const dl = screen === 'trono' ? this.stage.querySelector<HTMLElement>('.dialog') : null;
+    this.scene.setPanel(dl ? Math.min(0.6, (dl.offsetWidth + 20) / (this.stage.offsetWidth || 1)) : 0);
     mod.after?.(this);
     this.prevRes = floatDeltas(this, this.prevRes);
   }

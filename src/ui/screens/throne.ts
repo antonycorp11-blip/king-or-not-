@@ -379,7 +379,7 @@ export function render(app: App): string {
     <div class="dialog ${ev.kind === 'urgente' ? 'urgent' : ''} ${ev.council ? 'council' : ''}">
       <div class="d-portrait" style="--hc:${H.color};--hd:${H.dark}">
         ${portrait(who, 'big-portrait', d.expr)}
-        <div class="d-house">${iconImg(H.sigil, 'ico-lg', '#f2c14e')}<span><b>${esc(H.name)}</b><small>${(c.traits ?? []).map(esc).join(' · ')}</small></span></div>
+        <div class="d-house">${iconImg(H.sigil, 'ico-lg', '#f2c14e')}<span><b>${esc(c.name)}</b><small>${esc(c.title)}${c.ageYears ? ` · ${c.ageYears} anos` : ''}</small><small>${esc(H.name)}${(c.traits ?? []).length ? ` · ${(c.traits ?? []).map(esc).join(' · ')}` : ''}</small></span></div>
       </div>
       <div class="speech parchment">
         <button class="dialog-toggle" data-act="toggleDialog" aria-label="Minimizar diálogo">−</button>
@@ -388,7 +388,7 @@ export function render(app: App): string {
           <span>Tensão <b>${d.tension}%</b></span><div class="tension-track"><i style="width:${d.tension}%"></i></div><em>${tensionLabel}</em>
         </div>`}
         ${ev.kind === 'urgente' ? `<span class="alert">${iconImg('selo', 'ico-lg')}</span>` : ''}
-        <h3>${esc(ev.kind === 'reuniao' ? ev.topic : c.name)} <small>${esc(ev.kind === 'reuniao' ? `Conduzida por ${c.name}` : c.title)}${c.ageYears && ev.kind !== 'reuniao' ? ` · ${c.ageYears} anos` : ''} · ${KIND_LABEL[ev.kind]}</small></h3>
+        ${ev.kind === 'reuniao' ? `<h3>${esc(ev.topic)} <small>Conduzida por ${esc(c.name)} · ${KIND_LABEL[ev.kind]}</small></h3>` : `<div class="d-kind">${esc(ev.topic)} · ${KIND_LABEL[ev.kind]}</div>`}
         ${d.said ? `<div class="king-said">${portrait('rei', 'said-portrait')}<p>${esc(d.said)}</p></div>` : ''}
         ${d.prefix && !d.reply ? `<p class="d-prefix">${esc(d.prefix)}</p>` : ''}
         <p>${esc(text)}</p>
